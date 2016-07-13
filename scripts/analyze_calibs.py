@@ -5,7 +5,7 @@ Created on Wed Jul 13 09:29:28 2016
 @author: rstreet
 """
 
-from os import path
+from os import path, remove
 from sys import argv, exit
 import glob
 from astropy.io import fits
@@ -45,6 +45,7 @@ class CalibFrameSet:
             copy(frame, wframe)
             compression_handler.uncompress( wframe )
             uframe = wframe.replace('.fz','')
+            remove(wframe)
             hdr = fits.getheader(uframe)
             
             if self.naxis1 == None:
@@ -166,7 +167,7 @@ def read_frame_set(frame_list,naxis1,naxis2):
     """Function to read into memory the image data from a set of frames.
     Returns a 3D numpy array."""
     
-    image_data = zeros([len(frame_list),naxis1,naxis2])
+    image_data = np.zeros([len(frame_list),naxis1,naxis2])
     exp_times = []
     master_header = None
     for i in range(0,len(frame_list),1):
