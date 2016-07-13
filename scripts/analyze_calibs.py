@@ -12,6 +12,7 @@ from astropy.io import fits
 import compression_handler
 import prepraw3d
 import numpy as np
+from shutil import copy
 
 class CalibFrameSet:
     
@@ -40,8 +41,9 @@ class CalibFrameSet:
         frames = glob.glob( path.join(self.data_dir, '*.fits.fz') )
         
         for frame in frames:
-            compression_handler.uncompress( frame )
-            uframe = frame.replace('.fz')
+            wframe = path.join(self.out_dir, path.basename(frame))
+            compression_handler.uncompress( wframe )
+            uframe = wframe.replace('.fz')
             hdr = fits.getheader(uframe)
             
             if self.naxis1 == None:
