@@ -42,12 +42,14 @@ class CalibFrameSet:
         
         for frame in frames:
             wframe = path.join(self.out_dir, path.basename(frame))
-            copy(frame, wframe)
-            compression_handler.uncompress( wframe )
+            if path.isfile(wframe) == False:            
+                copy(frame, wframe)
             uframe = wframe.replace('.fz','')
+            if path.isfile(uframe) == False:
+                compression_handler.uncompress( wframe )
             remove(wframe)
-            hdr = fits.getheader(uframe)
             
+            hdr = fits.getheader(uframe)
             if self.naxis1 == None:
                 self.naxis1 = hdr['NAXIS1']
                 self.naxis2 = hdr['NAXIS2']
