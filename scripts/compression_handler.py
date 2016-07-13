@@ -5,6 +5,7 @@
 from os import path
 import subprocess
 from sys import argv
+from shutil import copy
 
 class DataFile:
     """Data file object with compression-handling functionality"""
@@ -43,9 +44,15 @@ class DataFile:
         else:
             coutput = 'INFO: File not fzipped, no decompression performed'
 
-def uncompress( file_path ):
+def uncompress( file_path, out_file_dir=None ):
     """Function to uncompress a single file"""
-    data_file = DataFile( path_string=file_path )
+    
+    if out_file_dir != None:
+        working_file = path.join(out_file_dir,path.basename(file_path))
+        copy(file_path, working_file)
+    else:
+        working_file = file_path
+    data_file = DataFile( path_string=working_file )
     data_file.funzip()
 
 if __name__ == '__main__':
