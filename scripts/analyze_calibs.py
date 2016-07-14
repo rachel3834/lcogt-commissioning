@@ -41,6 +41,9 @@ class CalibFrameSet:
         frames = glob.glob( path.join(self.data_dir, '*.fits.fz') )
         
         for frame in frames:
+            
+            # Copy frame to working directory and uncompress - a 
+            # step required due to limited access to the data
             wframe = path.join(self.out_dir, path.basename(frame))
             if path.isfile(wframe) == False:            
                 copy(frame, wframe)
@@ -49,6 +52,8 @@ class CalibFrameSet:
                 compression_handler.uncompress( wframe )
             remove(wframe)
             
+            (imstats, image) = prepraw3d.prepraw3d(frame_path)
+            print(image.shape)
             hdr = fits.getheader(uframe)
             if self.naxis1 == None:
                 self.naxis1 = hdr['NAXIS1']
@@ -62,6 +67,7 @@ class CalibFrameSet:
                 if hdr['FILTER'] not in self.flats.keys():
                     self.flats[hdr['FILTER']] = []
                 self.flats[hdr['FILTER']].append(uframe)
+    
     
     def make_master(self,master_type,bandpass=None):
 

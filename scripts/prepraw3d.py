@@ -120,7 +120,9 @@ def prepraw3d(frame_path,preserve_overscan=False,dbg=False):
     ImageStats = framestats()
     ImageStats.imagename = path.basename(FramePath)
     
-    ImageData = zeros([4096,4096])
+    naxis1 = hdr['NAXIS1']*2
+    naxis2 = hdr['NAXIS2']*2    
+    ImageData = zeros([naxis2,naxis1])
     for iquad in range(0,4,1):
         quadimage = DataCube[iquad,:,:]
         if preserve_overscan == True:
