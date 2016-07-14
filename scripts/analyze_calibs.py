@@ -52,7 +52,7 @@ class CalibFrameSet:
                 compression_handler.uncompress( wframe )
             remove(wframe)
             
-            (imstats, image) = prepraw3d.prepraw3d(frame_path)
+            (imstats, image) = prepraw3d.prepraw3d(uframe)
             print(image.shape)
             hdr = fits.getheader(uframe)
             if self.naxis1 == None:
