@@ -130,7 +130,7 @@ class CalibFrameSet:
     
     def stats_summary(self):
         
-        for master_type in [ 'BIAS', 'DARK', 'FLAT' ]:
+        for master_type in self.master_stats.keys():
             if master_type in ['BIAS', 'DARK']:
                 bandpass = 'None'
                 output = master_type
