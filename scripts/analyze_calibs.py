@@ -13,6 +13,7 @@ import compression_handler
 import prepraw3d
 import numpy as np
 from shutil import copy
+import noise_analysis
 
 class CalibFrameSet:
     
@@ -24,8 +25,11 @@ class CalibFrameSet:
         self.naxis2 = None
         self.master_stats = {}
         self.masterbias = None
+        self.masterbias_file = None
         self.masterdark = None
+        self.masterdark_file = None
         self.masterflats = {}
+        self.masterflat_files = {}
         
         if path.isdir(params['data_dir']) == True:
             self.data_dir = params['data_dir']
@@ -120,13 +124,31 @@ class CalibFrameSet:
 
             if master_type == 'BIAS':
                 self.masterbias = master_data
+                self.masterbias_file = file_path
                 print('Built masterbias')
             elif master_type == 'DARK':
                 self.masterdark = master_data
+                self.masterdark_file = file_path
                 print('Built masterdark')
             elif master_type == 'FLAT':
                 self.masterflats[bandpass] = master_data
+                self.masterflat_files[bandpass] = file_path
                 print('Built masterflat for '+ bandpass+' filter')
+    
+    def fft_master(self,master_type,bandpass=None):
+        
+        if master_type == 'BIAS' and self.masterbias_file != None:
+            params = { 'image_path': self.masterbias_file, 'out_dir': self.out_dir }
+            noise_analysis.plot_quadrant_ffts(params)
+        
+        elif master_type == 'DARK' and self.masterdark_file != None:
+            params = { 'image_path': self.masterdark_file, 'out_dir': self.out_dir }
+            noise_analysis.plot_quadrant_ffts(params)
+            
+        elif master_type == 'FLAT' and self.masterflat_files[bandpass] != None:
+            params = { 'image_path': self.masterflat_files[bandpass], \
+                        'out_dir': self.out_dir }
+            noise_analysis.plot_quadrant_ffts(params)
     
     def stats_summary(self):
         
@@ -158,7 +180,9 @@ def analyze_night_calibs():
     frame_set = CalibFrameSet(params)
     
     frame_set.make_master('BIAS')
+    frame_set.fft_master('BIAS')
     frame_set.make_master('DARK')
+    frame_set.fft_master('DARK')
     for bandpass in frame_set.flats.keys():
         frame_set.make_master('FLAT',bandpass)
 
@@ -179,7 +203,7 @@ def parse_args():
 
 def read_frame_set(frame_list,naxis1,naxis2):
     """Function to read into memory the image data from a set of frames.
-    Returns a 3D numpy array."""
+    Returns a 3D numpy array of 2D images."""
     
     image_data = np.zeros([len(frame_list),naxis2,naxis1])
     exp_times = []
