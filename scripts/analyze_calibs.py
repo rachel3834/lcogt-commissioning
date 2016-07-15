@@ -52,12 +52,11 @@ class CalibFrameSet:
                 compression_handler.uncompress( wframe )
             remove(wframe)
             
-            (imstats, image) = prepraw3d.prepraw3d(uframe)
-            print(image.shape)
             hdr = fits.getheader(uframe)
             if self.naxis1 == None:
-                self.naxis1 = hdr['NAXIS1']
-                self.naxis2 = hdr['NAXIS2']
+                datasec = int(hdr['TRIMSEC'].split(',')[0].split(':')[-1])
+                self.naxis1 = datasec
+                self.naxis2 = datasec
             
             if hdr['OBSTYPE'] == 'BIAS':
                 self.biases.append(uframe)
@@ -89,14 +88,14 @@ class CalibFrameSet:
             (image_data, exp_times, master_header) = \
                 read_frame_set(frame_list,self.naxis1,self.naxis2)
             
-            if master_type in ['DARK','FLAT'] and self.masterbias != None:
+            if master_type in ['DARK','FLAT'] and self.masterbias is not None:
                 image_data = subtract_calib(image_data,self.masterbias)
-            else:
+            elif master_type in ['DARK','FLAT'] and self.masterbias is None:
                 print('Warning: No masterbias data available to subtract')
                 
-            if master_type == 'FLAT' and self.masterdark != None:
+            if master_type == 'FLAT' and self.masterdark is not None:
                 image_data = subtract_calib(image_data,self.masterdark)
-            else:
+            elif master_type == 'FLAT' and self.masterdark is None:
                 print('Warning: No masterdark data available to subtract')
                 
             master_data = np.median(image_data,axis=0)
@@ -105,36 +104,43 @@ class CalibFrameSet:
                 master_data = master_data / np.median(exp_times)
         
             if master_type == 'FLAT':
-                flat_median = np.medium(master_data[55:4065,100:4050])
+                flat_median = np.median(master_data[55:4065,100:4050])
                 master_data = master_data / flat_median
                 
-            self.master_stats[master_type] = {}
-            self.master_stats[master_type]['mean'] = master_data.mean()
-            self.master_stats[master_type]['median'] = np.median(master_data)
-            self.master_stats[master_type]['stddev'] = master_data.stddev()
+            if master_type not in self.master_stats.keys():
+                self.master_stats[master_type] = {}
+            if master_type != 'FLAT':
+                bandpass = 'None'
+            self.master_stats[master_type][bandpass] = {}
+            self.master_stats[master_type][bandpass]['mean'] = master_data.mean()
+            self.master_stats[master_type][bandpass]['median'] = np.median(master_data)
+            self.master_stats[master_type][bandpass]['stddev'] = master_data.std()
             
-            output_frame(master_header, master_bias_data, file_path)
+            output_frame(master_header, master_data, file_path)
 
             if master_type == 'BIAS':
                 self.masterbias = master_data
+                print('Built masterbias')
             elif master_type == 'DARK':
                 self.masterdark = master_data
+                print('Built masterdark')
             elif master_type == 'FLAT':
-                self.masterflat[bandpass] = master_data
+                self.masterflats[bandpass] = master_data
+                print('Built masterflat for '+ bandpass+' filter')
     
-    def statistics(self):
+    def stats_summary(self):
         
-        for master_type in self.master_stats.keys():
+        for master_type in [ 'BIAS', 'DARK', 'FLAT' ]:
             if master_type in ['BIAS', 'DARK']:
                 bandpass = 'None'
                 output = master_type
-                for key,value in self.master_stats[master_type]:
+                for key,value in self.master_stats[master_type][bandpass].items():
                     output = output + ' ' + bandpass + ' ' + key + '=' + str(value)+'\n'
                 print(output)
             else:
                 for bandpass in self.master_stats['FLAT'].keys():
                     output = master_type
-                    for key,value in self.master_stats[master_type][bandpass]:
+                    for key,value in self.master_stats[master_type][bandpass].items():
                         output = output + ' ' + bandpass + ' ' + key + '=' + str(value)+'\n'
                     print(output)
                     
@@ -156,7 +162,7 @@ def analyze_night_calibs():
     for bandpass in frame_set.flats.keys():
         frame_set.make_master('FLAT',bandpass)
 
-    frame_set.statistics()
+    frame_set.stats_summary()
 
 def parse_args():
     """Parse the commandline arguments and harvest the data directory 
@@ -175,12 +181,12 @@ def read_frame_set(frame_list,naxis1,naxis2):
     """Function to read into memory the image data from a set of frames.
     Returns a 3D numpy array."""
     
-    image_data = np.zeros([len(frame_list),naxis1,naxis2])
+    image_data = np.zeros([len(frame_list),naxis2,naxis1])
     exp_times = []
     master_header = None
     for i in range(0,len(frame_list),1):
-        image_data[i,:,:] = fits.getdata(frame_list[i])
-        hdr = fits.getheader(frame_list[i])
+        (imstats, image, hdr) = prepraw3d.prepraw3d(frame_list[i])
+        image_data[i,:,:] = image
         if master_header == None:
             master_header = hdr
         exp_times.append( float(hdr['EXPTIME']) )
@@ -190,8 +196,8 @@ def read_frame_set(frame_list,naxis1,naxis2):
 def output_frame(header, data, file_path):
     """Function to output a new frame"""
     
-    hdu = fits.PrimaryHDU(header=header)
-    hdulist = fits.HDUList(hdu,data)
+    hdu = fits.PrimaryHDU(data,header=header)
+    hdulist = fits.HDUList([hdu])
     hdulist.writeto(file_path)
     
 def subtract_calib(image_data,master_frame):
@@ -201,6 +207,7 @@ def subtract_calib(image_data,master_frame):
     for i in range(0,image_data.shape[0],1):
         image_data[i,:,:] = image_data[i,:,:] - master_frame
     return image_data
+    
     
 if __name__ == '__main__':
     analyze_night_calibs()
