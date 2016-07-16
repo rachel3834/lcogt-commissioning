@@ -138,17 +138,28 @@ class CalibFrameSet:
     def fft_master(self,master_type,bandpass=None):
         
         if master_type == 'BIAS' and self.masterbias_file != None:
-            params = { 'image_path': self.masterbias_file, 'out_dir': self.out_dir }
+            params = {  'image_data': self.masterbias, \
+                        'image_path': self.masterbias_file, \
+                        'out_dir': self.out_dir }
             noise_analysis.plot_quadrant_ffts(params)
         
         elif master_type == 'DARK' and self.masterdark_file != None:
-            params = { 'image_path': self.masterdark_file, 'out_dir': self.out_dir }
+            params = {  'image_data': self.masterdark, \
+                        'image_path': self.masterdark_file, \
+                        'out_dir': self.out_dir }
             noise_analysis.plot_quadrant_ffts(params)
             
         elif master_type == 'FLAT' and self.masterflat_files[bandpass] != None:
-            params = { 'image_path': self.masterflat_files[bandpass], \
+            params = {  'image_data': self.masterflats[bandpass], \
+                        'image_path': self.masterflat_files[bandpass], \
                         'out_dir': self.out_dir }
             noise_analysis.plot_quadrant_ffts(params)
+    
+    def hist_master_bias(self):
+        params = {  'image_data': self.masterbias, \
+                    'image_path': self.masterbias_file, \
+                    'out_dir': self.out_dir }
+        noise_analysis.plot_quadrant_hist(params)
     
     def stats_summary(self):
         
@@ -181,6 +192,7 @@ def analyze_night_calibs():
     
     frame_set.make_master('BIAS')
     frame_set.fft_master('BIAS')
+    frame_set.hist_master_bias()
     frame_set.make_master('DARK')
     frame_set.fft_master('DARK')
     for bandpass in frame_set.flats.keys():
