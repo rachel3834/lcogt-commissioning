@@ -235,7 +235,8 @@ def select_pixels_in_flux_range(imagedata,flux_min,flux_max):
     # Now select everything below the maximum threshold, which excludes both too high and 
     # too low pixels:
     idx = where(mask_image <= flux_max)
-    print 'Number of selected pixels=',len(idx[0])
+    #print 'Number of selected pixels=',len(idx[0])
+    
     return idx
     
 ############################################

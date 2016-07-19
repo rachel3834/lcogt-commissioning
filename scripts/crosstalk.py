@@ -333,7 +333,6 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         xdata = xdata[idx]
         ydata = ydata[idx]
         stddev = resids.std()
-        print a1, afit[0], i
     
     return afit,fitfunc, errfunc, stddev
 
@@ -382,6 +381,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
     for i,imagefile in enumerate(FrameList):
         uframe = archive_access.fetch_frame(path.join(data_dir,imagefile),\
                                             out_dir)
+        print data_dir,imagefile,uframe
         (status, imageobj) = crossanalysis1(uframe,Quadrant,verbose=True)
         for iquad in range(0,4,1):
             (xdata,ydata) = imageobj.quad_flux[iquad+1]
