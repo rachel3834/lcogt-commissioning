@@ -379,6 +379,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
         4: 0.0
         }
     for i,imagefile in enumerate(FrameList):
+        print data_dir,imagefile,out_dir
         uframe = archive_access.fetch_frame(path.join(data_dir,imagefile),\
                                             out_dir)
         print data_dir,imagefile,uframe
