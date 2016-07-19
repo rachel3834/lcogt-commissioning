@@ -20,7 +20,7 @@ from os import path
 import glob
 import warnings
 from shutil import move
-
+import compression_handler
 import statistics
 
 ###################################
@@ -174,10 +174,19 @@ def parseset(frame_path,preserve_overscan=False,debug=False):
     
     if path.isdir(frame_path) == True:
         framelist = glob.glob(path.join(frame_path,'*fits'))
-        print framelist
+        if len(framelist) == 0:
+            framelist = glob.glob(path.join(frame_path,'*fits.fz'))
         for frame in framelist:
             print 'Converting frame: '+path.basename(frame)
-            (imagestats,imagedata, hdr) = prepraw3d(frame,\
+            if 'fits.fz' in frame:
+                compression_handler.uncompress( frame )
+                uframe = frame.replace('.fits.fz','.fits')
+            else:
+                uframe = frame
+            print uframe
+            (imagestats,imagedata, hdr) = prepraw3d(uframe,\
+                            preserve_overscan=preserve_overscan,dbg=debug)
+            imagestats = output_2d(uframe,\
                             preserve_overscan=preserve_overscan,dbg=debug)
             print imagestats.summary()
     
