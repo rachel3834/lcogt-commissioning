@@ -9,7 +9,8 @@ from os import path, remove
 from sys import argv, exit
 import glob
 from astropy.io import fits
-import compression_handler
+import archive_access
+import fetch_frame
 import prepraw3d
 import numpy as np
 from shutil import copy
@@ -48,13 +49,7 @@ class CalibFrameSet:
             
             # Copy frame to working directory and uncompress - a 
             # step required due to limited access to the data
-            wframe = path.join(self.out_dir, path.basename(frame))
-            if path.isfile(wframe) == False:            
-                copy(frame, wframe)
-            uframe = wframe.replace('.fz','')
-            if path.isfile(uframe) == False:
-                compression_handler.uncompress( wframe )
-            remove(wframe)
+            uframe = archive_access.fetch_frame(frame,self.out_dir)
             
             hdr = fits.getheader(uframe)
             if self.naxis1 == None:
