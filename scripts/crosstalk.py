@@ -146,7 +146,7 @@ class CrossImage:
     def create_mask(self,Quadrant):
         print 'Datacube min max: ',self.datacube[Quadrant-1,:,:].min(), self.datacube[Quadrant-1,:,:].max()
         self.region = self.datacube[Quadrant-1,self.image_sec[0]:self.image_sec[1],self.image_sec[2]:self.image_sec[3]]
-        self.maskidx = statistics.select_pixels_in_flux_range(self.region,2000.0,45000.0)
+        self.maskidx = statistics.select_pixels_in_flux_range(self.region,self.flux_min,self.flux_max)
         self.region = self.region[self.maskidx]
         if len(self.region) == 0:
             print 'Warning: All pixels masked from quadrant!'
@@ -316,7 +316,6 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
     afit = []
     for i in range(0,len(pinit),1):
         afit.append(0.0)
-    afit = [ -10.0, 0.0 ]
     i = 0
     while (abs(a1-afit[1]) > 1e-5):
         i = i + 1
