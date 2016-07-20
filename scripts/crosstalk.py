@@ -322,6 +322,8 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         
     a1 = 9e36
     afit = [ 0.0, 0.001 ]
+    (afit,fitfunc, errfunc, rms) = fit_function(xdata,ydata,pinit)
+    (idx, resids) = calc_resids(afit,ydata,fitfunc)
     i = 0
     while (abs(a1-afit[1]) > 1e-5):
         i = i + 1
