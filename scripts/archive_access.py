@@ -15,13 +15,15 @@ def fetch_frame(frame_path,working_dir):
     Returns the uframe image path
     """
     frame_path = frame_path.replace('\n','')
-    
-    wframe = path.join(working_dir, path.basename(frame_path))
-    if path.isfile(wframe) == False:            
-        copy(frame_path, wframe)
-    uframe = wframe.replace('.fz','')
-    if path.isfile(uframe) == False:
-        compression_handler.uncompress( wframe )
-    remove(wframe)
+    if path.isdir(frame_path) == False:
+        wframe = path.join(working_dir, path.basename(frame_path))
+        if path.isfile(wframe) == False:            
+            copy(frame_path, wframe)
+        uframe = wframe.replace('.fz','')
+        if path.isfile(uframe) == False:
+            compression_handler.uncompress( wframe )
+        remove(wframe)
+    else:
+        print 'Error: missing file name'
     
     return uframe
