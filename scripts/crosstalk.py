@@ -359,14 +359,12 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
     """Function to analyse a set of increasing exposures of a single pointing with a bright
     star in one quadrant."""
     
-    print ImageList
     if path.isfile(ImageList) == False:
         print 'ERROR: Cannot find imagelist '+ImageList
         exit()
     fileobj = open(ImageList,'r')
     FrameList = fileobj.readlines()
     fileobj.close()
-    print FrameList
     
     xplot = {
         1: 0.0,
@@ -381,10 +379,8 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
         4: 0.0
         }
     for i,imagefile in enumerate(FrameList):
-        print data_dir,imagefile,out_dir
         uframe = archive_access.fetch_frame(path.join(data_dir,imagefile),\
                                             out_dir)
-        print data_dir,imagefile,uframe
         (status, imageobj) = crossanalysis1(uframe,Quadrant,verbose=True)
         for iquad in range(0,4,1):
             (xdata,ydata) = imageobj.quad_flux[iquad+1]
