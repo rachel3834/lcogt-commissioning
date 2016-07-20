@@ -423,30 +423,30 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
                 idx = statistics.select_entries_within_bound(xdata,\
                             imageobj.flux_min,imageobj.flux_max)
             
-            if imageobj.model == 'linear':
-                (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
-                            ydata[idx],pinit,fit_gradient)
-                label = 'p[1]='+str(round(afit[1],8))+'\nsig='+str(round(stddev,8))
-            
-            elif imageobj.model == 'polynomial':
-                (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
-                        ydata[idx],pinit,fit_polynomial_zero)
-                label = 'p[1]='+str(round(afit[1],10)) + '\np[2]='+str(round(afit[2],10))
-            
-            elif imageobj.model == 'broken_power_law':
-                (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
-                        ydata[idx],pinit,fit_broken_power_law)
-                label = 'p[1]='+str(round(afit[1],10)) + '\np[2]='+str(round(afit[2],10))
+                if imageobj.model == 'linear':
+                    (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                                ydata[idx],pinit,fit_gradient)
+                    label = 'p[1]='+str(round(afit[1],8))+'\nsig='+str(round(stddev,8))
                 
-            if afit[1] > 0.0: 
-                coeffs[iquad].append(afit[1])
-            else: 
-                coeffs[iquad].append(0.0)
-            
-            xmodel = np.arange(0,xdata[idx].max(),100)
-            pyplot.plot(xmodel,fitfunc(afit,xmodel),'k-',label=label)
-            ymodel = fitfunc(afit,xdata)
-            ydata = ydata - ymodel
+                elif imageobj.model == 'polynomial':
+                    (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                            ydata[idx],pinit,fit_polynomial_zero)
+                    label = 'p[1]='+str(round(afit[1],10)) + '\np[2]='+str(round(afit[2],10))
+                
+                elif imageobj.model == 'broken_power_law':
+                    (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                            ydata[idx],pinit,fit_broken_power_law)
+                    label = 'p[1]='+str(round(afit[1],10)) + '\np[2]='+str(round(afit[2],10))
+                    
+                if afit[1] > 0.0: 
+                    coeffs[iquad].append(afit[1])
+                else: 
+                    coeffs[iquad].append(0.0)
+                
+                xmodel = np.arange(0,xdata[idx].max(),100)
+                pyplot.plot(xmodel,fitfunc(afit,xmodel),'k-',label=label)
+                ymodel = fitfunc(afit,xdata)
+                ydata = ydata - ymodel
             
         if iquad in [ 1, 4 ]: 
             pyplot.xlabel('Quadrant '+str(Quadrant)+' pixel value [ADU]')
