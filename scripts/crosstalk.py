@@ -415,8 +415,8 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
             pyplot.plot(xdata,ydata,fmt[iquad-1]+'.')
 
             fileobj= open(path.join(out_dir, 'crosstalk_data_Q'+str(iquad)+'.txt'),'w')
-            for i in range(0,len(xdata),1):
-                fileobj.write(str(xdata[i])+'  '+str(ydata[i])+'\n')
+            for k in range(0,len(xdata),1):
+                fileobj.write(str(xdata[k])+'  '+str(ydata[k])+'\n')
             fileobj.close()
             
             if iquad != Quadrant:
