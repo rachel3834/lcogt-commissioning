@@ -321,10 +321,10 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         i = i + 1
         a1 = afit[1]
         (afit,fitfunc, errfunc, rms) = fit_function(xdata,ydata,pinit)
+        print afit
         yfit = fitfunc(afit,xdata)
         resids = ydata - yfit
         stddev = resids.std()
-        #idx = np.where( resids <= sigclip*rms)
         jdx = np.where( resids <= 200.0 )
         kdx = np.where( resids >= -200.0 )
         idx = np.intersect1d(jdx,kdx)
