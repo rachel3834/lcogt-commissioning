@@ -99,7 +99,7 @@ class CrossImage:
                             3: 0.0,
                             4: 0.0
                             }
-        self.flux_min = 1000.0
+        self.flux_min = 2000.0
         self.flux_max = 50000.0       	# Default: 75000.0
         self.model = 'linear' 	     # One of { linear, polynomial, broken_power_law }
 	
