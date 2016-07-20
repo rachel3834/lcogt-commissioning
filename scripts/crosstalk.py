@@ -316,6 +316,7 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
     afit = []
     for i in range(0,len(pinit),1):
         afit.append(0.0)
+    afit = [ -10.0, 0.0 ]
     i = 0
     while (abs(a1-afit[1]) > 1.0):
         i = i + 1
