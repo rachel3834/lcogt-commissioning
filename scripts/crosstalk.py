@@ -333,7 +333,7 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         stddev = resids.std()
         print i,a1,afit, stddev, len(idx)
     
-    return afit,fitfunc, errfunc, stddev
+    return afit,fitfunc, errfunc, stddev, idx
 
 def crossanalysis1(ImageFile,Quadrant,verbose=False):
     """Function to analyse a single raw Sinistro frame"""
@@ -410,7 +410,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
             ax = pyplot.subplot(2,2,q+1)
             pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, \
                         top=0.9,wspace=0.3,hspace=0.35)
-            pyplot.plot(xdata,ydata,fmt[iquad-1]+'.')
+            pyplot.plot(xdata,ydata,'k.')
 
             fileobj= open(path.join(out_dir, 'crosstalk_data_Q'+str(iquad)+'.txt'),'w')
             for k in range(0,len(xdata),1):
@@ -422,17 +422,17 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
                             imageobj.flux_min,imageobj.flux_max)
             
                 if imageobj.model == 'linear':
-                    (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                    (afit,fitfunc,errfunc,stddev,kdx) = iterative_model_fit(xdata[idx],\
                                 ydata[idx],pinit,fit_gradient)
                     label = 'p[1]='+str(round(afit[1],8))+'\nsig='+str(round(stddev,8))
                 
                 elif imageobj.model == 'polynomial':
-                    (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                    (afit,fitfunc,errfunc,stddev,kdx) = iterative_model_fit(xdata[idx],\
                             ydata[idx],pinit,fit_polynomial_zero)
                     label = 'p[1]='+str(round(afit[1],10)) + '\np[2]='+str(round(afit[2],10))
                 
                 elif imageobj.model == 'broken_power_law':
-                    (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                    (afit,fitfunc,errfunc,stddev,kdx) = iterative_model_fit(xdata[idx],\
                             ydata[idx],pinit,fit_broken_power_law)
                     label = 'p[1]='+str(round(afit[1],10)) + '\np[2]='+str(round(afit[2],10))
                     
@@ -441,6 +441,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
                 else: 
                     coeffs[iquad].append(0.0)
                 
+                pyplot.plot(xdata[kdx],ydata[kdx],'r.')
                 xmodel = np.arange(0,xdata[idx].max(),100)
                 pyplot.plot(xmodel,fitfunc(afit,xmodel),'k-',label=label)
                 ymodel = fitfunc(afit,xdata)
