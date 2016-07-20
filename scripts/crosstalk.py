@@ -333,6 +333,7 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         xdata = xdata[idx]
         ydata = ydata[idx]
         stddev = resids.std()
+        print i,a1,afit
     
     return afit,fitfunc, errfunc, stddev
 
