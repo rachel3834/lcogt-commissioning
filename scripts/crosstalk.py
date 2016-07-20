@@ -324,15 +324,17 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         yfit = fitfunc(afit,xdata)
         resids = ydata - yfit
         stddev = resids.std()
-        idx = np.where( resids <= sigclip*rms)
+        #idx = np.where( resids <= sigclip*rms)
+        idx = np.where( resids <= 200.0 )
         resids = resids[idx]
         xdata = xdata[idx]
         ydata = ydata[idx]
-        idx = np.where( resids >= -1.0*sigclip*rms)
+        idx = np.where( resids >= -200.0 )
         resids = resids[idx]
         xdata = xdata[idx]
         ydata = ydata[idx]
         stddev = resids.std()
+        print ydata[idx]
         print i,a1,afit
     
     return afit,fitfunc, errfunc, stddev
