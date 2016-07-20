@@ -100,7 +100,7 @@ class CrossImage:
                             4: 0.0
                             }
         self.flux_min = 2000.0
-        self.flux_max = 750000.0       	# Default: 75000.0
+        self.flux_max = 45000.0       	# Default: 75000.0
         self.model = 'linear' 	     # One of { linear, polynomial, broken_power_law }
 	
     def overscan_statistics(self,iquad):
@@ -325,14 +325,16 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
     (afit,fitfunc, errfunc, rms) = fit_function(xdata,ydata,pinit)
     (idx, resids) = calc_resids(afit,ydata,fitfunc)
     i = 0
-    
-    while (abs(a1-afit[1]) > 1e-5) or afit[1] < 0.0:
+    cont = True
+    while cont == True
         i = i + 1
         a1 = afit[1]
         (afit,fitfunc, errfunc, rms) = fit_function(xdata[idx],ydata[idx],pinit)
         (idx, resids) = calc_resids(afit,ydata,fitfunc)
         stddev = resids.std()
-        #print i,a1,afit, stddev, len(idx)
+        
+        if (abs(a1-afit[1]) > 1e-5):
+            cont = False
     
     return afit,fitfunc, errfunc, stddev, idx
 
@@ -409,7 +411,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
     
         for i in range(0,1,1):
             ax = pyplot.subplot(2,2,q+1)
-            pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, \
+            pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, \
                         top=0.9,wspace=0.3,hspace=0.35)
             pyplot.plot(xdata,ydata,'k.')
 
@@ -469,7 +471,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
         pinit = [ 0.0, 0.0, 0.0 ]
     for q,iquad in enumerate(plotord):
         pyplot.subplot(2,2,q+1)
-        pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9, \
+        pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, \
                     wspace=0.3,hspace=0.35)
         xdata = xplot[iquad]
         ydata = yplot[iquad]
