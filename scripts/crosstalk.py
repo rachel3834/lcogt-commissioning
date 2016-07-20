@@ -312,27 +312,25 @@ def fit_broken_power_law(xdata,ydata,pinit):
 def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
     """Fit a function iteratively with sigma clipping"""
     
+    def calc_resids(afit,ydata):
+        yfit = fitfunc(afit,xdata)
+        resids = ydata - yfit
+        jdx = np.where( resids <= 200.0 )
+        kdx = np.where( resids >= -200.0 )
+        idx = np.intersect1d(jdx,kdx)
+        return idx, resids
+        
     a1 = 9e36
-    afit = []
-    for i in range(0,len(pinit),1):
-        afit.append(0.0)
     afit = [ 0.0, 0.001 ]
+    (idx, resids) = calc_resids(afit,ydata)
     i = 0
     while (abs(a1-afit[1]) > 1e-5):
         i = i + 1
         a1 = afit[1]
         (afit,fitfunc, errfunc, rms) = fit_function(xdata,ydata,pinit)
-        yfit = fitfunc(afit,xdata)
-        resids = ydata - yfit
+        (idx, resids) = calc_resids(afit,ydata)
         stddev = resids.std()
-        jdx = np.where( resids <= 200.0 )
-        kdx = np.where( resids >= -200.0 )
-        idx = np.intersect1d(jdx,kdx)
-        resids = resids[idx]
-        xdata = xdata[idx]
-        ydata = ydata[idx]
-        stddev = resids.std()
-        print i,a1,afit, stddev
+        print i,a1,afit, stddev, len(idx)
     
     return afit,fitfunc, errfunc, stddev
 
