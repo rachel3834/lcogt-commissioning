@@ -414,7 +414,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
                         top=0.9,wspace=0.3,hspace=0.35)
             pyplot.plot(xdata,ydata,fmt[iquad-1]+'.')
 
-            fileobj= open(path.join(out_dir, 'crosstalk_data_Q'+str(i+1)+'.txt'),'w')
+            fileobj= open(path.join(out_dir, 'crosstalk_data_Q'+str(iquad)+'.txt'),'w')
             for i in range(0,len(xdata),1):
                 fileobj.write(str(xdata[i])+'  '+str(ydata[i])+'\n')
             fileobj.close()
