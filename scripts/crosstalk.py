@@ -478,17 +478,17 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
             idx = statistics.select_entries_within_bound(xdata,\
                     imageobj.flux_min,imageobj.flux_max)
             if imageobj.model == 'linear':
-                (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                (afit,fitfunc,errfunc,stddev,kdx) = iterative_model_fit(xdata[idx],\
                 ydata[idx],pinit,fit_gradient)
                 label = 'p[1]='+str(round(afit[1],8))+'\nRMS='+str(round(stddev,8))
             
             elif imageobj.model == 'polynomial':
-                (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                (afit,fitfunc,errfunc,stddev,kdx) = iterative_model_fit(xdata[idx],\
                             ydata[idx],pinit,fit_polynomial_zero)
                 label = 'p[1]='+str(round(afit[1],5)) + '\np[2]='+str(round(afit[2],10))
             
             elif imageobj.model == 'broken_power_law':
-                (afit,fitfunc,errfunc,stddev) = iterative_model_fit(xdata[idx],\
+                (afit,fitfunc,errfunc,stddev,kdx) = iterative_model_fit(xdata[idx],\
                             ydata[idx],pinit,fit_broken_power_law)
                 label = 'p[1]='+str(round(afit[1],5)) + '\np[2]='+str(round(afit[2],10))
             
