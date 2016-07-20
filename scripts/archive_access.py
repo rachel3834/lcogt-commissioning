@@ -25,7 +25,7 @@ def fetch_frame(frame_path,working_dir):
             compression_handler.uncompress( wframe )
         remove(wframe)
     else:
-        print 'Error: missing file name'
+        print 'Error: missing file name (trailing blank line in input?)'
         exit()
         
     return uframe

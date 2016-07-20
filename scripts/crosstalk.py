@@ -146,7 +146,7 @@ class CrossImage:
     def create_mask(self,Quadrant):
         print 'Datacube min max: ',self.datacube[Quadrant-1,:,:].min(), self.datacube[Quadrant-1,:,:].max()
         self.region = self.datacube[Quadrant-1,self.image_sec[0]:self.image_sec[1],self.image_sec[2]:self.image_sec[3]]
-        self.maskidx = statistics.select_pixels_in_flux_range(self.region,0.0,50000.0)
+        self.maskidx = statistics.select_pixels_in_flux_range(self.region,2000.0,50000.0)
         self.region = self.region[self.maskidx]
         if len(self.region) == 0:
             print 'Warning: All pixels masked from quadrant!'
