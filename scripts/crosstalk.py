@@ -321,7 +321,6 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         i = i + 1
         a1 = afit[1]
         (afit,fitfunc, errfunc, rms) = fit_function(xdata,ydata,pinit)
-        print afit
         yfit = fitfunc(afit,xdata)
         resids = ydata - yfit
         stddev = resids.std()
@@ -332,7 +331,6 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         xdata = xdata[idx]
         ydata = ydata[idx]
         stddev = resids.std()
-        print xdata
         print i,a1,afit
     
     return afit,fitfunc, errfunc, stddev
