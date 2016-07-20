@@ -6,6 +6,7 @@ Created on Mon Jul 18 15:39:37 2016
 """
 
 from os import path, remove
+from sys import exit
 from shutil import copy
 import compression_handler
 
@@ -25,5 +26,6 @@ def fetch_frame(frame_path,working_dir):
         remove(wframe)
     else:
         print 'Error: missing file name'
-    
+        exit()
+        
     return uframe
