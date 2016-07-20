@@ -333,7 +333,7 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
         (idx, resids) = calc_resids(afit,ydata,fitfunc)
         stddev = resids.std()
         
-        if (abs(a1-afit[1]) > 1e-5):
+        if (abs(a1-afit[1]) > 1e-5) or i == 10:
             cont = False
     
     return afit,fitfunc, errfunc, stddev, idx
