@@ -235,15 +235,17 @@ class FrameSet:
     def get_temperatures(self):
         ccdatemp = [] 
         ccdstemp = []
+        frame_ts = []
         frames = self.biases + self.darks + self.exposures
         for bandpass, flats in self.flats.items():
             frames = frames + flats
             
         for frame in frames:
             hdr = fits.getheader(frame)
+            frame_ts.append( Time(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
             ccdatemp.append( float(hdr['CCDATEMP']) )
             ccdstemp.append( float(hdr['CCDSTEMP']) )
-        return ccdatemp, ccdstemp
+        return frame_ts,ccdatemp, ccdstemp
     
 def analyze_night_calibs():
     """Driver function to analyze the calibration frames taken in a single

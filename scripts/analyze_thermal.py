@@ -15,10 +15,10 @@ def analyze_thermal_stability():
     
     params = parse_args_thermal()
     
-    ts = []
+    current_ts = []
     currents = []
     for night_dir in params['dir_list']:
-        print 'Analyzing night '+ path.basename(night_dir)
+        print 'Analyzing data from '+ path.basename(night_dir)
         params['data_dir'] = path.join( night_dir, 'raw' )
         frames = analyze_calibs.FrameSet(params)
         frames.make_frame_listings()
@@ -29,11 +29,64 @@ def analyze_thermal_stability():
             currents = currents + night_currents
         
         if frames.nframes > 0:
-            (ccdatemp, ccdstemp) = frames.get_temperatures()
-            
-    print ts
-    print currents
-    print ccdatemp, ccdstemp
+            (temp_ts,ccdatemp, ccdstemp) = frames.get_temperatures()
+    
+    plot_dark_current(params, ts, currents)
+    plot_temperature(params,temp_ts,ccdatemp,ccdstemp)
+    
+def plot_dark_current(params, ts, currents):
+    """Function to create a plot of a set of dark current measurements and 
+    corresponding timestamps"""
+    
+    xplot = array(ts)
+    yplot = array(currents)
+    
+    hfmt = dates.DateFormatter('%Y-%m-%d\n%H:%M')
+    
+    fig = pyplot.figure(1)
+    pyplot.rcParams['font.size'] = 10.0
+    ax = pyplot.subplot(111)
+    pyplot.subplots_adjust(bottom=0.2)
+    pyplot.plot(xplot,yplot,'b.')
+    ax.xaxis.set_major_formatter(hfmt)
+    pyplot.xticks(rotation=60.0)
+    pyplot.xlabel('Date/time [UTC]')
+    pyplot.ylabel('Median e-/pixel/s')
+    pyplot.title('Dark current as a function of time')
+    pyplot.axis([xplot.min(),xplot.max(),-0.1,0.1])
+    plotfile = path.join(params['out_dir'],'darkcurrent.png')
+    pyplot.savefig(plotfile)
+    pyplot.close(1)
+
+def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
+    """Function to create a plot of a camera's measured temperature as a function
+    of time (CCDATEMP) compared with its set-point temperature (CCDSTEMP)"""
+    
+    xplot = array(temp_ts)
+    yplot = array(ccdatemp)
+    lplot = array(ccdstemp)
+    
+    fig = pyplot.figure(1)
+    pyplot.rcParams['font.size'] = 10.0
+    ax = pyplot.subplot(111)
+    pyplot.subplots_adjust(bottom=0.15)
+    pyplot.plot(xplot,yplot,'b.')
+    pyplot.plot(xplot,lplot,'r-',label='Setpoint temp')
+    ydiff = 0.25
+    if (yplot.max()-yplot.min()) > ydiff: ydiff = (yplot.max()-yplot.min())/2.0
+    temp_upper_limit = lplot.mean() + ydiff
+    temp_lower_limit = lplot.mean() - ydiff
+    pyplot.plot(xplot,array([ temp_upper_limit ] * len(xplot)),'r-.')
+    pyplot.plot(xplot,array([ temp_lower_limit ] * len(xplot)),'r-.',label='Warning threshold')
+    pyplot.gcf().autofmt_xdate()
+    pyplot.xlabel('Date/time [UTC]')
+    pyplot.ylabel('CCDATEMP [degC]')
+    pyplot.title('Temperature as a function of time')
+    pyplot.legend(loc='best',frameon=False)
+    plotfile = path.join(params['out_dir'],'ccd_temp.png')
+    pyplot.savefig(plotfile)
+    pyplot.close(1)
+    
     
 def parse_args_thermal():
     """Function to harvest the parameters required for thermal properties 
