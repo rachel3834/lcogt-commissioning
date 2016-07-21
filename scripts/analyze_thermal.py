@@ -131,8 +131,8 @@ def report_statistics(currents, ccdatemp):
                 ', std.dev = '+str(round(currents.std(),3))+'e-/pix'
     
     ccdatemp = np.array(ccdatemp)
-    print 'Mean CCD actual temperature = '+str(round(currents.mean(),3))+\
-                ', std dev = '+str(round(currents.std(),3))+'degC'
+    print 'Mean CCD actual temperature = '+str(round(ccdatemps.mean(),3))+\
+                ', std dev = '+str(round(ccdatemps.std(),3))+'degC'
     
 if __name__ == '__main__':
     analyze_thermal_stability()
