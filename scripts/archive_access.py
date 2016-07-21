@@ -6,7 +6,7 @@ Created on Mon Jul 18 15:39:37 2016
 """
 
 from os import path, remove
-from sys import exit
+from sys import exit, argv
 from shutil import copy
 import compression_handler
 
@@ -29,3 +29,14 @@ def fetch_frame(frame_path,working_dir):
         exit()
         
     return uframe
+
+if __name__ == '__main__':
+    
+    if len(argv) == 3:
+        frame_path = argv[1]
+        working_dir = argv[2]
+    else:
+        frame_path = raw_input('Please enter the path to the archive frame: ')
+        working_dir = raw_input('Please enter the output directory path: ')
+    uframe = fetch_frame(frame_path,working_dir)
+    
