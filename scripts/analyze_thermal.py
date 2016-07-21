@@ -24,7 +24,7 @@ def analyze_thermal_stability():
         if len(frames.darks) > 0:
             (night_ts, night_currents) = frames.measure_dark_current()
             ts = ts + night_ts
-            currents = current + night_currents
+            currents = currents + night_currents
     print ts
     print currents
     
