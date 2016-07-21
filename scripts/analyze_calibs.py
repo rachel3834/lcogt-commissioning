@@ -9,6 +9,7 @@ from os import path, remove
 from sys import argv, exit
 import glob
 from astropy.io import fits
+from astropy import Time
 import archive_access
 import archive_access
 import prepraw3d
@@ -16,12 +17,13 @@ import numpy as np
 from shutil import copy
 import noise_analysis
 
-class CalibFrameSet:
+class FrameSet:
     
     def __init__(self, params):
         self.biases = []
         self.darks = []
         self.flats = {}
+        self.exposures = []
         self.naxis1 = None
         self.naxis2 = None
         self.master_stats = {}
@@ -64,6 +66,8 @@ class CalibFrameSet:
                 if hdr['FILTER'] not in self.flats.keys():
                     self.flats[hdr['FILTER']] = []
                 self.flats[hdr['FILTER']].append(uframe)
+            elif hdr['OBSTYPE'] == 'EXPOSE':
+                self.exposures.append(uframe)
     
     def make_frame_listings_from_file(self,frames_file):
         
@@ -211,7 +215,20 @@ class CalibFrameSet:
                     for key,value in self.master_stats[master_type][bandpass].items():
                         output = output + ' ' + bandpass + ' ' + key + '=' + str(value)+'\n'
                     print(output)
-                    
+    
+    def measure_dark_current(self):
+        
+        (image_data, exp_times, master_header) = \
+                read_frame_set(self.darks,self.naxis1,self.naxis2)
+        dark_current = np.median(image_data[:, 70:4050, 65:4025])
+        
+        frame_ts = []
+        for dark_frame in self.darks:
+            hdr = fits.getheader(dark_frame)
+            frame_ts.append( Time(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
+        
+        return frame_ts,dark_current
+        
 def analyze_night_calibs():
     """Driver function to analyze the calibration frames taken in a single
     night from a single instrument.  The expected data format is raw Sinistro
@@ -223,16 +240,16 @@ def analyze_night_calibs():
     
     params = parse_args_night()
     
-    frame_set = CalibFrameSet(params)
-    frame_set.make_frame_listings()
+    frames = FrameSet(params)
+    frames.make_frame_listings()
     
-    frame_set.make_master('BIAS')
-    frame_set.fft_frame('MASTERBIAS')
-    frame_set.hist_frame(frame='MASTERBIAS')
-    frame_set.make_master('DARK')
-    frame_set.fft_frame('MASTERDARK')
-    for bandpass in frame_set.flats.keys():
-        frame_set.make_master('FLAT',bandpass)
+    frames.make_master('BIAS')
+    frames.fft_frame('MASTERBIAS')
+    frames.hist_frame(frame='MASTERBIAS')
+    frames.make_master('DARK')
+    frames.fft_frame('MASTERDARK')
+    for bandpass in frames.flats.keys():
+        frames.make_master('FLAT',bandpass)
 
     frame_set.stats_summary()
 
@@ -242,16 +259,16 @@ def analyze_bias_frames():
     taking an FFT"""
     
     params = parse_args_biases()
-    frame_set = CalibFrameSet(params)
-    frame_set.make_frame_listings_from_file(params['frames_file'])
+    frames = FrameSet(params)
+    frames.make_frame_listings_from_file(params['frames_file'])
         
     (image_data, exp_times, master_header) = \
-                read_frame_set(frame_set.biases,frame_set.naxis1,frame_set.naxis2)
-    for i in range(0,len(frame_set.biases),1):
-        frame_set.hist_frame(frame='SINGLE',data=image_data[i],\
-                file_path=frame_set.biases[i])
-        frame_set.fft_frame('BIAS', data=image_data[i],\
-                file_path=frame_set.biases[i])
+                read_frame_set(frames.biases,frames.naxis1,frames.naxis2)
+    for i in range(0,len(frames.biases),1):
+        frames.hist_frame(frame='SINGLE',data=image_data[i],\
+                file_path=frames.biases[i])
+        frames.fft_frame('BIAS', data=image_data[i],\
+                file_path=frames.biases[i])
         
 def parse_args_night():
     """Parse the commandline arguments and harvest the data directory 
@@ -278,7 +295,6 @@ def parse_args_biases():
         params['data_dir'] = argv[2]
         params['out_dir'] = argv[3]
         params['frames_file'] = argv[4]
-    
     
     return params
 

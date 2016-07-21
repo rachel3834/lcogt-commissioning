@@ -140,8 +140,11 @@ def plot_quadrant_hist(params):
         region = params['regions'][q]
         
         quad_image = image[region[0]:region[1],region[2]:region[3]]
-        nbins = int(((quad_image.max()-quad_image.min())/7.5)*2.0)
-        
+        if 'nbins' not in params.keys():
+            nbins = int(((quad_image.max()-quad_image.min())/7.5)*2.0)
+        else:
+            nbins = int(params['nbins'])
+            
         ax = pyplot.subplot(2,2,q+1)
         pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
             wspace=0.4,hspace=0.4)
