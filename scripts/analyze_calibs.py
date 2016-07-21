@@ -239,18 +239,19 @@ def parse_args_biases():
     """Parse the commandline arguments and harvest the data directory 
     location.  Prompt the user if none are given."""
     params = {}
-    if len(argv) != 3:
-        params['data_path'] = raw_input('Please enter the path to the bias frame or list of frames: ')
+    if len(argv) != 4:
+        params['data_dir'] = raw_input('Please enter the path to the data directory: ')
         params['out_dir'] = raw_input('Please enter the path to the output directory: ')
+        params['frames'] = raw_input('Please enter the path to the bias frame or list of frames: ')
     else:
         params['data_path'] = argv[2]
         params['out_dir'] = argv[3]
-    params['data_dir'] = path.dirname(params['data_path'])
+        params['frames'] = argv[4]
     
-    if '.fits' in params['data_path']:
-        params['file_list'] = [ params['data_path'] ]
+    if '.fits' in params['frame_list']:
+        params['file_list'] = [ params['frames'] ]
     elif path.isfile(params['data_path']) == True:
-        params['file_list'] = open(params['data_path'],'r').readlines()
+        params['file_list'] = open(params['frames'],'r').readlines()
     else:
         print('ERROR: Cannot find input frame or file list')
         exit()
