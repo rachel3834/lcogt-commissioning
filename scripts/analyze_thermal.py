@@ -80,8 +80,8 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     if (yplot.max()-yplot.min()) > ydiff: ydiff = (yplot.max()-yplot.min())/2.0
     temp_upper_limit = lplot.mean() + ydiff
     temp_lower_limit = lplot.mean() - ydiff
-    pyplot.plot(xplot,array([ temp_upper_limit ] * len(xplot)),'r-.')
-    pyplot.plot(xplot,array([ temp_lower_limit ] * len(xplot)),'r-.',label='Warning threshold')
+    pyplot.plot(xplot,np.array([ temp_upper_limit ] * len(xplot)),'r-.')
+    pyplot.plot(xplot,np.array([ temp_lower_limit ] * len(xplot)),'r-.',label='Warning threshold')
     pyplot.gcf().autofmt_xdate()
     pyplot.xlabel('Date/time [UTC]')
     pyplot.ylabel('CCDATEMP [degC]')
