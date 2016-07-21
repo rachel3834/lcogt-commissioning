@@ -128,7 +128,7 @@ def report_statistics(currents, ccdatemps):
 
     currents = np.array(currents)
     print 'Mean dark current = '+str(round(currents.mean(),3))+\
-                ', std.dev = '+str(round(currents.std(),3))+'e-/pix'
+                ', std.dev = '+str(currents.std())+'e-/pix'
     
     ccdatemps = np.array(ccdatemps)
     print 'Mean CCD actual temperature = '+str(round(ccdatemps.mean(),3))+\
