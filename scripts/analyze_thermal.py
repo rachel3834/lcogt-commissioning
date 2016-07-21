@@ -43,6 +43,8 @@ def plot_dark_current(params, ts, currents):
     xplot = np.array(ts)
     yplot = np.array(currents)
     
+    print xplot
+    print yplot
     hfmt = dates.DateFormatter('%Y-%m-%d\n%H:%M')
     
     fig = pyplot.figure(1)
