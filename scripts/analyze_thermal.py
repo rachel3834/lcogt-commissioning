@@ -38,7 +38,7 @@ def parse_args_thermal():
         params['out_dir'] = argv[2]
         params['date_search_string'] = argv[3]
     
-    params['dir_list'] = glob.glob(path.join(params['data_dir'], params['date_search_string']))
+    params['dir_list'] = glob.glob(path.join(params['top_data_dir'], params['date_search_string']))
     
     return params
     
