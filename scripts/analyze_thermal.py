@@ -128,7 +128,7 @@ def report_current_statistics(currents):
 
     currents = np.array(currents)
     print 'Mean dark current = '+str(round(currents.mean(),3)+\
-                'std.dev = '+str(round(currents.std(),3))+'e-/pix'
+                ', std.dev = '+str(round(currents.std(),3))+'e-/pix'
                 
 if __name__ == '__main__':
     analyze_thermal_stability()
