@@ -42,6 +42,8 @@ def analyze_thermal_stability():
     plot_dark_current(params, current_ts, currents)
     plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
     
+    report_current_statistics(currents)
+    
 def plot_dark_current(params, ts, currents):
     """Function to create a plot of a set of dark current measurements and 
     corresponding timestamps"""
@@ -119,6 +121,14 @@ def parse_args_thermal():
     params['dir_list'] = glob.glob(path.join(params['top_data_dir'], params['date_search_string']))
     
     return params
-    
+
+def report_current_statistics(currents):
+    """Function to calculate and report essential statistics on the measured
+    dark current"""
+
+    currents = np.array(currents)
+    print 'Mean dark current = '+str(currents.mean())+\
+                'std.dev = '+str(currents.std())+'e-/pix'
+                
 if __name__ == '__main__':
     analyze_thermal_stability()
