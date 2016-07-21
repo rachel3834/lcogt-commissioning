@@ -70,7 +70,7 @@ class CalibFrameSet:
         frames = []
         if '.fits' in frames_file:
             frames = [ frames_file ]
-        elif path.isfile(params['data_path']) == True:
+        elif path.isfile(params['frames_file']) == True:
             frames = open( frames_file,'r').readlines()
         else:
             print('ERROR: Cannot find input frame or file list')
