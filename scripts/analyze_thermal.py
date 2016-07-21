@@ -122,7 +122,7 @@ def parse_args_thermal():
     
     return params
 
-def report_statistics(currents, ccdatemp):
+def report_statistics(currents, ccdatemps):
     """Function to calculate and report essential statistics on the measured
     dark current"""
 
@@ -130,7 +130,7 @@ def report_statistics(currents, ccdatemp):
     print 'Mean dark current = '+str(round(currents.mean(),3))+\
                 ', std.dev = '+str(round(currents.std(),3))+'e-/pix'
     
-    ccdatemp = np.array(ccdatemp)
+    ccdatemps = np.array(ccdatemps)
     print 'Mean CCD actual temperature = '+str(round(ccdatemps.mean(),3))+\
                 ', std dev = '+str(round(ccdatemps.std(),3))+'degC'
     
