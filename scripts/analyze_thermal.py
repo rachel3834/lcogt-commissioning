@@ -19,7 +19,8 @@ def analyze_thermal_stability():
         params['data_dir'] = night_dir
         frames = analyze_calibs.FrameSet(params)
         frames.make_frame_listings()
-    
+        print frames.darks
+        
         (ts, currents) = frames.measure_dark_current()
         print ts
         print currents
