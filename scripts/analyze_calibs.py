@@ -65,6 +65,37 @@ class CalibFrameSet:
                     self.flats[hdr['FILTER']] = []
                 self.flats[hdr['FILTER']].append(uframe)
     
+    def make_frame_listings_from_file(self,frames_file):
+        
+        frames = []
+        if '.fits' in frame_file:
+            frames = [ params['frames'] ]
+        elif path.isfile(params['data_path']) == True:
+            frames = open(params['frames'],'r').readlines()
+        else:
+            print('ERROR: Cannot find input frame or file list')
+            exit()
+        
+        for frame in frames:
+            
+            # Copy frame to working directory and uncompress - a 
+            # step required due to limited access to the data
+            uframe = archive_access.fetch_frame(frame,self.out_dir)
+            
+            hdr = fits.getheader(uframe)
+            if self.naxis1 == None:
+                datasec = int(hdr['TRIMSEC'].split(',')[0].split(':')[-1])
+                self.naxis1 = datasec
+                self.naxis2 = datasec
+            
+            if hdr['OBSTYPE'] == 'BIAS':
+                self.biases.append(uframe)
+            elif hdr['OBSTYPE'] == 'DARK':
+                self.darks.append(uframe)
+            elif hdr['OBSTYPE'] == 'SKYFLAT':
+                if hdr['FILTER'] not in self.flats.keys():
+                    self.flats[hdr['FILTER']] = []
+                self.flats[hdr['FILTER']].append(uframe)
     
     def make_master(self,master_type,bandpass=None):
 
@@ -211,9 +242,7 @@ def analyze_bias_frames():
     
     params = parse_args_biases()
     frame_set = CalibFrameSet(params)
-    for frame in params['file_list']:
-        uframe = archive_access.fetch_frame(frame,frame_set.out_dir)
-        frame_set.biases.append(uframe)
+    frame_set.make_frame_listings_from_file(params['frames_file'])
         
     (image_data, exp_times, master_header) = \
                 read_frame_set(frame_set.biases,frame_set.naxis1,frame_set.naxis2)
@@ -243,25 +272,20 @@ def parse_args_biases():
     if len(argv) != 5:
         params['data_dir'] = raw_input('Please enter the path to the data directory: ')
         params['out_dir'] = raw_input('Please enter the path to the output directory: ')
-        params['frames'] = raw_input('Please enter the path to the bias frame or list of frames: ')
+        params['frames_file'] = raw_input('Please enter the path to the bias frame or list of frames: ')
     else:
         params['data_dir'] = argv[2]
         params['out_dir'] = argv[3]
-        params['frames'] = argv[4]
+        params['frames_file'] = argv[4]
     
-    if '.fits' in params['frames']:
-        params['file_list'] = [ params['frames'] ]
-    elif path.isfile(params['data_path']) == True:
-        params['file_list'] = open(params['frames'],'r').readlines()
-    else:
-        print('ERROR: Cannot find input frame or file list')
-        exit()
     
     return params
 
 def read_frame_set(frame_list,naxis1,naxis2):
     """Function to read into memory the image data from a set of frames.
     Returns a 3D numpy array of 2D images."""
+    
+    print frame_list,naxis1,naxis
     
     image_data = np.zeros([len(frame_list),naxis2,naxis1])
     exp_times = []
@@ -274,6 +298,7 @@ def read_frame_set(frame_list,naxis1,naxis2):
         exp_times.append( float(hdr['EXPTIME']) )
     
     return image_data, exp_times, master_header
+
 
 def output_frame(header, data, file_path):
     """Function to output a new frame"""
