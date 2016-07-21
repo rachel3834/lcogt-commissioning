@@ -188,7 +188,8 @@ class CalibFrameSet:
         if frame == 'MASTERBIAS':
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
-                    'out_dir': self.out_dir }
+                    'out_dir': self.out_dir,
+                    'nbins': 10 }
         else:
             params = {  'image_data': data, \
                     'image_path': file_path, \
