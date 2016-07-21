@@ -220,12 +220,13 @@ class FrameSet:
         
         (image_data, exp_times, master_header) = \
                 read_frame_set(self.darks,self.naxis1,self.naxis2)
-        dark_current = np.median(image_data[:, 70:4050, 65:4025])
         
         frame_ts = []
-        for dark_frame in self.darks:
-            hdr = fits.getheader(dark_frame)
+        dark_current = []
+        for i in range(0,len(self.darks),1):
+            hdr = fits.getheader(self.darks[i])
             frame_ts.append( Time(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
+            dark_current.append( np.median(image_data[i, 70:4050, 65:4025]) )
         
         return frame_ts,dark_current
         
