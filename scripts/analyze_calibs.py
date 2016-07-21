@@ -68,7 +68,8 @@ class FrameSet:
                 self.flats[hdr['FILTER']].append(uframe)
             elif hdr['OBSTYPE'] == 'EXPOSE':
                 self.exposures.append(uframe)
-    
+        self.nframes = len(frames)
+        
     def make_frame_listings_from_file(self,frames_file):
         
         frames = []
@@ -100,6 +101,7 @@ class FrameSet:
                 if hdr['FILTER'] not in self.flats.keys():
                     self.flats[hdr['FILTER']] = []
                 self.flats[hdr['FILTER']].append(uframe)
+        self.nframes = len(frames)
     
     def make_master(self,master_type,bandpass=None):
 
@@ -229,7 +231,20 @@ class FrameSet:
             dark_current.append( np.median(image_data[i, 70:4050, 65:4025]) )
         
         return frame_ts,dark_current
-        
+    
+    def get_temperatures(self):
+        ccdatemp = [] 
+        ccdstemp = []
+        frames = self.biases + self.darks + self.exposures
+        for bandpass, flats in self.flats.items():
+            frames = frames + flats
+            
+        for frame in frames:
+            hdr = fits.getheader(frame)
+            ccdatemp.append( float(hdr['CCDATEMP']) )
+            ccdstemp.append( float(hdr['CCDSTEMP']) )
+        return ccdatemp, ccdstemp
+    
 def analyze_night_calibs():
     """Driver function to analyze the calibration frames taken in a single
     night from a single instrument.  The expected data format is raw Sinistro

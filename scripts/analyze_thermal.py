@@ -18,15 +18,22 @@ def analyze_thermal_stability():
     ts = []
     currents = []
     for night_dir in params['dir_list']:
+        print 'Analyzing night '+ path.basename(night_dir)
         params['data_dir'] = path.join( night_dir, 'raw' )
         frames = analyze_calibs.FrameSet(params)
         frames.make_frame_listings()
+        
         if len(frames.darks) > 0:
             (night_ts, night_currents) = frames.measure_dark_current()
             ts = ts + night_ts
             currents = currents + night_currents
+        
+        if frames.nframes > 0:
+            (ccdatemp, ccdstemp) = frames.get_temperatures()
+            
     print ts
     print currents
+    print ccdatemp, ccdstemp
     
 def parse_args_thermal():
     """Function to harvest the parameters required for thermal properties 
