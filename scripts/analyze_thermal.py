@@ -33,9 +33,9 @@ def parse_args_thermal():
         params['out_dir'] = raw_input('Please enter the path to the output directory: ')
         params['date_search_string'] = raw_input('Please enter the date search string [e.g. yyyymmd?]: ')
     else:
-        params['top_data_dir'] = argv[2]
-        params['out_dir'] = argv[3]
-        params['date_search_string'] = argv[4]
+        params['top_data_dir'] = argv[1]
+        params['out_dir'] = argv[2]
+        params['date_search_string'] = argv[3]
     
     params['dir_list'] = glob.glob(path.join(params['data_dir'], params['date_search_string']))
     
