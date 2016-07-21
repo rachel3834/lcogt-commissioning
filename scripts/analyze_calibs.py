@@ -239,7 +239,7 @@ def parse_args_biases():
     """Parse the commandline arguments and harvest the data directory 
     location.  Prompt the user if none are given."""
     params = {}
-    if len(argv) != 4:
+    if len(argv) != 5:
         params['data_dir'] = raw_input('Please enter the path to the data directory: ')
         params['out_dir'] = raw_input('Please enter the path to the output directory: ')
         params['frames'] = raw_input('Please enter the path to the bias frame or list of frames: ')
