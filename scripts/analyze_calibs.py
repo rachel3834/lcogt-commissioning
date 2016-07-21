@@ -69,9 +69,9 @@ class CalibFrameSet:
         
         frames = []
         if '.fits' in frames_file:
-            frames = [ params['frames_file'] ]
+            frames = [ frames_file ]
         elif path.isfile(params['data_path']) == True:
-            frames = open(params['frames_file'],'r').readlines()
+            frames = open( frames_file,'r').readlines()
         else:
             print('ERROR: Cannot find input frame or file list')
             exit()
