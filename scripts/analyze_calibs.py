@@ -286,8 +286,6 @@ def read_frame_set(frame_list,naxis1,naxis2):
     """Function to read into memory the image data from a set of frames.
     Returns a 3D numpy array of 2D images."""
     
-    print frame_list,naxis1,naxis2
-    
     image_data = np.zeros([len(frame_list),naxis2,naxis1])
     exp_times = []
     master_header = None
