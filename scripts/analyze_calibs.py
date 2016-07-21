@@ -244,7 +244,7 @@ def parse_args_biases():
         params['out_dir'] = raw_input('Please enter the path to the output directory: ')
         params['frames'] = raw_input('Please enter the path to the bias frame or list of frames: ')
     else:
-        params['data_path'] = argv[2]
+        params['data_dir'] = argv[2]
         params['out_dir'] = argv[3]
         params['frames'] = argv[4]
     
