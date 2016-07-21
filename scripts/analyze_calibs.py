@@ -10,7 +10,7 @@ from sys import argv, exit
 import glob
 from astropy.io import fits
 import archive_access
-import fetch_frame
+import archive_access
 import prepraw3d
 import numpy as np
 from shutil import copy
