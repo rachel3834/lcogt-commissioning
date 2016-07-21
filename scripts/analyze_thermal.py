@@ -42,7 +42,7 @@ def analyze_thermal_stability():
     plot_dark_current(params, current_ts, currents)
     plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
     
-    report_statistics(currents, ccdatemp)
+    report_statistics(currents, ccdatemps)
     
 def plot_dark_current(params, ts, currents):
     """Function to create a plot of a set of dark current measurements and 
