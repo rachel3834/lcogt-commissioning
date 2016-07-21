@@ -38,8 +38,8 @@ def plot_dark_current(params, ts, currents):
     """Function to create a plot of a set of dark current measurements and 
     corresponding timestamps"""
     
-    xplot = array(ts)
-    yplot = array(currents)
+    xplot = np.array(ts)
+    yplot = np.array(currents)
     
     hfmt = dates.DateFormatter('%Y-%m-%d\n%H:%M')
     
