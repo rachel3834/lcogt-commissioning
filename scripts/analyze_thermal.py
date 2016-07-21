@@ -57,7 +57,7 @@ def plot_dark_current(params, ts, currents):
     pyplot.xlabel('Date/time [UTC]')
     pyplot.ylabel('Median e-/pixel/s')
     pyplot.title('Dark current as a function of time')
-    pyplot.axis([xplot.min(),xplot.max(),yplot.min(),yplot.max()])
+    pyplot.axis([xplot.min(),xplot.max(),yplot.min()*0.98,yplot.max()*1.2])
     plotfile = path.join(params['out_dir'],'darkcurrent.png')
     pyplot.savefig(plotfile)
     pyplot.close(1)
