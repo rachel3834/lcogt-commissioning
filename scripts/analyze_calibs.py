@@ -35,7 +35,6 @@ class CalibFrameSet:
         if path.isdir(params['data_dir']) == True:
             self.data_dir = params['data_dir']
             self.out_dir = params['out_dir']
-            self.make_frame_listings()
         else:
             self.data_dir = None
             print('ERROR: Cannot find data directory ' + params['data_dir'])
@@ -130,29 +129,38 @@ class CalibFrameSet:
                 self.masterflat_files[bandpass] = file_path
                 print('Built masterflat for '+ bandpass+' filter')
     
-    def fft_master(self,master_type,bandpass=None):
+    def fft_frame(self,frame_type,bandpass=None, data=None, file_path=None):
         
-        if master_type == 'BIAS' and self.masterbias_file != None:
+        if frame_type == 'MASTERBIAS' and self.masterbias_file != None:
             params = {  'image_data': self.masterbias, \
                         'image_path': self.masterbias_file, \
                         'out_dir': self.out_dir }
-            noise_analysis.plot_quadrant_ffts(params)
-        
-        elif master_type == 'DARK' and self.masterdark_file != None:
+                        
+        elif frame_type == 'BIAS' and file_path != None:
+            params = {  'image_data': data, \
+                        'image_path': file_path, \
+                        'out_dir': self.out_dir }
+            
+        elif frame_type == 'MASTERDARK' and self.masterdark_file != None:
             params = {  'image_data': self.masterdark, \
                         'image_path': self.masterdark_file, \
                         'out_dir': self.out_dir }
-            noise_analysis.plot_quadrant_ffts(params)
-            
-        elif master_type == 'FLAT' and self.masterflat_files[bandpass] != None:
+                        
+        elif frame_type == 'MASTERFLAT' and self.masterflat_files[bandpass] != None:
             params = {  'image_data': self.masterflats[bandpass], \
                         'image_path': self.masterflat_files[bandpass], \
                         'out_dir': self.out_dir }
-            noise_analysis.plot_quadrant_ffts(params)
+        noise_analysis.plot_quadrant_ffts(params)
     
-    def hist_master_bias(self):
-        params = {  'image_data': self.masterbias, \
+    
+    def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None):
+        if frame == 'MASTERBIAS':
+            params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
+                    'out_dir': self.out_dir }
+        else:
+            params = {  'image_data': data, \
+                    'image_path': file_path, \
                     'out_dir': self.out_dir }
         noise_analysis.plot_quadrant_hist(params)
     
@@ -181,30 +189,71 @@ def analyze_night_calibs():
     and flat fields for all available filters) wherever possible. 
     """
     
-    params = parse_args()
+    params = parse_args_night()
     
     frame_set = CalibFrameSet(params)
+    frame_set.make_frame_listings()
     
     frame_set.make_master('BIAS')
-    frame_set.fft_master('BIAS')
-    frame_set.hist_master_bias()
+    frame_set.fft_frame('MASTERBIAS')
+    frame_set.hist_frame(frame='MASTERBIAS')
     frame_set.make_master('DARK')
-    frame_set.fft_master('DARK')
+    frame_set.fft_frame('MASTERDARK')
     for bandpass in frame_set.flats.keys():
         frame_set.make_master('FLAT',bandpass)
 
     frame_set.stats_summary()
 
-def parse_args():
+def analyze_bias_frames():
+    """Function to perform a statistical analyze of a single bias frame, 
+    including plotting a histogram of the pixel values per quadrant and
+    taking an FFT"""
+    
+    params = parse_args_biases()
+    frame_set = CalibFrameSet(params)
+    for frame in params['file_list']:
+        uframe = archive_access.fetch_frame(frame,frame_set.out_dir)
+        frame_set.biases.append(uframe)
+    (image_data, exp_times, master_header) = \
+                read_frame_set(frame_set.biases,frame_set.naxis1,frame_set.naxis2)
+    for i in range(0,len(frame_set.biases),1):
+        frame_set.hist_frame(frame='SINGLE',data=image_data[i],\
+                file_path=frame_set.biases[i])
+        frame_set.fft_frame('BIAS', data=image_data[i],\
+                file_path=frame_set.biases[i])
+        
+def parse_args_night():
     """Parse the commandline arguments and harvest the data directory 
     location.  Prompt the user if none are given."""
     params = {}
-    if len(argv) == 1:
+    if len(argv) != 3:
         params['data_dir'] = raw_input('Please enter the path to the data directory: ')
         params['out_dir'] = raw_input('Please enter the path to the output directory: ')
     else:
-        params['data_dir'] = argv[1]
-        params['out_dir'] = argv[2]
+        params['data_dir'] = argv[2]
+        params['out_dir'] = argv[3]
+        
+    return params
+    
+def parse_args_biases():
+    """Parse the commandline arguments and harvest the data directory 
+    location.  Prompt the user if none are given."""
+    params = {}
+    if len(argv) != 3:
+        params['data_path'] = raw_input('Please enter the path to the bias frame or list of frames: ')
+        params['out_dir'] = raw_input('Please enter the path to the output directory: ')
+    else:
+        params['data_path'] = argv[2]
+        params['out_dir'] = argv[3]
+    params['data_dir'] = path.dirname(params['data_path'])
+    
+    if '.fits' in params['data_path']:
+        params['file_list'] = [ params['data_path'] ]
+    elif path.isfile(params['data_path']) == True:
+        params['file_list'] = open(params['data_path'],'r').readlines()
+    else:
+        print('ERROR: Cannot find input frame or file list')
+        exit()
         
     return params
 
@@ -238,8 +287,32 @@ def subtract_calib(image_data,master_frame):
     for i in range(0,image_data.shape[0],1):
         image_data[i,:,:] = image_data[i,:,:] - master_frame
     return image_data
+
+def command_menu():
+    """Function to handle the menu of available options and harvesting of
+    commandline arguments"""
     
+    main_menu = """
+    Analyze a set of calibration frames from one night.........N
+    Analyze a one or more bias frames..........................B
     
+    Exit.......................................................X
+    """
+    
+    if len(argv) == 1:
+        print main_menu
+        opt = raw_input('Option: ')
+    else:
+        opt = argv[1]
+    opt = str(opt).upper()
+    
+    if opt == 'N':
+        analyze_night_calibs()
+    elif opt == 'B':
+        analyze_bias_frames()
+        
+        
 if __name__ == '__main__':
-    analyze_night_calibs()
+    
+    command_menu()
     
