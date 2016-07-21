@@ -16,7 +16,7 @@ def analyze_thermal_stability():
     params = parse_args_thermal()
     
     for night_dir in params['dir_list']:
-        params['data_dir'] = night_dir
+        params['data_dir'] = path.join( night_dir, 'raw' )
         frames = analyze_calibs.FrameSet(params)
         frames.make_frame_listings()
         print frames.darks
