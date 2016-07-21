@@ -66,9 +66,9 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     """Function to create a plot of a camera's measured temperature as a function
     of time (CCDATEMP) compared with its set-point temperature (CCDSTEMP)"""
     
-    xplot = array(temp_ts)
-    yplot = array(ccdatemp)
-    lplot = array(ccdstemp)
+    xplot = np.array(temp_ts)
+    yplot = np.array(ccdatemp)
+    lplot = np.array(ccdstemp)
     
     fig = pyplot.figure(1)
     pyplot.rcParams['font.size'] = 10.0
