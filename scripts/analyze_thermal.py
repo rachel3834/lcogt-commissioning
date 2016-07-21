@@ -19,6 +19,9 @@ def analyze_thermal_stability():
     
     current_ts = []
     currents = []
+    temp_ts = []
+    ccdatemps = []
+    ccdstemps = []
     for night_dir in params['dir_list']:
         print 'Analyzing data from '+ path.basename(night_dir)
         params['data_dir'] = path.join( night_dir, 'raw' )
@@ -31,10 +34,13 @@ def analyze_thermal_stability():
             currents = currents + night_currents
         
         if frames.nframes > 0:
-            (temp_ts,ccdatemp, ccdstemp) = frames.get_temperatures()
-    
+            (night_temp_ts,night_ccdatemp, night_ccdstemp) = frames.get_temperatures()
+            temp_ts = temp_ts + night_temp_ts
+            ccdatemps = ccdatemps + night_ccdatemp
+            ccdstemps = ccdstemps + night_ccdstemp
+            
     plot_dark_current(params, current_ts, currents)
-    plot_temperature(params,temp_ts,ccdatemp,ccdstemp)
+    plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
     
 def plot_dark_current(params, ts, currents):
     """Function to create a plot of a set of dark current measurements and 
@@ -70,11 +76,15 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     lplot = np.array(ccdstemp)
     set_point = np.median(lplot)
     
+    hfmt = dates.DateFormatter('%Y-%m-%d\n%H:%M')
+    
     fig = pyplot.figure(1)
     pyplot.rcParams['font.size'] = 10.0
     ax = pyplot.subplot(111)
     pyplot.subplots_adjust(bottom=0.15)
     pyplot.plot(xplot,yplot,'b.')
+    ax.xaxis.set_major_formatter(hfmt)
+    pyplot.xticks(rotation=60.0)
     ydiff = 0.25
     if (yplot.max()-yplot.min()) > ydiff: ydiff = (yplot.max()-yplot.min())/2.0
     temp_upper_limit = lplot.mean() + ydiff
@@ -82,7 +92,7 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     pyplot.plot(xbounds,np.array([ set_point ] * 2),'r-',label='Setpoint temp')
     pyplot.plot(xbounds,np.array([ temp_upper_limit ] * 2),'r-.')
     pyplot.plot(xbounds,np.array([ temp_lower_limit ] * 2),'r-.',label='Warning threshold')
-    pyplot.gcf().autofmt_xdate()
+    #pyplot.gcf().autofmt_xdate()
     pyplot.xlabel('Date/time [UTC]')
     pyplot.ylabel('CCDATEMP [degC]')
     pyplot.title('Temperature as a function of time')
