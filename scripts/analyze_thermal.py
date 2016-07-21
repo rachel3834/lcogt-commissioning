@@ -65,6 +65,7 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     of time (CCDATEMP) compared with its set-point temperature (CCDSTEMP)"""
     
     xplot = np.array(temp_ts)
+    xbounds = np.array([xplot.min(),xplot.max()])
     yplot = np.array(ccdatemp)
     lplot = np.array(ccdstemp)
     set_point = np.median(lplot)
@@ -74,13 +75,13 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     ax = pyplot.subplot(111)
     pyplot.subplots_adjust(bottom=0.15)
     pyplot.plot(xplot,yplot,'b.')
-    pyplot.plot(xplot,np.array([ set_point ] * len(xplot)),'r-',label='Setpoint temp')
     ydiff = 0.25
     if (yplot.max()-yplot.min()) > ydiff: ydiff = (yplot.max()-yplot.min())/2.0
     temp_upper_limit = lplot.mean() + ydiff
     temp_lower_limit = lplot.mean() - ydiff
-    pyplot.plot(xplot,np.array([ temp_upper_limit ] * len(xplot)),'r-.')
-    pyplot.plot(xplot,np.array([ temp_lower_limit ] * len(xplot)),'r-.',label='Warning threshold')
+    pyplot.plot(xbounds,np.array([ set_point ] * 2),'r-',label='Setpoint temp')
+    pyplot.plot(xbounds,np.array([ temp_upper_limit ] * 2),'r-.')
+    pyplot.plot(xbounds,np.array([ temp_lower_limit ] * 2),'r-.',label='Warning threshold')
     pyplot.gcf().autofmt_xdate()
     pyplot.xlabel('Date/time [UTC]')
     pyplot.ylabel('CCDATEMP [degC]')
