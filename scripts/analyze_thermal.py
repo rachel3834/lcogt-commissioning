@@ -39,3 +39,6 @@ def parse_args_thermal():
     params['dir_list'] = glob.glob(path.join(params['data_dir'], params['date_search_string']))
     
     return params
+    
+if __name__ == '__main__':
+    analyze_thermal_stability()
