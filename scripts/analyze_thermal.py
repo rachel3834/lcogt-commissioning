@@ -8,6 +8,7 @@ Created on Thu Jul 21 13:30:32 2016
 import analyze_calibs
 import glob
 from sys import argv
+from os import path
 
 def analyze_thermal_stability():
     """Function to analyze the thermal stability of a camera"""
