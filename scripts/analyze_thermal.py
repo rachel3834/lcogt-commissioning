@@ -43,8 +43,6 @@ def plot_dark_current(params, ts, currents):
     xplot = np.array(ts)
     yplot = np.array(currents)
     
-    print xplot
-    print yplot
     hfmt = dates.DateFormatter('%Y-%m-%d\n%H:%M')
     
     fig = pyplot.figure(1)
@@ -69,13 +67,14 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     xplot = np.array(temp_ts)
     yplot = np.array(ccdatemp)
     lplot = np.array(ccdstemp)
+    set_point = np.median(lplot)
     
     fig = pyplot.figure(1)
     pyplot.rcParams['font.size'] = 10.0
     ax = pyplot.subplot(111)
     pyplot.subplots_adjust(bottom=0.15)
     pyplot.plot(xplot,yplot,'b.')
-    pyplot.plot(xplot,lplot,'r-',label='Setpoint temp')
+    pyplot.plot(xplot,np.array([ set_point ] * len(xplot)),'r-',label='Setpoint temp')
     ydiff = 0.25
     if (yplot.max()-yplot.min()) > ydiff: ydiff = (yplot.max()-yplot.min())/2.0
     temp_upper_limit = lplot.mean() + ydiff
