@@ -9,6 +9,7 @@ import analyze_calibs
 import glob
 from sys import argv
 from os import path
+import numpy as np
 
 def analyze_thermal_stability():
     """Function to analyze the thermal stability of a camera"""
