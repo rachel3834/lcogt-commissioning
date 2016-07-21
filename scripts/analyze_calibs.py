@@ -68,10 +68,10 @@ class CalibFrameSet:
     def make_frame_listings_from_file(self,frames_file):
         
         frames = []
-        if '.fits' in frame_file:
-            frames = [ params['frames'] ]
+        if '.fits' in frames_file:
+            frames = [ params['frames_file'] ]
         elif path.isfile(params['data_path']) == True:
-            frames = open(params['frames'],'r').readlines()
+            frames = open(params['frames_file'],'r').readlines()
         else:
             print('ERROR: Cannot find input frame or file list')
             exit()
