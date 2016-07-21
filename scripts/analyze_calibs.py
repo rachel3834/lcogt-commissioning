@@ -9,7 +9,7 @@ from os import path, remove
 from sys import argv, exit
 import glob
 from astropy.io import fits
-from astropy import Time
+from astropy.time import Time
 import archive_access
 import archive_access
 import prepraw3d
