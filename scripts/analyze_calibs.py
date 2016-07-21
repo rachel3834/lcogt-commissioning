@@ -248,7 +248,7 @@ def parse_args_biases():
         params['out_dir'] = argv[3]
         params['frames'] = argv[4]
     
-    if '.fits' in params['frame_list']:
+    if '.fits' in params['frames']:
         params['file_list'] = [ params['frames'] ]
     elif path.isfile(params['data_path']) == True:
         params['file_list'] = open(params['frames'],'r').readlines()
