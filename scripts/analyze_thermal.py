@@ -11,7 +11,7 @@ import glob
 def analyze_thermal_stability():
     """Function to analyze the thermal stability of a camera"""
     
-    params = parse_args_night()
+    params = parse_args_thermal()
     
     for night_dir in params['dir_list']:
         params['data_dir'] = night_dir
