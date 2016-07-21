@@ -214,6 +214,7 @@ def analyze_bias_frames():
     for frame in params['file_list']:
         uframe = archive_access.fetch_frame(frame,frame_set.out_dir)
         frame_set.biases.append(uframe)
+    print frame_set.biases
     (image_data, exp_times, master_header) = \
                 read_frame_set(frame_set.biases,frame_set.naxis1,frame_set.naxis2)
     for i in range(0,len(frame_set.biases),1):
@@ -255,7 +256,8 @@ def parse_args_biases():
     else:
         print('ERROR: Cannot find input frame or file list')
         exit()
-        
+    
+    print params['file_list']
     return params
 
 def read_frame_set(frame_list,naxis1,naxis2):
