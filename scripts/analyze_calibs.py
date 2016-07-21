@@ -9,7 +9,7 @@ from os import path, remove
 from sys import argv, exit
 import glob
 from astropy.io import fits
-from astropy.time import Time
+from datetime import datetime
 import archive_access
 import archive_access
 import prepraw3d
@@ -227,7 +227,7 @@ class FrameSet:
         dark_current = []
         for i in range(0,len(self.darks),1):
             hdr = fits.getheader(self.darks[i])
-            frame_ts.append( Time(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
+            frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
             dark_current.append( np.median(image_data[i, 70:4050, 65:4025]) )
         
         return frame_ts,dark_current
@@ -242,7 +242,7 @@ class FrameSet:
             
         for frame in frames:
             hdr = fits.getheader(frame)
-            frame_ts.append( Time(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
+            frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
             ccdatemp.append( float(hdr['CCDATEMP']) )
             ccdstemp.append( float(hdr['CCDSTEMP']) )
         return frame_ts,ccdatemp, ccdstemp
