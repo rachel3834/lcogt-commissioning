@@ -25,13 +25,13 @@ def analyze_thermal_stability():
         
         if len(frames.darks) > 0:
             (night_ts, night_currents) = frames.measure_dark_current()
-            ts = ts + night_ts
+            current_ts = current_ts + night_ts
             currents = currents + night_currents
         
         if frames.nframes > 0:
             (temp_ts,ccdatemp, ccdstemp) = frames.get_temperatures()
     
-    plot_dark_current(params, ts, currents)
+    plot_dark_current(params, current_ts, currents)
     plot_temperature(params,temp_ts,ccdatemp,ccdstemp)
     
 def plot_dark_current(params, ts, currents):
