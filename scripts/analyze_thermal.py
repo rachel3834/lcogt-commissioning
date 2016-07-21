@@ -42,7 +42,7 @@ def analyze_thermal_stability():
     plot_dark_current(params, current_ts, currents)
     plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
     
-    report_current_statistics(currents)
+    report_statistics(currents, ccdatemp)
     
 def plot_dark_current(params, ts, currents):
     """Function to create a plot of a set of dark current measurements and 
@@ -122,13 +122,17 @@ def parse_args_thermal():
     
     return params
 
-def report_current_statistics(currents):
+def report_statistics(currents, ccdatemp):
     """Function to calculate and report essential statistics on the measured
     dark current"""
 
     currents = np.array(currents)
     print 'Mean dark current = '+str(round(currents.mean(),3))+\
                 ', std.dev = '+str(round(currents.std(),3))+'e-/pix'
-                
+    
+    ccdatemp = np.array(ccdatemp)
+    print 'Mean CCD actual temperature = '+str(round(currents.mean(),3))+\
+                ', std dev = '+str(round(currents.std(),3))+'degC'
+    
 if __name__ == '__main__':
     analyze_thermal_stability()
