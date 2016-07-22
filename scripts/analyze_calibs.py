@@ -286,7 +286,7 @@ def analyze_bias_frames():
     (image_data, exp_times, master_header) = \
                 read_frame_set(frames.biases,frames.naxis1,frames.naxis2)
     
-    bias_stats = np.zeros([len(frame.biases),12])
+    bias_stats = np.zeros([len(frames.biases),12])
     for i in range(0,len(frames.biases),1):
         frames.hist_frame(frame='SINGLE',data=image_data[i],\
                 file_path=frames.biases[i])
