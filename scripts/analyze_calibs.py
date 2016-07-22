@@ -225,9 +225,9 @@ class FrameSet:
     
         stats_array = np.zeros([len(params['frame_list']),12])
         for i in range(0,len(params['frame_list']),1):
-            frames.hist_frame(frame='SINGLE',data=image_data[i],\
+            self.hist_frame(frame='SINGLE',data=image_data[i],\
                     file_path=params['frame_list'][i])
-            frames.fft_frame('BIAS', data=image_data[i],\
+            self.fft_frame('BIAS', data=image_data[i],\
                     file_path=params['frame_list'][i])
             
             image_params = {'image_data': image_data[i], \
