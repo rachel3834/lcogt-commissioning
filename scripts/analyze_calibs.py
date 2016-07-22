@@ -191,7 +191,7 @@ class FrameSet:
         noise_analysis.plot_quadrant_ffts(params)
     
     
-    def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None):
+    def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True):
         if frame == 'MASTERBIAS':
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
@@ -201,7 +201,7 @@ class FrameSet:
             params = {  'image_data': data, \
                     'image_path': file_path, \
                     'out_dir': self.out_dir }
-        noise_analysis.plot_quadrant_hist(params)
+        noise_analysis.plot_quadrant_hist(params,logy=logy)
     
     def stats_summary(self):
         
@@ -266,7 +266,7 @@ def analyze_night_calibs():
     
     frames.make_master('BIAS')
     frames.fft_frame('MASTERBIAS')
-    frames.hist_frame(frame='MASTERBIAS')
+    frames.hist_frame(frame='MASTERBIAS',logy=False)
     frames.make_master('DARK')
     frames.fft_frame('MASTERDARK')
     for bandpass in frames.flats.keys():
@@ -341,7 +341,7 @@ def output_frame(header, data, file_path):
     
     hdu = fits.PrimaryHDU(data,header=header)
     hdulist = fits.HDUList([hdu])
-    hdulist.writeto(file_path)
+    hdulist.writeto(file_path, clobber=True)
     
 def subtract_calib(image_data,master_frame):
     """Function to subtract a pre-existing master calibration frame from 

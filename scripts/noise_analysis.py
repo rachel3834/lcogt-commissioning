@@ -126,7 +126,7 @@ def parse_args():
     return params
 
 
-def plot_quadrant_hist(params):
+def plot_quadrant_hist(params,logy=True):
     """Function to plot histograms of the pixel values of an image, separated
     into separate quadrants"""
     
@@ -150,7 +150,7 @@ def plot_quadrant_hist(params):
             wspace=0.4,hspace=0.4)
         
         pyplot.hist(quad_image.flatten(),bins=nbins,color='w',\
-                range=(quad_image.min(),quad_image.max()),log=True)
+                range=(quad_image.min(),quad_image.max()),log=logy)
         stats = basic_stats(quad_image)
         
         pyplot.title('Quadrant '+str(q+1)+\
