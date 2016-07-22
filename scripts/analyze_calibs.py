@@ -286,6 +286,9 @@ def analyze_bias_frames():
     (image_data, exp_times, master_header) = \
                 read_frame_set(frames.biases,frames.naxis1,frames.naxis2)
     
+    stats_log = file(path.join(params['out_dir'],'biases_statistics.data'),'w')
+    stats_log.write('# Frame Quadrant     Mean    Median   Stddev [e-]\n')
+    
     bias_stats = np.zeros([len(frames.biases),12])
     for i in range(0,len(frames.biases),1):
         frames.hist_frame(frame='SINGLE',data=image_data[i],\
@@ -299,14 +302,18 @@ def analyze_bias_frames():
             bias_stats[i,(3*q)] = image_stats[q]['mean']
             bias_stats[i,(3*q+1)] = image_stats[q]['median']
             bias_stats[i,(3*q+2)] = image_stats[q]['std']
+            stats_log.write(path.basename(frames.biases[i])+' '+str(q+1)+' '+\
+                    str(image_stats[q]['mean'])+'  '+\
+                    str(image_stats[q]['median'])+'  '+\
+                    str(image_stats[q]['std'])+'\n')
     
-    stats_log = file(path.join(params['out_dir'],'biases_statistics.data'),'w')
+    stats_log.write('\n# Average values:\n')
     stats_log.write('# Quadrant     Mean    Median   Stddev [e-]\n')
     for q in range(0,4,1):
         mean = bias_stats[:,(3*q)].mean()
         median = np.median(bias_stats[:,(3*q+1)])
         std = bias_stats[:,(3*q+2)].std()
-        stats_log.write(str(q)+'     '+str(mean)+'  '+str(median)+'  '+str(std)+'\n')
+        stats_log.write(str(q+1)+'     '+str(mean)+'  '+str(median)+'  '+str(std)+'\n')
     stats_log.close()
     
 def parse_args_night():
