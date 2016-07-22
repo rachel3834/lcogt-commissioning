@@ -181,6 +181,18 @@ def basic_stats(image):
     stats['median'] = np.median(image)
     stats['std'] = image.std()
     return stats
+
+def quadrant_stats(params):
+    """Function to calculate basic statistics for each quadrant of a munged, 
+    2D image"""
+    
+    (image, params) = get_image_data(params)
+    image_stats = {}
+    for q in range(0,4,1):
+        region = params['regions'][q]
+        quad_image = image[region[0]:region[1],region[2]:region[3]]
+        image_stats[q] = basic_stats(quad_image)
+    return image_stats
     
 if __name__ == '__main__':
     params = parse_args()
