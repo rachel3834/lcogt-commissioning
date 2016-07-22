@@ -146,6 +146,7 @@ class FrameSet:
                 self.master_stats[master_type] = {}
             if master_type != 'FLAT':
                 bandpass = 'None'
+            print 'MASTER ',master_data.shape
             self.master_stats[master_type][bandpass] = {}
             self.master_stats[master_type][bandpass]['mean'] = master_data.mean()
             self.master_stats[master_type][bandpass]['median'] = np.median(master_data)
@@ -271,7 +272,7 @@ def analyze_night_calibs():
     for bandpass in frames.flats.keys():
         frames.make_master('FLAT',bandpass)
 
-    frame_set.stats_summary()
+    frames.stats_summary()
 
 def analyze_bias_frames():
     """Function to perform a statistical analyze of a single bias frame, 
