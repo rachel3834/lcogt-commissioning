@@ -322,7 +322,7 @@ def analyze_bias_frames():
     
     params['frame_list'] = frames.biases
     params['log_name'] = 'biases_statistics.data'
-    measure_frame_stats(self,image_data,params)
+    frames.measure_frame_stats(self,image_data,params)
     
     
 def parse_args_night():
