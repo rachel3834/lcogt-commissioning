@@ -221,7 +221,7 @@ class FrameSet:
     
     def measure_frame_stats(self,image_data,params):
         stats_log = file(path.join(params['out_dir'],params['log_name']),'w')
-        stats_log.write('# Frame Quadrant     Mean    Median   Stddev [e-]\n')
+        stats_log.write('# Frame Quadrant     Mean    Median   Stddev [ADU]\n')
     
         stats = np.zeros([len(params['frame_list']),12])
         for i in range(0,len(params['frame_list']),1):
@@ -245,7 +245,7 @@ class FrameSet:
                         str(image_stats[q]['std'])+'\n')
         
         stats_log.write('\n# Average values:\n')
-        stats_log.write('# Quadrant     Mean    Median   Mean_stddev [e-]\n')
+        stats_log.write('# Quadrant     Mean    Median   Mean_stddev [ADU]\n')
         for q in range(0,4,1):
             mean = stats[:,(3*q)].mean()
             median = np.median(stats[:,(3*q+1)])
