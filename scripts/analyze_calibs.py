@@ -245,12 +245,14 @@ class FrameSet:
                         str(image_stats[q]['std'])+'\n')
         
         stats_log.write('\n# Average values:\n')
-        stats_log.write('# Quadrant     Mean    Median   Mean_stddev [ADU]\n')
+        stats_log.write('# Quadrant     Mean    Median   Mean_stddev std_stddev [ADU]\n')
         for q in range(0,4,1):
             mean = stats[:,(3*q)].mean()
             median = np.median(stats[:,(3*q+1)])
             meanstd = stats[:,(3*q+2)].mean()
-            stats_log.write(str(q+1)+'     '+str(mean)+'  '+str(median)+'  '+str(meanstd)+'\n')
+            std = stats[:,(3*q+2)].std()
+            stats_log.write(str(q+1)+'     '+str(mean)+'  '+str(median)+\
+                '  '+str(meanstd)+'  '+str(std)+'\n')
         stats_log.close()
 
     def measure_dark_current(self):
