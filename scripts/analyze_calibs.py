@@ -219,6 +219,40 @@ class FrameSet:
                         output = output + ' ' + bandpass + ' ' + key + '=' + str(value)+'\n'
                     print(output)
     
+    def measure_frame_stats(self,image_data,params):
+        stats_log = file(path.join(params['out_dir'],params['log_name']),'w')
+        stats_log.write('# Frame Quadrant     Mean    Median   Stddev [e-]\n')
+    
+        stats_array = np.zeros([len(params['frame_list']),12])
+        for i in range(0,len(params['frame_list']),1):
+            frames.hist_frame(frame='SINGLE',data=image_data[i],\
+                    file_path=params['frame_list'][i])
+            frames.fft_frame('BIAS', data=image_data[i],\
+                    file_path=params['frame_list'][i])
+            
+            image_params = {'image_data': image_data[i], \
+                            'image_path': params['frame_list'][i]}
+            image_stats = noise_analysis.quadrant_stats(image_params)
+            
+            for q in range(0,4,1):
+                stats[i,(3*q)] = image_stats[q]['mean']
+                stats[i,(3*q+1)] = image_stats[q]['median']
+                stats[i,(3*q+2)] = image_stats[q]['std']
+                stats_log.write(path.basename(params['frame_list'][i])+' '+\
+                        str(q+1)+' '+\
+                        str(image_stats[q]['mean'])+'  '+\
+                        str(image_stats[q]['median'])+'  '+\
+                        str(image_stats[q]['std'])+'\n')
+        
+        stats_log.write('\n# Average values:\n')
+        stats_log.write('# Quadrant     Mean    Median   Stddev [e-]\n')
+        for q in range(0,4,1):
+            mean = stats[:,(3*q)].mean()
+            median = np.median(stats[:,(3*q+1)])
+            std = stats[:,(3*q+2)].std()
+            stats_log.write(str(q+1)+'     '+str(mean)+'  '+str(median)+'  '+str(std)+'\n')
+        stats_log.close()
+
     def measure_dark_current(self):
         
         (image_data, exp_times, master_header) = \
@@ -286,35 +320,10 @@ def analyze_bias_frames():
     (image_data, exp_times, master_header) = \
                 read_frame_set(frames.biases,frames.naxis1,frames.naxis2)
     
-    stats_log = file(path.join(params['out_dir'],'biases_statistics.data'),'w')
-    stats_log.write('# Frame Quadrant     Mean    Median   Stddev [e-]\n')
+    params['frame_list'] = frames.biases
+    params['log_name'] = 'biases_statistics.data'
+    measure_frame_stats(self,image_data,params)
     
-    bias_stats = np.zeros([len(frames.biases),12])
-    for i in range(0,len(frames.biases),1):
-        frames.hist_frame(frame='SINGLE',data=image_data[i],\
-                file_path=frames.biases[i])
-        frames.fft_frame('BIAS', data=image_data[i],\
-                file_path=frames.biases[i])
-        
-        image_params = {'image_data': image_data[i], 'image_path': frames.biases[i]}
-        image_stats = noise_analysis.quadrant_stats(image_params)
-        for q in range(0,4,1):
-            bias_stats[i,(3*q)] = image_stats[q]['mean']
-            bias_stats[i,(3*q+1)] = image_stats[q]['median']
-            bias_stats[i,(3*q+2)] = image_stats[q]['std']
-            stats_log.write(path.basename(frames.biases[i])+' '+str(q+1)+' '+\
-                    str(image_stats[q]['mean'])+'  '+\
-                    str(image_stats[q]['median'])+'  '+\
-                    str(image_stats[q]['std'])+'\n')
-    
-    stats_log.write('\n# Average values:\n')
-    stats_log.write('# Quadrant     Mean    Median   Stddev [e-]\n')
-    for q in range(0,4,1):
-        mean = bias_stats[:,(3*q)].mean()
-        median = np.median(bias_stats[:,(3*q+1)])
-        std = bias_stats[:,(3*q+2)].std()
-        stats_log.write(str(q+1)+'     '+str(mean)+'  '+str(median)+'  '+str(std)+'\n')
-    stats_log.close()
     
 def parse_args_night():
     """Parse the commandline arguments and harvest the data directory 
