@@ -223,7 +223,7 @@ class FrameSet:
         stats_log = file(path.join(params['out_dir'],params['log_name']),'w')
         stats_log.write('# Frame Quadrant     Mean    Median   Stddev [e-]\n')
     
-        stats_array = np.zeros([len(params['frame_list']),12])
+        stats = np.zeros([len(params['frame_list']),12])
         for i in range(0,len(params['frame_list']),1):
             self.hist_frame(frame='SINGLE',data=image_data[i],\
                     file_path=params['frame_list'][i])
