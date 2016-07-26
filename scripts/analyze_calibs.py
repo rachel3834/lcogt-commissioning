@@ -48,26 +48,31 @@ class FrameSet:
         
         for frame in frames:
             
-            # Copy frame to working directory and uncompress - a 
-            # step required due to limited access to the data
-            uframe = archive_access.fetch_frame(frame,self.out_dir)
+            # Always skip the first frame of the night, because un-flushed
+            # charge means it will be close to saturation
+            f_number = int(path.basename(frame).split('-')[3])
+            if f_number > 1:
             
-            hdr = fits.getheader(uframe)
-            if self.naxis1 == None:
-                datasec = int(hdr['TRIMSEC'].split(',')[0].split(':')[-1])
-                self.naxis1 = datasec
-                self.naxis2 = datasec
-            
-            if hdr['OBSTYPE'] == 'BIAS':
-                self.biases.append(uframe)
-            elif hdr['OBSTYPE'] == 'DARK':
-                self.darks.append(uframe)
-            elif hdr['OBSTYPE'] == 'SKYFLAT':
-                if hdr['FILTER'] not in self.flats.keys():
-                    self.flats[hdr['FILTER']] = []
-                self.flats[hdr['FILTER']].append(uframe)
-            elif hdr['OBSTYPE'] == 'EXPOSE':
-                self.exposures.append(uframe)
+                # Copy frame to working directory and uncompress - a 
+                # step required due to limited access to the data
+                uframe = archive_access.fetch_frame(frame,self.out_dir)
+                
+                hdr = fits.getheader(uframe)
+                if self.naxis1 == None:
+                    datasec = int(hdr['TRIMSEC'].split(',')[0].split(':')[-1])
+                    self.naxis1 = datasec
+                    self.naxis2 = datasec
+                
+                if hdr['OBSTYPE'] == 'BIAS':
+                    self.biases.append(uframe)
+                elif hdr['OBSTYPE'] == 'DARK':
+                    self.darks.append(uframe)
+                elif hdr['OBSTYPE'] == 'SKYFLAT':
+                    if hdr['FILTER'] not in self.flats.keys():
+                        self.flats[hdr['FILTER']] = []
+                    self.flats[hdr['FILTER']].append(uframe)
+                elif hdr['OBSTYPE'] == 'EXPOSE':
+                    self.exposures.append(uframe)
         self.nframes = len(frames)
         
     def make_frame_listings_from_file(self,frames_file):
