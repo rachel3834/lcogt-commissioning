@@ -88,13 +88,18 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     ax.xaxis.set_major_formatter(hfmt)
     pyplot.xticks(rotation=60.0)
     ydiff = 0.25
-    if (yplot.max()-yplot.min()) > (ydiff*2): 
-        ydiff = (yplot.max()-yplot.min())/2.0
+    ydelta = 0.25
+    if (yplot.max()-yplot.min()) > (ydelta*2): 
+        ydelta = (yplot.max()-yplot.min())/2.0
     temp_upper_limit = lplot.mean() + ydiff
     temp_lower_limit = lplot.mean() - ydiff
     pyplot.plot(xbounds,np.array([ set_point ] * 2),'r-',label='Setpoint temp')
     pyplot.plot(xbounds,np.array([ temp_upper_limit ] * 2),'r-.')
     pyplot.plot(xbounds,np.array([ temp_lower_limit ] * 2),'r-.',label='Warning threshold')
+    (xmin,xmax,ymin,ymax) = pyplot.axis()
+    ymin = set_point - ydelta/2.0
+    ymax = set_point + ydelta/2.0
+    pyplot.axis([xmin,xmax,ymin,ymax])
     #pyplot.gcf().autofmt_xdate()
     pyplot.xlabel('Date/time [UTC]')
     pyplot.ylabel('CCDATEMP [degC]')
