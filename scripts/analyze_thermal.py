@@ -88,7 +88,8 @@ def plot_temperature(params,temp_ts,ccdatemp,ccdstemp):
     ax.xaxis.set_major_formatter(hfmt)
     pyplot.xticks(rotation=60.0)
     ydiff = 0.25
-    if (yplot.max()-yplot.min()) > ydiff: ydiff = (yplot.max()-yplot.min())/2.0
+    if (yplot.max()-yplot.min()) > (ydiff*2): 
+        ydiff = (yplot.max()-yplot.min())/2.0
     temp_upper_limit = lplot.mean() + ydiff
     temp_lower_limit = lplot.mean() - ydiff
     pyplot.plot(xbounds,np.array([ set_point ] * 2),'r-',label='Setpoint temp')
