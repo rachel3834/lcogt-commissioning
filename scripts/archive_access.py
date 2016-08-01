@@ -18,8 +18,11 @@ def fetch_frame(frame_path,working_dir):
     frame_path = frame_path.replace('\n','')
     if path.isdir(frame_path) == False:
         wframe = path.join(working_dir, path.basename(frame_path))
-        if path.isfile(wframe) == False:            
+        if path.isfile(frame_path) == True and path.isfile(wframe) == False:            
             copy(frame_path, wframe)
+        elif path.isfile(frame_path) == False:
+            print('ERROR: Missing archive data '+frame_path)
+            exit()
         uframe = wframe.replace('.fz','')
         if path.isfile(uframe) == False:
             compression_handler.uncompress( wframe )

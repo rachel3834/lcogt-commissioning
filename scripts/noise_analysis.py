@@ -96,10 +96,10 @@ def get_image_data(params):
     NAXIS2 = float(header['NAXIS2'])
     
     params['regions'] = {
-                        0: [1.0,(NAXIS1/2.0),1.0,(NAXIS2/2.0)],
-                        1: [(NAXIS1/2.0),NAXIS1,1.0,(NAXIS2/2.0)],
-                        2: [(NAXIS1/2.0),NAXIS1,(NAXIS2/2.0),NAXIS2],
-                        3: [1.0,(NAXIS1/2.0),(NAXIS2/2.0),NAXIS2]
+                        0: [1,int(NAXIS1/2.0),1,int(NAXIS2/2.0)],
+                        1: [int(NAXIS1/2.0),int(NAXIS1),1,int(NAXIS2/2.0)],
+                        2: [int(NAXIS1/2.0),int(NAXIS1),int(NAXIS2/2.0),int(NAXIS2)],
+                        3: [1,int(NAXIS1/2.0),int(NAXIS2/2.0),int(NAXIS2)]
                         }
                         
     return image, params
@@ -138,7 +138,8 @@ def plot_quadrant_hist(params,logy=True):
     
     for q in range(0,4,1):
         region = params['regions'][q]
-        
+        print region
+        exit()
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         if 'nbins' not in params.keys():
             nbins = int(((quad_image.max()-quad_image.min())/7.5)*2.0)
