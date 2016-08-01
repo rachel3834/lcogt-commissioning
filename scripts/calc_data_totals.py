@@ -46,7 +46,11 @@ def calc_data_totals():
 
     data = DataCounter()
     nframes = 0
-    for night_dir in params['dir_list']:
+
+    dir_sort = params['dir_list']
+    dir_sort.sort()
+    
+    for night_dir in dir_sort:
         night = night_dir.split('/')[-2]
         night_data = calc_nightly_data_totals(night_dir)
         print night+' '+night_data.summary()
