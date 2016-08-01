@@ -51,6 +51,7 @@ def calc_data_totals():
         night_data = calc_nightly_data_totals(night_dir)
         print night+' '+night_data.summary()
         for ftype in ['nbiases','ndarks','nflats','nscience']:
+            fcount = getattr(night_data,ftype)
             setattr(data,ftype,(getattr(data,ftype) + fcount))
             nframes = nframes + fcount
 
