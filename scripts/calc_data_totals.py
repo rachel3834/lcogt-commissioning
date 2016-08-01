@@ -9,21 +9,33 @@ from os import path
 from sys import argv
 import glob
 
+class DataCounter:
+    def __init__(self):
+        self.nbiases = 0
+        self.ndarks = 0
+        self.nflats = 0
+        self.nscience = 0
+    
+    def summary(self):
+        output = 'N biases='+str(self.nbiases)+' N darks='+str(self.ndarks)+\
+                ' N flats='+str(self.nflats)+' N science='+str(self.nscience)
+        return output
+
 def calc_nightly_data_totals(night_dir):
     """Function to calculate the number of frames of different types available
     within a single nights data directory
     """
-    data = {'nbiases': 0, 'ndarks': 0, 'nflats': 0, 'nscience': 0}
+    data = DataCounter()
     frame_list = glob.glob( path.join( night_dir, '*.fits.fz' ) )
     for frame in frame_list:
         if '-b00' in frame:
-            data['nbiases'] = data['nbiases'] + 1
+            data.nbiases = data.nbiases + 1
         elif '-d00' in frame:
-            data['ndarks'] = data['ndarks'] + 1
+            data.ndarks = data.ndarks + 1
         elif '-f00' in frame:
-            data['nflats'] = data['nflats'] + 1
+            data.nflats = data.nflats + 1
         elif '-e00' in frame:
-            data['nscience'] = data['nscience'] + 1
+            data.nscience = data.nscience + 1
     return data
     
 def calc_data_totals():
@@ -32,19 +44,18 @@ def calc_data_totals():
     
     params = parse_args_data()
 
-    data = {'nbiases': 0, 'ndarks': 0, 'nflats': 0, 'nscience': 0}
+    data = DataCounter()
     nframes = 0
     for night_dir in params['dir_list']:
+        night = night_dir.split('/')[-2]
         night_data = calc_nightly_data_totals(night_dir)
-        for ftype, fcount in night_data.items():
-            data[ftype] = data[ftype] + fcount
+        print night+' '+night_data.summary()
+        for ftype in ['nbiases','ndarks','nflats','nscience']:
+            setattr(data,ftype,(getattr(data,ftype) + fcount)
             nframes = nframes + fcount
 
     print('Data holdings: ')
-    print('N bias frames: ' + str(data['nbiases']))
-    print('N dark frames: ' + str(data['ndarks']))
-    print('N flat fields: ' + str(data['nflats']))
-    print('N science frames: ' + str(data['nscience']))
+    print data.summary()
     print('\nTotal number of frames: '+str(nframes))
 
 def parse_args_data():
