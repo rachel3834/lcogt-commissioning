@@ -26,9 +26,11 @@ def calc_nightly_data_totals(night_dir):
             data['nscience'] = data['nscience'] + 1
     return data
     
-def calc_data_totals(params):
+def calc_data_totals():
     """Function to calculate the total number of frames of different types
     acquired within a given time frame"""
+    
+    params = parse_args_data()
 
     data = {'nbiases': 0, 'ndarks': 0, 'nflats': 0, 'nscience': 0}
     nframes = 0
@@ -62,4 +64,4 @@ def parse_args_data():
     return params
 
 if __name__ == '__main__':
-    parse_args_data()
+    calc_data_totals()
