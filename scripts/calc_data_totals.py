@@ -59,9 +59,12 @@ def parse_args_data():
         params['top_data_dir'] = argv[1]
         params['date_search_string'] = argv[2]
     
-    params['dir_list'] = glob.glob(path.join(params['top_data_dir'], params['date_search_string']))
-    print params['dir_list']
-    
+    dir_list = glob.glob(path.join(params['top_data_dir'], \
+                                params['date_search_string']))
+    params['dir_list'] = []
+    for data_dir in dir_list:
+        params['dir_list'].append( path.join(data_dir,'raw') )
+        
     return params
 
 if __name__ == '__main__':
