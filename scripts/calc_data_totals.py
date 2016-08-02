@@ -8,24 +8,13 @@ Created on Mon Aug  1 10:07:43 2016
 from os import path
 from sys import argv
 import glob
-
-class DataCounter:
-    def __init__(self):
-        self.nbiases = 0
-        self.ndarks = 0
-        self.nflats = 0
-        self.nscience = 0
-    
-    def summary(self):
-        output = 'N biases='+str(self.nbiases)+' N darks='+str(self.ndarks)+\
-                ' N flats='+str(self.nflats)+' N science='+str(self.nscience)
-        return output
+import data_counter
 
 def calc_nightly_data_totals(night_dir):
     """Function to calculate the number of frames of different types available
     within a single nights data directory
     """
-    data = DataCounter()
+    data = data_counter.DataCounter()
     frame_list = glob.glob( path.join( night_dir, '*.fits.fz' ) )
     for frame in frame_list:
         if '-b00' in frame:
@@ -44,7 +33,7 @@ def calc_data_totals():
     
     params = parse_args_data()
 
-    data = DataCounter()
+    data = data_counter.DataCounter()
     nframes = 0
 
     dir_sort = params['dir_list']
