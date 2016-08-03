@@ -45,7 +45,7 @@ class DataCounter:
         quicklook_path = path.join( night_dir, 'preview' )
         reduced_path = path.join( night_dir, 'processed' )
         
-        raw_frames = glob.glob( path.join( raw_path, '*-e00.fits.fz' ) )
+        raw_frames = glob.glob( path.join( raw_path, '*fits.fz' ) )
         quicklook_frames = glob.glob( path.join( quicklook_path, '-e11.fits.fz'))
         reduced_frames = glob.glob( path.join( reduced_path, '-e91.fits.fz'))
         self.nraw = len(raw_frames)
@@ -54,13 +54,10 @@ class DataCounter:
         params = {'out_dir':out_dir}
         
         for frame in raw_frames:
-            print 'FRAME: ',path.basename(frame)
             if '-b00' in frame:
                 self.nbiases = self.nbiases + 1
-                print 'Got bias'
             elif '-d00' in frame:
                 self.ndarks = self.ndarks + 1
-                print 'Got dark'
             elif '-f00' in frame:
                 self.nflats = self.nflats + 1
                 keywords= archive.access(params, frame, key_list)
