@@ -62,7 +62,8 @@ class DataCounter:
                 self.nflats = self.nflats + 1
                 keywords= archive_access.get_frame_params(params,frame,key_list)
                 if keywords['FILTER'] in self.nflats_per_filter.keys():
-                    self.nflats_per_filter = self.nflats_per_filter + 1
+                    self.nflats_per_filter[keywords['FILTER']] = \
+                            self.nflats_per_filter[keywords['FILTER']] + 1
                 else:
                     self.nflats_per_filter[keywords['FILTER']] = 1
             elif '-e00' in frame:
