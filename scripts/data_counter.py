@@ -23,7 +23,9 @@ class DataCounter:
     
     def summary(self):
         output = self.night_dir+' N biases='+str(self.nbiases)+' N darks='+str(self.ndarks)+\
-                ' N flats='+str(self.nflats)+' N science='+str(self.nscience)
+                ' N flats='+str(self.nflats)+' N science (raw)='+str(self.nscience_raw)+\
+                ' N science (quicklook)='+str(self.nscience_quicklook)+\
+                ' N science (reduced)='+str(self.nscience_reduced)
         return output
         
     def calc_nightly_data_totals(self,night_dir,out_dir):
