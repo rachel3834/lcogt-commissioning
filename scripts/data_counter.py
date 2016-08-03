@@ -60,7 +60,7 @@ class DataCounter:
                 self.ndarks = self.ndarks + 1
             elif '-f00' in frame:
                 self.nflats = self.nflats + 1
-                keywords= archive_access.get_frame_params(params, frame, key_list)
+                keywords= archive_access.get_frame_params(params,frame,key_list)
                 if keywords['FILTER'] in self.nflats_per_filter.keys():
                     self.nflats_per_filter = self.nflats_per_filter + 1
                 else:
