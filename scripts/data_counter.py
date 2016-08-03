@@ -54,7 +54,7 @@ class DataCounter:
         params = {'out_dir':out_dir}
         
         for frame in raw_frames:
-            print path.basename(frame)
+            print 'FRAME: ',path.basename(frame)
             if '-b00' in frame:
                 self.nbiases = self.nbiases + 1
                 print 'Got bias'
