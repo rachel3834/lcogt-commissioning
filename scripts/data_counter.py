@@ -53,7 +53,7 @@ class DataCounter:
         self.raw_frames = glob.glob( path.join( raw_path, '*-[b,d,f,e]00.fits.fz' ) )
         self.quicklook_frames = glob.glob( path.join( quicklook_path, '-e11.fits.fz'))
         self.reduced_frames = glob.glob( path.join( reduced_path, '-e91.fits.fz'))
-        self.nraw = len(raw_frames)
+        self.nraw = len(self.raw_frames)
         
     def calc_nightly_data_totals(self,night_dir,out_dir):
         """Method to calculate the number of frames of different types 
