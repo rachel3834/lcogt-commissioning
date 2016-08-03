@@ -27,6 +27,11 @@ class DataCounter:
                 ' N science (quicklook)='+str(self.nscience_quicklook)+\
                 ' N science (reduced)='+str(self.nscience_reduced)
         return output
+    def flats_summary(self):
+        output = self.night_dir
+        for f,fcount in self.nflats_per_filter.items():
+            output = output + ' N flats('+f+')='+str(fcount)
+        return output
         
     def calc_nightly_data_totals(self,night_dir,out_dir):
         """Mothod to calculate the number of frames of different types 

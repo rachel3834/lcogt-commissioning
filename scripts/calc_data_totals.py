@@ -29,7 +29,7 @@ def calc_data_totals():
         night_counter.calc_nightly_data_totals(night_dir,params['out_dir'])
         data.sum_nightly_data_totals(night_counter)
         print night_counter.night_dir+' '+night_counter.summary()
-        
+        print night_counter.night_dir+' '+night_counter.flats_summary()
     print('\nData holdings: ')
     print data.summary()
     print('\nTotal number of frames: '+str(nframes))
