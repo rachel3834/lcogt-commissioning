@@ -18,7 +18,6 @@ def calc_data_totals():
 
     data = data_counter.DataCounter()
     data.night_dir = params['date_search_string']
-    nframes = 0
 
     dir_sort = params['dir_list']
     dir_sort.sort()
@@ -32,7 +31,7 @@ def calc_data_totals():
         print night_counter.flats_summary()
     print('\nData holdings: ')
     print data.summary()
-    print('\nTotal number of frames: '+str(nframes))
+    print('\nTotal number of frames: '+str(data.nraw))
 
 def parse_args_data():
     """Function to harvest the parameters required for the data summary code
