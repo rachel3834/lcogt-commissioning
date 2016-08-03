@@ -19,8 +19,6 @@ def calc_data_totals():
     data = data_counter.DataCounter()
     data.night_dir = params['date_search_string']
     nframes = 0
-    frame_types = [ 'nbiases','ndarks','nflats','nscience_raw',\
-                    'nscience_quicklook', 'nscience_reduced' ]
 
     dir_sort = params['dir_list']
     dir_sort.sort()
@@ -30,7 +28,7 @@ def calc_data_totals():
         night_counter.night_dir = path.basename(night_dir)
         night_counter.calc_nightly_data_totals(night_dir,params['out_dir'])
         data.sum_nightly_data_totals(night_counter)
-        print night+' '+night_data.summary()
+        print night_counter.night_dir+' '+night_data.summary()
         
     print('\nData holdings: ')
     print data.summary()
