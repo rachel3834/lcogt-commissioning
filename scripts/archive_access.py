@@ -38,7 +38,7 @@ def get_frame_params(params, frame, key_list):
     FITS header of a frame"""
     
     keywords = {}
-    uframe = archive_access.fetch_frame(frame,params['out_dir'])
+    uframe = fetch_frame(frame,params['out_dir'])
     hdr = fits.getheader(uframe)
     for key in key_list:
         keywords[key] = hdr[key]
