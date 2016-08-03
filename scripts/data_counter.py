@@ -44,7 +44,7 @@ class DataCounter:
                 ' for '+object_name
         return output
         
-    def get_night_frame_lists(self):
+    def get_night_frame_lists(self,night_dir):
         
         raw_path = path.join( night_dir, 'raw' )
         quicklook_path = path.join( night_dir, 'preview' )
@@ -60,7 +60,7 @@ class DataCounter:
         available within a single nights data directory
         """
         
-        self.get_night_frame_lists()
+        self.get_night_frame_lists(night_dir)
         
         key_list = ['FILTER']
         params = {'out_dir':out_dir}
@@ -109,7 +109,7 @@ class DataCounter:
         """Method to calculate the number of frames taken of a given
         object per night"""
         
-        self.get_night_frame_lists()
+        self.get_night_frame_lists(night_dir)
         
         key_list = ['OBJECT']
         params = {'out_dir':out_dir}
