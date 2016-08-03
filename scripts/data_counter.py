@@ -28,7 +28,7 @@ class DataCounter:
                 ' N science (reduced)='+str(self.nscience_reduced)
         return output
     def flats_summary(self):
-        output = self.night_dir
+        output = self.night_dir+' flat fields: '
         for f,fcount in self.nflats_per_filter.items():
             output = output + ' N flats('+f+')='+str(fcount)
         return output
