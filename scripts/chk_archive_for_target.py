@@ -9,7 +9,6 @@ from os import path
 import glob
 import archive_access
 from astropy.io import fits
-from shutil import remove
 import DataCounter
 
 def chk_archive_for_target():
