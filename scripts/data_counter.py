@@ -45,7 +45,7 @@ class DataCounter:
         quicklook_path = path.join( night_dir, 'preview' )
         reduced_path = path.join( night_dir, 'processed' )
         
-        raw_frames = glob.glob( path.join( raw_path, '*fits.fz' ) )
+        raw_frames = glob.glob( path.join( raw_path, '*-[b,d,f,e]00.fits.fz' ) )
         quicklook_frames = glob.glob( path.join( quicklook_path, '-e11.fits.fz'))
         reduced_frames = glob.glob( path.join( reduced_path, '-e91.fits.fz'))
         self.nraw = len(raw_frames)
