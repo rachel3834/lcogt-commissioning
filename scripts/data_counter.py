@@ -28,10 +28,13 @@ class DataCounter:
                 ' N science (reduced)='+str(self.nscience_reduced)
         return output
     def flats_summary(self):
-        output = self.night_dir+' flat fields: '
-        for f,fcount in self.nflats_per_filter.items():
-            output = output + ' N flats('+f+')='+str(fcount)
-        return output
+        if len(self.nflats_per_filter) == 0:
+            output = self.night_dir+' no flat fields'
+        else:
+            output = self.night_dir+' flat fields: '
+            for f,fcount in self.nflats_per_filter.items():
+                output = output + ' N flats('+f+')='+str(fcount)
+                return output
         
     def calc_nightly_data_totals(self,night_dir,out_dir):
         """Mothod to calculate the number of frames of different types 
@@ -51,10 +54,13 @@ class DataCounter:
         params = {'out_dir':out_dir}
         
         for frame in raw_frames:
+            print path.basename(frame)
             if '-b00' in frame:
                 self.nbiases = self.nbiases + 1
+                print 'Got bias'
             elif '-d00' in frame:
                 self.ndarks = self.ndarks + 1
+                print 'Got dark'
             elif '-f00' in frame:
                 self.nflats = self.nflats + 1
                 keywords= archive.access(params, frame, key_list)
