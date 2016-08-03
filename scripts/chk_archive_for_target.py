@@ -6,6 +6,7 @@ Created on Mon Aug  1 20:35:12 2016
 """
 
 from os import path
+from sys import argv
 import glob
 import archive_access
 from astropy.io import fits
