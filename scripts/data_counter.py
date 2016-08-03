@@ -6,6 +6,8 @@ Created on Mon Aug  1 20:09:04 2016
 """
 
 import archive_access
+from os import path
+import glob
 
 class DataCounter:
     def __init__(self):

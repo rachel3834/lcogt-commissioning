@@ -41,7 +41,7 @@ def parse_args_data():
     from the commandline or prompts"""
     
     params = {}
-    if len(argv) != 3:
+    if len(argv) != 4:
         params['top_data_dir'] = raw_input('Please enter the path to the data directory: ')
         params['out_dir'] = raw_input('Please enter the output directory path: ')
         params['date_search_string'] = raw_input('Please enter the date search string [e.g. yyyymmd?]: ')
