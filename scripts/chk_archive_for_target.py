@@ -9,7 +9,7 @@ from os import path
 import glob
 import archive_access
 from astropy.io import fits
-import DataCounter
+import data_counter
 
 def chk_archive_for_target():
     """Function to search the archive for frames on a specific object"""
