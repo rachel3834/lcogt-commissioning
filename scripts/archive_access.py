@@ -9,6 +9,7 @@ from os import path, remove
 from sys import exit, argv
 from shutil import copy
 import compression_handler
+from astropy.io import fits
 
 def fetch_frame(frame_path,working_dir):
     """Function to fetch a copy of an input frame from the data archive
