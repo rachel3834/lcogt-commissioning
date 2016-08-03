@@ -34,7 +34,7 @@ class DataCounter:
             output = self.night_dir+' flat fields: '
             for f,fcount in self.nflats_per_filter.items():
                 output = output + ' N flats('+f+')='+str(fcount)
-                return output
+        return output
         
     def calc_nightly_data_totals(self,night_dir,out_dir):
         """Mothod to calculate the number of frames of different types 
