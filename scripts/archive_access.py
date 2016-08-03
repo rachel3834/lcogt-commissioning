@@ -43,7 +43,7 @@ def get_frame_params(params, frame, key_list):
     hdr = fits.getheader(uframe)
     for key in key_list:
         keywords[key] = hdr[key]
-    remove(uframes)
+    remove(uframe)
     
     return keywords
 
