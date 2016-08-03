@@ -33,19 +33,6 @@ def chk_archive_for_target():
     log.close()
     
 
-def get_frame_params(params, frame, key_list):
-    """Function to object the requested header keyword parameters from the
-    FITS header of a frame"""
-    
-    keywords = {}
-    uframe = archive_access.fetch_frame(frame,params['out_dir'])
-    hdr = fits.getheader(uframe)
-    for key in key_list:
-        keywords[key] = hdr[key]
-    remove(uframes)
-    
-    return keywords
-
 def parse_args():
     """Function to harvest the parameters required for the data summary code
     from the commandline or prompts"""
