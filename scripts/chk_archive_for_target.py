@@ -18,7 +18,7 @@ def chk_archive_for_target():
     params = parse_args()
     key_list = [ 'OBJECT' ]
     nframes = 0
-    log = open( path.join(params['out_dir'], 'data_listing.log'), 'r' )
+    log = open( path.join(params['out_dir'], 'data_listing.log'), 'w' )
     for night_dir in params['dir_list']:
         night_counter = data_counter.DataCounter()
         night_counter.night_dir = path.basename(night_dir)
