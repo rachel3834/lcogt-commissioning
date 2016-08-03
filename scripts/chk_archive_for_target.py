@@ -24,7 +24,7 @@ def chk_archive_for_target():
         night_counter.night_dir = path.basename(night_dir)
         night_counter.calc_nightly_object_total(night_dir,params['out_dir'],\
                                                 params['object_name'])
-        output = night_counter.object_data_summary(object_name)
+        output = night_counter.object_data_summary(params['object_name'])
         log.write(output+'\n')
         
         nframes = nframes + night_counter.nscience_raw
