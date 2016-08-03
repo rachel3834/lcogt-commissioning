@@ -32,6 +32,19 @@ def fetch_frame(frame_path,working_dir):
         exit()
         
     return uframe
+    
+def get_frame_params(params, frame, key_list):
+    """Function to object the requested header keyword parameters from the
+    FITS header of a frame"""
+    
+    keywords = {}
+    uframe = archive_access.fetch_frame(frame,params['out_dir'])
+    hdr = fits.getheader(uframe)
+    for key in key_list:
+        keywords[key] = hdr[key]
+    remove(uframes)
+    
+    return keywords
 
 if __name__ == '__main__':
     
