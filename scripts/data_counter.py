@@ -58,7 +58,7 @@ class DataCounter:
                 else:
                     self.nflats_per_filter[keywords['FILTER']] = 1
             elif '-e00' in frame:
-                self.nscience = self.nscience + 1
+                self.nscience_raw = self.nscience_raw + 1
         
         for frame in quicklook_frames:
             if '-e11' in frame:
