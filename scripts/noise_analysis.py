@@ -138,8 +138,6 @@ def plot_quadrant_hist(params,logy=True):
     
     for q in range(0,4,1):
         region = params['regions'][q]
-        print region
-        exit()
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         if 'nbins' not in params.keys():
             nbins = int(((quad_image.max()-quad_image.min())/7.5)*2.0)
