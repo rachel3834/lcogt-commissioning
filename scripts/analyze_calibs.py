@@ -52,10 +52,11 @@ class FrameSet:
             lines = open(self.exclude_file,'r').readlines()
             for line in lines:
                 self.exclude_list.append(line.replace('\n',''))
-        
+        print self.exclude_list
         
         frames = glob.glob( path.join(self.data_dir, '*.fits.fz') )
         for frame in frames:
+            print path.basename(frame)
             if path.basename(frame) not in self.exclude_list:
             
                 # Always skip the first frame of the night, because un-flushed
