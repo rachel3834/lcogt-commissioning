@@ -48,6 +48,7 @@ class FrameSet:
     def make_frame_listings(self):
         
         # Check to see if there is an exclude list:
+        print self.exclude_file, (path.isfile(self.exclude_file))
         if path.isfile(self.exclude_file) == True:
             lines = open(self.exclude_file,'r').readlines()
             for line in lines:
