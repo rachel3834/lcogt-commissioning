@@ -33,10 +33,13 @@ class FrameSet:
         self.masterdark_file = None
         self.masterflats = {}
         self.masterflat_files = {}
+        self.exclude_file = None
+        self.exclude_list = []
         
         if path.isdir(params['data_dir']) == True:
             self.data_dir = params['data_dir']
             self.out_dir = params['out_dir']
+            self.exclude_file = path.join(self.out_dir,'exclude.frames')
         else:
             self.data_dir = None
             print('ERROR: Cannot find data directory ' + params['data_dir'])
@@ -44,35 +47,42 @@ class FrameSet:
             
     def make_frame_listings(self):
         
-        frames = glob.glob( path.join(self.data_dir, '*.fits.fz') )
+        # Check to see if there is an exclude list:
+        if path.isfile(self.exclude_file) == True:
+            lines = open(self.exclude_file,'r').readlines()
+            for line in lines:
+                self.exclude_list.append(line.replace('\n',''))
         
+        
+        frames = glob.glob( path.join(self.data_dir, '*.fits.fz') )
         for frame in frames:
+            if path.basename(frame) not in self.exclude_list:
             
-            # Always skip the first frame of the night, because un-flushed
-            # charge means it will be close to saturation
-            f_number = int(path.basename(frame).split('-')[3])
-            if f_number > 1:
-            
-                # Copy frame to working directory and uncompress - a 
-                # step required due to limited access to the data
-                uframe = archive_access.fetch_frame(frame,self.out_dir)
+                # Always skip the first frame of the night, because un-flushed
+                # charge means it will be close to saturation
+                f_number = int(path.basename(frame).split('-')[3])
+                if f_number > 1:
                 
-                hdr = fits.getheader(uframe)
-                if self.naxis1 == None:
-                    datasec = int(hdr['TRIMSEC'].split(',')[0].split(':')[-1])
-                    self.naxis1 = datasec
-                    self.naxis2 = datasec
-                
-                if hdr['OBSTYPE'] == 'BIAS':
-                    self.biases.append(uframe)
-                elif hdr['OBSTYPE'] == 'DARK':
-                    self.darks.append(uframe)
-                elif hdr['OBSTYPE'] == 'SKYFLAT':
-                    if hdr['FILTER'] not in self.flats.keys():
-                        self.flats[hdr['FILTER']] = []
-                    self.flats[hdr['FILTER']].append(uframe)
-                elif hdr['OBSTYPE'] == 'EXPOSE':
-                    self.exposures.append(uframe)
+                    # Copy frame to working directory and uncompress - a 
+                    # step required due to limited access to the data
+                    uframe = archive_access.fetch_frame(frame,self.out_dir)
+                    
+                    hdr = fits.getheader(uframe)
+                    if self.naxis1 == None:
+                        datasec = int(hdr['TRIMSEC'].split(',')[0].split(':')[-1])
+                        self.naxis1 = datasec
+                        self.naxis2 = datasec
+                    
+                    if hdr['OBSTYPE'] == 'BIAS':
+                        self.biases.append(uframe)
+                    elif hdr['OBSTYPE'] == 'DARK':
+                        self.darks.append(uframe)
+                    elif hdr['OBSTYPE'] == 'SKYFLAT':
+                        if hdr['FILTER'] not in self.flats.keys():
+                            self.flats[hdr['FILTER']] = []
+                        self.flats[hdr['FILTER']].append(uframe)
+                    elif hdr['OBSTYPE'] == 'EXPOSE':
+                        self.exposures.append(uframe)
         self.nframes = len(frames)
         
     def make_frame_listings_from_file(self,frames_file):
