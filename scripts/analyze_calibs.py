@@ -52,7 +52,7 @@ class FrameSet:
         if path.isfile(self.exclude_file) == True:
             lines = open(self.exclude_file,'r').readlines()
             for line in lines:
-                self.exclude_list.append(path.basename(line.replace('\n',''))
+                self.exclude_list.append(path.basename(line.replace('\n','')))
         print self.exclude_list
         
         frames = glob.glob( path.join(self.data_dir, '*.fits.fz') )
