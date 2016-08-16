@@ -68,8 +68,8 @@ def plot_quadrant_ffts(params):
     fig = pyplot.figure(2)
     pyplot.rcParams['font.size'] = 10.0
     
-    for q in range(0,4,1):
-        region = params['regions'][q]
+    for q,qid in enumerate(plotord):
+        region = params['regions'][qid]
         
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         
@@ -136,8 +136,8 @@ def plot_quadrant_hist(params,logy=True):
     fig = pyplot.figure(3)
     pyplot.rcParams['font.size'] = 10.0
     
-    for q in range(0,4,1):
-        region = params['regions'][q]
+    for q,qid in enumerate(plotord):
+        region = params['regions'][qid]
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         if 'nbins' not in params.keys():
             nbins = int(((quad_image.max()-quad_image.min())/7.5)*2.0)
