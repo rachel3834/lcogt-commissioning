@@ -69,7 +69,7 @@ def plot_quadrant_ffts(params):
     pyplot.rcParams['font.size'] = 10.0
     
     for q,qid in enumerate(plotord):
-        region = params['regions'][qid]
+        region = params['regions'][qid-1]
         
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         
@@ -137,7 +137,7 @@ def plot_quadrant_hist(params,logy=True):
     pyplot.rcParams['font.size'] = 10.0
     
     for q,qid in enumerate(plotord):
-        region = params['regions'][qid]
+        region = params['regions'][qid-1]
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         if 'nbins' not in params.keys():
             nbins = int(((quad_image.max()-quad_image.min())/7.5)*2.0)
@@ -152,7 +152,7 @@ def plot_quadrant_hist(params,logy=True):
                 range=(quad_image.min(),quad_image.max()),log=logy)
         stats = basic_stats(quad_image)
         
-        pyplot.title('Quadrant '+str(q+1)+\
+        pyplot.title('Quadrant '+str(qid+1)+\
                     '\nMedian = '+str(round(stats['median'],3))+'e-, '+\
                     'Mean = '+str(round(stats['mean'],3))+'e-\n'+\
                     'St.D = '+str(round(stats['std'],3))+'e-',\
