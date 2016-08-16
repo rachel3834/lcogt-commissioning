@@ -210,7 +210,7 @@ class FrameSet:
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
-                    'nbins': 10 }
+                    'nbins': 11 }
         else:
             params = {  'image_data': data, \
                     'image_path': file_path, \
