@@ -152,7 +152,7 @@ def plot_quadrant_hist(params,logy=True):
                 range=(quad_image.min(),quad_image.max()),log=logy)
         stats = basic_stats(quad_image)
         
-        pyplot.title('Quadrant '+str(qid+1)+\
+        pyplot.title('Quadrant '+str(qid)+\
                     '\nMedian = '+str(round(stats['median'],3))+'e-, '+\
                     'Mean = '+str(round(stats['mean'],3))+'e-\n'+\
                     'St.D = '+str(round(stats['std'],3))+'e-',\
