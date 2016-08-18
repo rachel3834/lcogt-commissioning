@@ -177,10 +177,10 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
     
     if xrange != None:
         plotname = path.join( params['out_dir'], \
-         path.splitext(path.basename(params['image_path']))[0]+'_hist.png' )
+         path.splitext(path.basename(params['image_path']))[0]+'_hist_zoom.png' )
     else:
         plotname = path.join( params['out_dir'], \
-         path.splitext(path.basename(params['image_path']))[0]+'_hist_zoom.png' )
+         path.splitext(path.basename(params['image_path']))[0]+'_hist.png' )
     pyplot.savefig(plotname)
     pyplot.close(3)
 
