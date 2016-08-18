@@ -205,7 +205,8 @@ class FrameSet:
         noise_analysis.plot_quadrant_ffts(params)
     
     
-    def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True):
+    def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True,\
+                    xrange=None):
         if frame == 'MASTERBIAS':
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
@@ -215,7 +216,7 @@ class FrameSet:
             params = {  'image_data': data, \
                     'image_path': file_path, \
                     'out_dir': self.out_dir }
-        noise_analysis.plot_quadrant_hist(params,logy=logy)
+        noise_analysis.plot_quadrant_hist(params,logy=logy,xrange=xrange)
     
     def stats_summary(self):
         
@@ -317,6 +318,7 @@ def analyze_night_calibs():
     frames.make_master('BIAS')
     frames.fft_frame('MASTERBIAS')
     frames.hist_frame(frame='MASTERBIAS')
+    frames.hist_frame(frame='MASTERBIAS',xrange=[-3.0,3.0])
     frames.make_master('DARK')
     frames.fft_frame('MASTERDARK')
     for bandpass in frames.flats.keys():

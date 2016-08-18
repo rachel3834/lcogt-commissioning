@@ -126,7 +126,7 @@ def parse_args():
     return params
 
 
-def plot_quadrant_hist(params,logy=True):
+def plot_quadrant_hist(params,logy=True,xrange=None):
     """Function to plot histograms of the pixel values of an image, separated
     into separate quadrants"""
     
@@ -161,15 +161,22 @@ def plot_quadrant_hist(params,logy=True):
         pyplot.ylabel('Frequency')
         
         (xr1,xr2,yr1,yr2) = pyplot.axis()
+        if xrange != None:
+            xr1 = xrange[0]
+            xr2 = xrange[1]
         dx = (xr2 - xr1)/10.0
         dy = (yr2 - yr1)/10.0
         yr2 = yr2 + 3.0*dy
         pyplot.axis([xr1,xr2,yr1,yr2])
         yval = yr2 - 1.5*dy
         pyplot.plot(np.array([0.0,stats['std']]),np.array([yval]*2),'k-')
-        
-    plotname = path.join( params['out_dir'], \
+    
+    if xrange != None:
+        plotname = path.join( params['out_dir'], \
          path.splitext(path.basename(params['image_path']))[0]+'_hist.png' )
+    else:
+        plotname = path.join( params['out_dir'], \
+         path.splitext(path.basename(params['image_path']))[0]+'_hist_zoom.png' )
     pyplot.savefig(plotname)
     pyplot.close(3)
 
