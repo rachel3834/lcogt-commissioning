@@ -207,11 +207,16 @@ class FrameSet:
     
     def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True,\
                     xrange=None):
-        if frame == 'MASTERBIAS':
+        if frame == 'MASTERBIAS' and xrange==None:
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
                     'nbins': 22 }
+        elif frame == 'MASTERBIAS' and xrange!= None:
+            params = {  'image_data': self.masterbias, \
+                    'image_path': self.masterbias_file, \
+                    'out_dir': self.out_dir,
+                    'nbins': 200 }
         else:
             params = {  'image_data': data, \
                     'image_path': file_path, \
