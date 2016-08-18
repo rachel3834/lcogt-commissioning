@@ -148,7 +148,11 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
         pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
             wspace=0.4,hspace=0.4)
         
-        pyplot.hist(quad_image.flatten(),bins=nbins,color='w',\
+        hist_data = quad_image.flatten()
+        if xrange != None:
+            idx = np.where(hist_data < xrange[1])
+            hist_data = hist_data[idx]
+        pyplot.hist(hist_data,bins=nbins,color='w',\
                 range=(quad_image.min(),quad_image.max()),log=logy)
         stats = basic_stats(quad_image)
         
