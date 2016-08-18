@@ -318,7 +318,7 @@ def analyze_night_calibs():
     frames.make_master('BIAS')
     frames.fft_frame('MASTERBIAS')
     frames.hist_frame(frame='MASTERBIAS')
-    frames.hist_frame(frame='MASTERBIAS',xrange=[-3.0,3.0])
+    frames.hist_frame(frame='MASTERBIAS',xrange=[-10.0,10.0])
     frames.make_master('DARK')
     frames.fft_frame('MASTERDARK')
     for bandpass in frames.flats.keys():
