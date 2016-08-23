@@ -384,7 +384,9 @@ def read_frame_set(frame_list,naxis1,naxis2):
     image_data = np.zeros([len(frame_list),naxis2,naxis1])
     exp_times = []
     master_header = None
-    for i in range(0,len(frame_list),1):
+    nframes = min(50,len(frame_list))
+    
+    for i in range(0,nframes,1):
         (imstats, image, hdr) = prepraw3d.prepraw3d(frame_list[i])
         
         # Check for zero-array frames:
