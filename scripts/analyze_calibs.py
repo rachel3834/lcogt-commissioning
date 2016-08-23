@@ -146,7 +146,8 @@ class FrameSet:
                 image_data = subtract_calib(image_data,self.masterdark)
             elif master_type == 'FLAT' and self.masterdark is None:
                 print('Warning: No masterdark data available to subtract')
-                
+            
+            print image_data.shape, image_data
             master_data = np.median(image_data,axis=0)
         
             if master_type == 'DARK':
@@ -388,7 +389,7 @@ def read_frame_set(frame_list,naxis1,naxis2):
         
         # Check for zero-array frames:
         izeros = np.where(image == 0)
-        print izeros
+        print frame_list[i],izeros[0]
         if len(izeros) > (0.1*len(image.flatten())):
             print('Warning: High number of zero-array entries in '+frame_list[i])
         else:
