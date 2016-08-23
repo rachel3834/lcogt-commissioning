@@ -127,6 +127,7 @@ class FrameSet:
             file_path = path.join(self.out_dir, 'masterdark.fits')
         elif master_type == 'FLAT':
             frame_list = self.flats[bandpass]
+            print bandpass, frame_list
             file_path = path.join(self.out_dir, 'masterflat_'+bandpass+'.fits')
             
         if len(frame_list) <= 2:
