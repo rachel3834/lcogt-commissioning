@@ -393,6 +393,8 @@ def read_frame_set(frame_list,naxis1,naxis2):
     for i in range(0,nframes,1):
         (imstats, image, hdr) = prepraw3d.prepraw3d(frame_list[i])
         
+        print frame_list[i], image.mean(), image.std()
+        
         # Check for zero-array frames:
         izeros = np.where(image == 0)
         if len(izeros) > (0.1*len(image.flatten())):
