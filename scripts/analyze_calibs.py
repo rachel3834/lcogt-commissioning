@@ -148,7 +148,6 @@ class FrameSet:
             elif master_type == 'FLAT' and self.masterdark is None:
                 print('Warning: No masterdark data available to subtract')
             
-            print image_data.shape
             master_data = np.median(image_data,axis=0)
         
             if master_type == 'DARK':
