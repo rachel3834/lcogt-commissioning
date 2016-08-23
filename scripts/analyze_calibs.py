@@ -381,14 +381,14 @@ def read_frame_set(frame_list,naxis1,naxis2):
     """Function to read into memory the image data from a set of frames.
     Returns a 3D numpy array of 2D images."""
     
-    image_data = np.zeros([len(frame_list),naxis2,naxis1])
     exp_times = []
     master_header = None
     max_frames = 50
     nframes = min(max_frames,len(frame_list))
     if nframes < len(frame_list):
-        print('Warning: number of frames ( '+str(len(frame_list))+\
-            ' exceeds maximum ' + str(max_frames))
+        print('Warning: number of frames ('+str(len(frame_list))+\
+            ') exceeds maximum (' + str(max_frames)+'), dataset will be limited')
+    image_data = np.zeros([nframes,naxis2,naxis1])
     
     for i in range(0,nframes,1):
         (imstats, image, hdr) = prepraw3d.prepraw3d(frame_list[i])
