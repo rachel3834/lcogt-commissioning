@@ -385,10 +385,16 @@ def read_frame_set(frame_list,naxis1,naxis2):
     master_header = None
     for i in range(0,len(frame_list),1):
         (imstats, image, hdr) = prepraw3d.prepraw3d(frame_list[i])
-        image_data[i,:,:] = image
-        if master_header == None:
-            master_header = hdr
-        exp_times.append( float(hdr['EXPTIME']) )
+        
+        # Check for zero-array frames:
+        izeros = np.where(image == 0)
+        if len(izeros) > (0.1*len(image.flatten())):
+            print('Warning: High number of zero-array entries in '+frame_list[i])
+        else:
+            image_data[i,:,:] = image
+            if master_header == None:
+                master_header = hdr
+            exp_times.append( float(hdr['EXPTIME']) )
     
     return image_data, exp_times, master_header
 
