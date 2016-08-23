@@ -388,6 +388,7 @@ def read_frame_set(frame_list,naxis1,naxis2):
         
         # Check for zero-array frames:
         izeros = np.where(image == 0)
+        print izeros
         if len(izeros) > (0.1*len(image.flatten())):
             print('Warning: High number of zero-array entries in '+frame_list[i])
         else:
