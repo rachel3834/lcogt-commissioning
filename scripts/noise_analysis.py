@@ -157,9 +157,9 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
         
         xaxis_range = get_hist_axis_range(data)
         
-        idx = np.where(data >= xaxis_range[[0]])
+        idx = np.where(data >= xaxis_range[0])
         data = data[idx]
-        idx = np.where(data <= xaxis_range[[1]])
+        idx = np.where(data <= xaxis_range[1])
         data = data[idx]
         pyplot.hist(data,bins=nbins,color='w',\
                 range=(quad_image.min(),quad_image.max()),log=logy)
