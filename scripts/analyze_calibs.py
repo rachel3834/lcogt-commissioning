@@ -138,50 +138,54 @@ class FrameSet:
             (image_data, exp_times, master_header) = \
                 read_frame_set(frame_list,self.naxis1,self.naxis2)
             
-            if master_type in ['DARK','FLAT'] and self.masterbias is not None:
-                image_data = subtract_calib(image_data,self.masterbias)
-            elif master_type in ['DARK','FLAT'] and self.masterbias is None:
-                print('Warning: No masterbias data available to subtract')
+            if len(exp_times) > 0:
+                if master_type in ['DARK','FLAT'] and self.masterbias is not None:
+                    image_data = subtract_calib(image_data,self.masterbias)
+                elif master_type in ['DARK','FLAT'] and self.masterbias is None:
+                    print('Warning: No masterbias data available to subtract')
+                    
+                if master_type == 'FLAT' and self.masterdark is not None:
+                    image_data = subtract_calib(image_data,self.masterdark)
+                elif master_type == 'FLAT' and self.masterdark is None:
+                    print('Warning: No masterdark data available to subtract')
                 
-            if master_type == 'FLAT' and self.masterdark is not None:
-                image_data = subtract_calib(image_data,self.masterdark)
-            elif master_type == 'FLAT' and self.masterdark is None:
-                print('Warning: No masterdark data available to subtract')
+                master_data = np.median(image_data,axis=0)
             
-            master_data = np.median(image_data,axis=0)
-        
-            if master_type == 'DARK':
-                master_data = master_data / np.median(exp_times)
-        
-            if master_type == 'FLAT':
-                flat_median = np.median(master_data[55:4065,100:4050])
-                master_data = master_data / flat_median
+                if master_type == 'DARK':
+                    master_data = master_data / np.median(exp_times)
+            
+                if master_type == 'FLAT':
+                    flat_median = np.median(master_data[55:4065,100:4050])
+                    master_data = master_data / flat_median
+                    
+                if master_type not in self.master_stats.keys():
+                    self.master_stats[master_type] = {}
+                if master_type != 'FLAT':
+                    bandpass = 'None'
                 
-            if master_type not in self.master_stats.keys():
-                self.master_stats[master_type] = {}
-            if master_type != 'FLAT':
-                bandpass = 'None'
-            
-            self.master_stats[master_type][bandpass] = {}
-            self.master_stats[master_type][bandpass]['mean'] = master_data.mean()
-            self.master_stats[master_type][bandpass]['median'] = np.median(master_data)
-            self.master_stats[master_type][bandpass]['stddev'] = master_data.std()
-            
-            output_frame(master_header, master_data, file_path)
-
-            if master_type == 'BIAS':
-                self.masterbias = master_data
-                self.masterbias_file = file_path
-                print('Built masterbias')
-            elif master_type == 'DARK':
-                self.masterdark = master_data
-                self.masterdark_file = file_path
-                print('Built masterdark')
-            elif master_type == 'FLAT':
-                self.masterflats[bandpass] = master_data
-                self.masterflat_files[bandpass] = file_path
-                print('Built masterflat for '+ bandpass+' filter')
+                self.master_stats[master_type][bandpass] = {}
+                self.master_stats[master_type][bandpass]['mean'] = master_data.mean()
+                self.master_stats[master_type][bandpass]['median'] = np.median(master_data)
+                self.master_stats[master_type][bandpass]['stddev'] = master_data.std()
+                
+                output_frame(master_header, master_data, file_path)
     
+                if master_type == 'BIAS':
+                    self.masterbias = master_data
+                    self.masterbias_file = file_path
+                    print('Built masterbias')
+                elif master_type == 'DARK':
+                    self.masterdark = master_data
+                    self.masterdark_file = file_path
+                    print('Built masterdark')
+                elif master_type == 'FLAT':
+                    self.masterflats[bandpass] = master_data
+                    self.masterflat_files[bandpass] = file_path
+                    print('Built masterflat for '+ bandpass+' filter')
+            else:
+                print('ERROR: Insufficient valid data to build master'+master_type.lower())
+                
+                
     def fft_frame(self,frame_type,bandpass=None, data=None, file_path=None):
         
         if frame_type == 'MASTERBIAS' and self.masterbias_file != None:
