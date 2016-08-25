@@ -156,6 +156,7 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
         data = quad_image.flatten()
         
         xaxis_range = get_hist_axis_range(data)
+        print qid, xaxis_range, data.max()
         
         idx = np.where(data >= xaxis_range[0])
         data = data[idx]
