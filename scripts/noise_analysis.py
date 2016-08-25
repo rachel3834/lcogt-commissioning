@@ -133,7 +133,7 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
     def get_hist_axis_range(data):
         (hist_data,bins) = np.histogram(data,bins=200)
         idx = hist_data > 10
-        print hist_data[idx], bins[idx]
+        print bins[idx].min, bins[idx].max
         
     (image, params) = get_image_data(params)
     plotfmt = [ 'r', 'b', 'm', 'g' ]
