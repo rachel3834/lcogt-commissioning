@@ -230,7 +230,7 @@ class FrameSet:
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
                     'nbins': 200 }
-        else:
+        elif frame == 'MASTERDARK':
             params = {  'image_data': data, \
                     'image_path': file_path, \
                     'out_dir': self.out_dir }
