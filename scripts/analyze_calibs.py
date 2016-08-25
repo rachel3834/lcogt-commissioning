@@ -223,12 +223,12 @@ class FrameSet:
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
-                    'nbins': 22 }
+                    'nbins': 23 }
         elif frame == 'MASTERBIAS' and xrange!= None and self.got_masterbias == True:
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
-                    'nbins': 200 }
+                    'nbins': 23 }
         elif frame == 'MASTERDARK':
             params = {  'image_data': data, \
                     'image_path': file_path, \
