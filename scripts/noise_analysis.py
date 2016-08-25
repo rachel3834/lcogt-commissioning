@@ -131,7 +131,7 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
     into separate quadrants"""
     
     def get_hist_axis_range(data):
-        idx = data < 15.0
+        idx = np.where(data < 15.0)
         print len(data), len(data[idx])
         (hist_data,bins) = np.histogram(data[idx],bins=200)
         idx = hist_data > 10
