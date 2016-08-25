@@ -408,7 +408,8 @@ def read_frame_set(frame_list,naxis1,naxis2):
         (imstats, image, hdr) = prepraw3d.prepraw3d(frame_list[i])
         
         # Check for zero-array frames:
-        izeros = (image == 0)
+        izeros = np.where(image == 0)
+        print len(izeros)
         if len(izeros.flatten()) > (0.1*len(image.flatten())):
             print('Warning: High number of zero-array entries in '+frame_list[i]+\
                     ' - frame skipped')
