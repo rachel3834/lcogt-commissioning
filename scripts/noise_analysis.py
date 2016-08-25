@@ -130,6 +130,11 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
     """Function to plot histograms of the pixel values of an image, separated
     into separate quadrants"""
     
+    def get_hist_axis_range(data):
+        (hist_data,bins) = np.histogram(data,nbins=200)
+        idx = hist_data > 10
+        print bins[idx]
+        
     (image, params) = get_image_data(params)
     plotfmt = [ 'r', 'b', 'm', 'g' ]
     plotord = [ 2, 3, 1, 4 ]
@@ -148,11 +153,14 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
         pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
             wspace=0.4,hspace=0.4)
         
-        hist_data = quad_image.flatten()
+        data = quad_image.flatten()
+        
+        get_hist_axis_range(data)
+        
         if xrange != None:
-            idx = np.where(hist_data < xrange[1])
-            hist_data = hist_data[idx]
-        pyplot.hist(hist_data,bins=nbins,color='w',\
+            idx = np.where(data < xrange[1])
+            data = data[idx]
+        pyplot.hist(data,bins=nbins,color='w',\
                 range=(quad_image.min(),quad_image.max()),log=logy)
         stats = basic_stats(quad_image)
         

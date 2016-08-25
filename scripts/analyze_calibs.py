@@ -205,7 +205,6 @@ class FrameSet:
                         'out_dir': self.out_dir }
         noise_analysis.plot_quadrant_ffts(params)
     
-    
     def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True,\
                     xrange=None):
         if frame == 'MASTERBIAS' and xrange==None:
