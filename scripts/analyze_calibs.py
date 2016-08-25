@@ -28,8 +28,10 @@ class FrameSet:
         self.naxis2 = None
         self.master_stats = {}
         self.masterbias = None
+        self.got_masterbias = False
         self.masterbias_file = None
         self.masterdark = None
+        self.got_masterdark = False
         self.masterdark_file = None
         self.masterflats = {}
         self.masterflat_files = {}
@@ -172,10 +174,12 @@ class FrameSet:
     
                 if master_type == 'BIAS':
                     self.masterbias = master_data
+                    self.got_masterbias = True
                     self.masterbias_file = file_path
                     print('Built masterbias')
                 elif master_type == 'DARK':
                     self.masterdark = master_data
+                    self.got_masterdark = True
                     self.masterdark_file = file_path
                     print('Built masterdark')
                 elif master_type == 'FLAT':
@@ -188,7 +192,8 @@ class FrameSet:
                 
     def fft_frame(self,frame_type,bandpass=None, data=None, file_path=None):
         
-        if frame_type == 'MASTERBIAS' and self.masterbias_file != None:
+        params = {}
+        if frame_type == 'MASTERBIAS' and self.got_masterbias == True:
             params = {  'image_data': self.masterbias, \
                         'image_path': self.masterbias_file, \
                         'out_dir': self.out_dir }
@@ -198,7 +203,7 @@ class FrameSet:
                         'image_path': file_path, \
                         'out_dir': self.out_dir }
             
-        elif frame_type == 'MASTERDARK' and self.masterdark_file != None:
+        elif frame_type == 'MASTERDARK' and self.got_masterdark == True:
             params = {  'image_data': self.masterdark, \
                         'image_path': self.masterdark_file, \
                         'out_dir': self.out_dir }
@@ -207,7 +212,10 @@ class FrameSet:
             params = {  'image_data': self.masterflats[bandpass], \
                         'image_path': self.masterflat_files[bandpass], \
                         'out_dir': self.out_dir }
-        noise_analysis.plot_quadrant_ffts(params)
+        if len(params) > 0:
+            noise_analysis.plot_quadrant_ffts(params)
+        else:
+            print('No '+frame_type.lower()+' available, cannot produce FFT')
     
     def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True,\
                     xrange=None):
@@ -407,7 +415,7 @@ def read_frame_set(frame_list,naxis1,naxis2):
                 master_header = hdr
             exp_times.append( float(hdr['EXPTIME']) )
         
-        print('Read in '+str(len(exp_times))+' frame(s)')
+    print('Read in '+str(len(exp_times))+' frame(s)')
         
     return image_data, exp_times, master_header
 
