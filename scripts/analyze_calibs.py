@@ -395,13 +395,16 @@ def read_frame_set(frame_list,naxis1,naxis2):
         # Check for zero-array frames:
         izeros = (image == 0)
         if len(izeros.flatten()) > (0.1*len(image.flatten())):
-            print('Warning: High number of zero-array entries in '+frame_list[i])
+            print('Warning: High number of zero-array entries in '+frame_list[i]+\
+                    ' - frame skipped')
         else:
             image_data[i,:,:] = image
             if master_header == None:
                 master_header = hdr
             exp_times.append( float(hdr['EXPTIME']) )
-    
+        
+        print('Read in '+str(len(exp_times))+' frame(s)')
+        
     return image_data, exp_times, master_header
 
 
