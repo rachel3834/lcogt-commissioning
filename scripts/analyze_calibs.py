@@ -215,16 +215,17 @@ class FrameSet:
         if len(params) > 0:
             noise_analysis.plot_quadrant_ffts(params)
         else:
-            print('No '+frame_type.lower()+' available, cannot produce FFT')
+            print('Warning: No '+frame_type.lower()+' available, cannot produce FFT')
     
     def hist_frame(self,frame='MASTERBIAS',data=None,file_path=None,logy=True,\
                     xrange=None):
-        if frame == 'MASTERBIAS' and xrange==None:
+        params = {}
+        if frame == 'MASTERBIAS' and xrange==None and self.got_masterbias == True:
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
                     'nbins': 22 }
-        elif frame == 'MASTERBIAS' and xrange!= None:
+        elif frame == 'MASTERBIAS' and xrange!= None and self.got_masterbias == True:
             params = {  'image_data': self.masterbias, \
                     'image_path': self.masterbias_file, \
                     'out_dir': self.out_dir,
@@ -233,8 +234,11 @@ class FrameSet:
             params = {  'image_data': data, \
                     'image_path': file_path, \
                     'out_dir': self.out_dir }
-        noise_analysis.plot_quadrant_hist(params,logy=logy,xrange=xrange)
-    
+        if len(params) > 0:
+            noise_analysis.plot_quadrant_hist(params,logy=logy,xrange=xrange)
+        else:
+            print('Warning: No '+frame+' available, cannot produce histogram')
+            
     def stats_summary(self):
         
         for master_type in self.master_stats.keys():
