@@ -49,7 +49,6 @@ class DataCounter:
         raw_path = path.join( night_dir, 'raw' )
         quicklook_path = path.join( night_dir, 'preview' )
         reduced_path = path.join( night_dir, 'processed' )
-        print raw_path
         
         self.raw_frames = glob.glob( path.join( raw_path, '*-[b,d,f,e]00.fits.fz' ) )
         self.quicklook_frames = glob.glob( path.join( quicklook_path, '-e11.fits.fz'))
