@@ -39,9 +39,14 @@ def analyze_thermal_stability():
             ccdatemps = ccdatemps + night_ccdatemp
             ccdstemps = ccdstemps + night_ccdstemp
     
-    print current_ts, currents, temp_ts,ccdatemps,ccdstemps
-    plot_dark_current(params, current_ts, currents)
-    plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
+    if len(current_ts) > 0:
+        plot_dark_current(params, current_ts, currents)
+    else:
+        print('ERROR: No valid measurements of dark current, so no plot created')
+    if len(temp_ts) > 0:
+        plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
+    else:
+        print('ERROR: No valid measurements of temperature, so no plot created')
     
     report_statistics(currents, ccdatemps)
     
