@@ -308,7 +308,7 @@ class FrameSet:
         
         frame_ts = []
         dark_current = []
-        for i in range(0,len(self.darks),1):
+        for i in range(0,image_data.shape[0],1):
             hdr = fits.getheader(self.darks[i])
             frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
             dc = np.median(image_data[i, 70:4050, 65:4025] )
