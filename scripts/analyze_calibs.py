@@ -242,7 +242,8 @@ class FrameSet:
         elif frame == 'SINGLE':
             params = {  'image_data': data, \
                     'image_path': file_path, \
-                    'out_dir': self.out_dir }
+                    'out_dir': self.out_dir ,
+                    'nbins': 23}
         if len(params) > 0:
             noise_analysis.plot_quadrant_hist(params,logy=logy,xrange=xrange)
         else:
