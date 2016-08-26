@@ -269,7 +269,7 @@ class FrameSet:
         stats_log.write('# Frame Quadrant     Mean    Median   Stddev [ADU]\n')
     
         stats = np.zeros([len(params['frame_list']),12])
-        for i in range(0,len(params['frame_list']),1):
+        for i in range(0,image_data.shape[0],1):
             self.hist_frame(frame='SINGLE',data=image_data[i],\
                     file_path=params['frame_list'][i])
             self.fft_frame('BIAS', data=image_data[i],\
