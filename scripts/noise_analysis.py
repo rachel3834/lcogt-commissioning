@@ -167,7 +167,7 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
         data = data[idx]
         print len(data), data.min(), data.max()
         pyplot.hist(data,bins=nbins,color='w',\
-                range=(quad_image.min(),quad_image.max()),log=logy)
+                range=(data.min(),data.max()),log=logy)
         stats = basic_stats(quad_image)
         
         pyplot.title('Quadrant '+str(qid)+\
