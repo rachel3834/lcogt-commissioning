@@ -16,9 +16,11 @@ def image_fft(image):
     
     fft_image = abs(np.fft.rfft(image)).mean(axis=0)
     
-    expected_noise = np.random.normal(0, image.std(), size=image.shape)
+    gaussian_noise = np.random.normal(0, image.std(), size=image.shape)
     
-    fft_noise = abs(np.fft.rfft(expected_noise)).mean(axis=0)
+    fft_noise = abs(np.fft.rfft(gaussian_noise)).mean(axis=0)
+    
+    
     
     return fft_image, fft_noise
 
