@@ -134,9 +134,8 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
     
     def get_hist_axis_range(data):
         idx = np.where(data < 15.0)
-        print len(data), len(data[idx])
         (hist_data,bins) = np.histogram(data[idx],bins=200)
-        idx = hist_data > 10
+        idx = hist_data > 1
         return (bins[idx].min(), bins[idx].max())
         
     (image, params) = get_image_data(params)
@@ -160,14 +159,11 @@ def plot_quadrant_hist(params,logy=True,xrange=None):
         data = quad_image.flatten()
         
         xaxis_range = get_hist_axis_range(data)
-        print qid, xaxis_range, data.max()
         
         idx = np.where(data >= xaxis_range[0])
         data = data[idx]
-        print len(data)
         idx = np.where(data <= xaxis_range[1])
         data = data[idx]
-        print len(data), data.min(), data.max()
         pyplot.hist(data,bins=nbins,color='w',\
                 range=(data.min(),data.max()),log=logy)
         stats = basic_stats(quad_image)
