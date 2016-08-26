@@ -201,6 +201,11 @@ class FrameSet:
             params = {  'image_data': data, \
                         'image_path': file_path, \
                         'out_dir': self.out_dir }
+                        
+        elif frame_type == 'SINGLE' and file_path != None:
+            params = {  'image_data': data, \
+                        'image_path': file_path, \
+                        'out_dir': self.out_dir }
             
         elif frame_type == 'MASTERDARK' and self.got_masterdark == True:
             params = {  'image_data': self.masterdark, \
@@ -211,6 +216,7 @@ class FrameSet:
             params = {  'image_data': self.masterflats[bandpass], \
                         'image_path': self.masterflat_files[bandpass], \
                         'out_dir': self.out_dir }
+                        
         if len(params) > 0:
             noise_analysis.plot_quadrant_ffts(params)
         else:
