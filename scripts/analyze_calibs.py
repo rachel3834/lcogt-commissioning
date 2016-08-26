@@ -305,7 +305,7 @@ class FrameSet:
         
         (image_data, exp_times, master_header) = \
                 read_frame_set(self.darks,self.naxis1,self.naxis2)
-        
+        print image_data.shape, len(exp_times)
         frame_ts = []
         dark_current = []
         for i in range(0,image_data.shape[0],1):
