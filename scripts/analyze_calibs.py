@@ -305,15 +305,15 @@ class FrameSet:
         
         (image_data, exp_times, master_header) = \
                 read_frame_set(self.darks,self.naxis1,self.naxis2)
-        print image_data.shape, len(exp_times)
         frame_ts = []
         dark_current = []
         for i in range(0,image_data.shape[0],1):
             hdr = fits.getheader(self.darks[i])
-            frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
             dc = np.median(image_data[i, 70:4050, 65:4025] )
-            dc = dc / exp_times[i]
-            dark_current.append( dc )
+            if dc > 0.0:
+                dc = dc / exp_times[i]
+                dark_current.append( dc )
+                frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
         
         return frame_ts,dark_current
     
@@ -427,7 +427,7 @@ def read_frame_set(frame_list,naxis1,naxis2):
             image_data[i,:,:] = image
             if master_header == None:
                 master_header = hdr
-            exp_times.append( float(hdr['EXPTIME']) )
+        exp_times.append( float(hdr['EXPTIME']) )
         
     print('Read in '+str(len(exp_times))+' frame(s)')
         
