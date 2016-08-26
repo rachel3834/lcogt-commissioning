@@ -45,10 +45,10 @@ def analyze_thermal_stability():
         print('ERROR: No valid measurements of dark current, so no plot created')
     if len(temp_ts) > 0:
         plot_temperature(params,temp_ts,ccdatemps,ccdstemps)
+        report_statistics(currents, ccdatemps)
     else:
-        print('ERROR: No valid measurements of temperature, so no plot created')
+        print('ERROR: No valid measurements of temperature, so no plot or statistics calculated')
     
-    report_statistics(currents, ccdatemps)
     
 def plot_dark_current(params, ts, currents):
     """Function to create a plot of a set of dark current measurements and 
