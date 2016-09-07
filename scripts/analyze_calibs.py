@@ -326,10 +326,11 @@ class FrameSet:
             frames = frames + flats
             
         for frame in frames:
-            hdr = fits.getheader(frame)
-            frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
-            ccdatemp.append( float(hdr['CCDATEMP']) )
-            ccdstemp.append( float(hdr['CCDSTEMP']) )
+            if path.isfile(frame) == True:
+                hdr = fits.getheader(frame)
+                frame_ts.append( datetime.strptime(hdr['DATE-OBS'],"%Y-%m-%dT%H:%M:%S.%f") )
+                ccdatemp.append( float(hdr['CCDATEMP']) )
+                ccdstemp.append( float(hdr['CCDSTEMP']) )
         return frame_ts,ccdatemp, ccdstemp
     
 def analyze_night_calibs():
