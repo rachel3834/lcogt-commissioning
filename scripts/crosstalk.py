@@ -59,13 +59,16 @@ class CrossImage:
             self.istat = -4
             if verbose==True: print 'ERROR: Input image is not in the required raw 3D data format'
             exit()
-
-        if '1 1' in self.header['CCDSUM']:
-            self.raw_frame_dims = ( 2048,2080 )  # Ymax,Xmax
+            
+        # Ymax,Xmax
+        self.raw_frame_dims = ( int(self.header['NAXIS1']), int(self.header['NAXIS2']) )
+        if int(self.header['NAXIS1']) > 4000:
+            self.bias_sec = ( 1, 4200, 4117, 4200 )
+            self.image_sec = ( 30, 4112, 1, 4200 )
+        elif '1 1' in self.header['CCDSUM']:
             self.bias_sec = ( 1, 2048, 2055, 2080 )   # Windowed; actually starts at col 2049
             self.image_sec = ( 30, 2048, 1, 2048 )
         elif '2 2' in self.header['CCDSUM']:
-            self.raw_frame_dims = ( 1024,1040 )
             self.bias_sec = ( 1, 1024, 1025, 1040 )
             self.image_sec = ( 16, 1024, 1, 1024 )
         self.naxis1 = self.image_sec[1]*2
@@ -118,16 +121,17 @@ class CrossImage:
             idx = np.intersect1d(idx1[0],idx2[0])
         self.overscan_mean = regiondata[idx].mean()
         self.overscan_std = regiondata[idx].std()
-        print 'Overscan stats: ', self.overscan_mean, \
+        print 'Overscan '+str(iquad+1)+' stats: ', self.overscan_mean, \
                                 self.overscan_median,self.overscan_std
 	
     def debias_quadrants(self):
         for iquad in range(0,4,1):
             self.overscan_statistics(iquad)
             self.datacube[iquad,:,:] = self.datacube[iquad,:,:] - self.overscan_mean
-            print 'Debiased all quadrants'
+        print 'Debiased all quadrants'
 	
     def subtract_bkgd(self):
+        print('On-sky data in use, subtracting sky background...')
         for iquad in range(0,4,1):
             imagedata = self.datacube[iquad,self.image_sec[0]:self.image_sec[1],self.image_sec[2]:self.image_sec[3]]
             (mean,stddev) = statistics.calcRMSclip2D(imagedata,3.0,3)
@@ -338,7 +342,7 @@ def iterative_model_fit(xdata,ydata,pinit,fit_function,sigclip=3.0):
     
     return afit,fitfunc, errfunc, stddev, idx
 
-def crossanalysis1(ImageFile,Quadrant,verbose=False):
+def crossanalysis1(ImageFile,Quadrant,lab_data,verbose=False):
     """Function to analyse a single raw Sinistro frame"""
     
     if verbose==True:
@@ -351,13 +355,14 @@ def crossanalysis1(ImageFile,Quadrant,verbose=False):
     
     imageobj = CrossImage(ImageFile)
     imageobj.debias_quadrants()
-    imageobj.subtract_bkgd()
+    if lab_data == False:
+        imageobj.subtract_bkgd()
     imageobj.create_mask(Quadrant)
     imageobj.correlate_flux()
     
     return status_code[0], imageobj
 
-def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=False):
+def multicrossanalysis(lab_data,data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=False):
     """Function to analyse a set of increasing exposures of a single pointing with a bright
     star in one quadrant."""
     
@@ -383,7 +388,7 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
     for i,imagefile in enumerate(FrameList):
         uframe = archive_access.fetch_frame(path.join(data_dir,imagefile),\
                                             out_dir)
-        (status, imageobj) = crossanalysis1(uframe,Quadrant,verbose=True)
+        (status, imageobj) = crossanalysis1(uframe,Quadrant,lab_data,verbose=True)
         for iquad in range(0,4,1):
             (xdata,ydata) = imageobj.quad_flux[iquad+1]
             if i == 0:
@@ -414,11 +419,12 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
             pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, \
                         top=0.9,wspace=0.3,hspace=0.35)
             pyplot.plot(xdata,ydata,'k.')
-
-            fileobj= open(path.join(out_dir, 'crosstalk_data_Q'+str(iquad)+'.txt'),'w')
-            for k in range(0,len(xdata),1):
-                fileobj.write(str(xdata[k])+'  '+str(ydata[k])+'\n')
-            fileobj.close()
+            
+            if verbose==True:
+                fileobj= open(path.join(out_dir, 'crosstalk_data_Q'+str(iquad)+'.txt'),'w')
+                for k in range(0,len(xdata),1):
+                    fileobj.write(str(xdata[k])+'  '+str(ydata[k])+'\n')
+                    fileobj.close()
             
             if iquad != Quadrant:
                 idx = statistics.select_entries_within_bound(xdata,\
@@ -503,9 +509,10 @@ def multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile,verbose=Fals
             pyplot.xlabel('Quadrant '+str(Quadrant)+' pixel value [ADU]')
         pyplot.ylabel('Pixel value [ADU]')
         pyplot.xticks(rotation=45)
-        (xmin,xmax,ymin,ymax) = pyplot.axis()
+        #(xmin,xmax,ymin,ymax) = pyplot.axis()
+        xmax = xdata[idx].max()
         if iquad != Quadrant: 
-            pyplot.axis([xmax-20000,xmax,-200.0,200.0])
+            pyplot.axis([xmax-2000,xmax+1000,-200.0,200.0])
         else: 
             pyplot.axis([0.0,xmax,0.0,ymax])
         pyplot.title('Quadrant '+str(iquad))
@@ -560,7 +567,7 @@ if __name__ == '__main__':
 	Call sequence:
 	python crosstalk.py -option [arguments]
 	
-	where:
+	where options are:
 	    -measure : to measure the crosstalk coefficients for one primary quadrant
 	      	Arguments: DataLoc ImageList Quadrant PlotFile
 	      	  data_dir is the full path to the input data directory
@@ -568,6 +575,9 @@ if __name__ == '__main__':
 	      	  ImageList is an ASCII list of frames to be analysed together
 	      	  Quadrant indicates which quadrant {1-4} should be used as a reference
 	      	  PlotFile is the full path to the output plot
+          
+                  -lab flag must be set if lab-based data are used
+          
 	    -read_config : [DEBUG] read the configuration
 	      	Arguments: ConfigFile
 		  ConfigFile is the full path to the configuration file
@@ -577,6 +587,14 @@ if __name__ == '__main__':
 	      	  ImageList is an ASCII list of frames to be analysed together
 		  ConfigFile is the full path to the configuration file
     """
+    
+    if '-lab' in argv:
+        lab_data = True
+        print('Lab-based data to be analyzed')
+    else:
+        lab_data = False
+        print('On-sky data to be analyzed')
+        
     if len(argv) < 2:
         print HelpText
         exit()
@@ -590,7 +608,7 @@ if __name__ == '__main__':
         ImageList = argv[4]
         Quadrant = int(argv[5])
         PlotFile = argv[6]
-        status = multicrossanalysis(data_dir,out_dir,ImageList,Quadrant,PlotFile)
+        status = multicrossanalysis(lab_data,data_dir,out_dir,ImageList,Quadrant,PlotFile)
         print status
     
     elif argv[1].lower() == '-read_config':
