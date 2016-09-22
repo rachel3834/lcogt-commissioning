@@ -11,14 +11,17 @@ from sys import argv, exit
 from astropy.io import fits
 from matplotlib import pyplot
 
-def image_fft(image,axis=0):
+def image_fft(image,sumaxis=0):
     """Function to compute an FFT of an image data array."""
     
-    fft_image = abs(np.fft.rfft(image)).mean(axis=axis)
+    axis = 1
+    if sumaxis==1: axis=0
+    
+    fft_image = abs(np.fft.rfft(image,axis=axis)).mean(axis=sumaxis)
     
     gaussian_noise = np.random.normal(0, image.std(), size=image.shape)
     
-    fft_noise = abs(np.fft.rfft(gaussian_noise)).mean(axis=axis)
+    fft_noise = abs(np.fft.rfft(gaussian_noise,axis=axis)).mean(axis=axis)
     
     return fft_image, fft_noise
 
@@ -27,7 +30,7 @@ def plot_image_fft(fig,image,axis=0):
     """Function to create the plot of an FFT, given a data array of an 
     image region"""
     
-    (fft_image, fft_noise) = image_fft(image,axis=axis)
+    (fft_image, fft_noise) = image_fft(image,sumaxis=axis)
     
     log_fft_image = np.log10(fft_image)
     log_fft_noise = np.log10(fft_noise)
@@ -77,9 +80,9 @@ def plot_quadrant_ffts(params):
             ax = pyplot.subplot(2,2,q+1)
             pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
                 wspace=0.4,hspace=0.4)
-                
-            fig = plot_image_fft(fig,quad_image,axis=axis)
             
+            fig = plot_image_fft(fig,quad_image,axis=axis)
+            pyplot.title('Quadrant '+str(q+1))
         plotname = path.join( params['out_dir'], \
              path.splitext(path.basename(params['image_path']))[0]+'_fft_log_'+axes[axis]+'.png' )
         pyplot.savefig(plotname)
