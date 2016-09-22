@@ -11,25 +11,23 @@ from sys import argv, exit
 from astropy.io import fits
 from matplotlib import pyplot
 
-def image_fft(image):
+def image_fft(image,axis=0):
     """Function to compute an FFT of an image data array."""
     
-    fft_image = abs(np.fft.rfft(image)).mean(axis=0)
+    fft_image = abs(np.fft.rfft(image)).mean(axis=axis)
     
     gaussian_noise = np.random.normal(0, image.std(), size=image.shape)
     
-    fft_noise = abs(np.fft.rfft(gaussian_noise)).mean(axis=0)
-    
-    
+    fft_noise = abs(np.fft.rfft(gaussian_noise)).mean(axis=axis)
     
     return fft_image, fft_noise
 
 
-def plot_image_fft(fig,image):
+def plot_image_fft(fig,image,axis=0):
     """Function to create the plot of an FFT, given a data array of an 
     image region"""
     
-    (fft_image, fft_noise) = image_fft(image)
+    (fft_image, fft_noise) = image_fft(image,axis=axis)
     
     log_fft_image = np.log10(fft_image)
     log_fft_noise = np.log10(fft_noise)
@@ -64,27 +62,28 @@ def plot_quadrant_ffts(params):
     """Function to plot separate FFTs of each quadrant of a Sinistro frame"""
     
     (image, params) = get_image_data(params)
-
-    plotfmt = [ 'r', 'b', 'm', 'g' ]
-    plotord = [ 2, 3, 1, 4 ]
-    fig = pyplot.figure(2)
-    pyplot.rcParams['font.size'] = 10.0
-    
-    for q,qid in enumerate(plotord):
-        region = params['regions'][qid-1]
+    axes = { 0: 'x', 1: 'y' }
+    for axis in axes.keys():
+        plotfmt = [ 'r', 'b', 'm', 'g' ]
+        plotord = [ 2, 3, 1, 4 ]
+        fig = pyplot.figure(2)
+        pyplot.rcParams['font.size'] = 10.0
         
-        quad_image = image[region[0]:region[1],region[2]:region[3]]
-        
-        ax = pyplot.subplot(2,2,q+1)
-        pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
-            wspace=0.4,hspace=0.4)
+        for q,qid in enumerate(plotord):
+            region = params['regions'][qid-1]
             
-        fig = plot_image_fft(fig,quad_image)
-        
-    plotname = path.join( params['out_dir'], \
-         path.splitext(path.basename(params['image_path']))[0]+'_fft_log.png' )
-    pyplot.savefig(plotname)
-    pyplot.close(2)
+            quad_image = image[region[0]:region[1],region[2]:region[3]]
+            
+            ax = pyplot.subplot(2,2,q+1)
+            pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
+                wspace=0.4,hspace=0.4)
+                
+            fig = plot_image_fft(fig,quad_image,axis=axis)
+            
+        plotname = path.join( params['out_dir'], \
+             path.splitext(path.basename(params['image_path']))[0]+'_fft_log_'+axes[axis]+'.png' )
+        pyplot.savefig(plotname)
+        pyplot.close(2)
 
 def get_image_data(params):
     
