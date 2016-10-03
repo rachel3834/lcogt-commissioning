@@ -349,8 +349,6 @@ def crossanalysis1(ImageFile,Quadrant,lab_data,verbose=False):
         print 'Processing SINISTRO frame '+ImageFile
         print 'Primary quadrant is '+str(Quadrant)
 	
-    print path.isfile(ImageFile), ImageFile
-    
     if path.isfile(ImageFile) == False:
         print 'Error: Cannot find frame '+ImageFile
         exit()
