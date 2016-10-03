@@ -349,6 +349,8 @@ def crossanalysis1(ImageFile,Quadrant,lab_data,verbose=False):
         print 'Processing SINISTRO frame '+ImageFile
         print 'Primary quadrant is '+str(Quadrant)
 	
+    print path.isfile(ImageFile), ImageFile
+    
     if path.isfile(ImageFile) == False:
         print 'Error: Cannot find frame '+ImageFile
         exit()
@@ -386,8 +388,11 @@ def multicrossanalysis(lab_data,data_dir,out_dir,ImageList,Quadrant,PlotFile,ver
         4: 0.0
         }
     for i,imagefile in enumerate(FrameList):
-        uframe = archive_access.fetch_frame(path.join(data_dir,imagefile),\
+        if lab_data == False:
+            uframe = archive_access.fetch_frame(path.join(data_dir,imagefile.replace('\n','')),\
                                             out_dir)
+        else:
+            uframe = path.join(data_dir,imagefile.replace('\n',''))
         (status, imageobj) = crossanalysis1(uframe,Quadrant,lab_data,verbose=True)
         for iquad in range(0,4,1):
             (xdata,ydata) = imageobj.quad_flux[iquad+1]
