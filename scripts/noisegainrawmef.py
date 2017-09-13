@@ -9,116 +9,32 @@ import math
 from sys import argv, exit
 import matplotlib.pyplot as plt
 import argparse
-
-class Image(object):
-
-    filename = None
-
-
-    def __init__(self, filename):
-        """
-        Load an image from a FITS file
-
-        copypaste from banzai
-
-        Parameters
-        ----------
-        filename: str
-              Full path of the file to open
-
-        Returns
-        -------
-        data: numpy array
-            image data; will have 3 dimensions if the file was either multi-extension or
-             a datacube
-        header: astropy.io.fits.Header
-              Header from the primary extension
-        bpm: numpy array
-            Array of bad pixel mask values if the BPM extension exists. None otherwise.
-            extension_headers: list of astropy.io.fits.Header
-                           List of headers from other SCI extensions that are not the
-                           primary extension
-
-        Notes
-        -----
-        The file can be either compressed or not. If there are multiple extensions,
-        e.g. Sinistros, the extensions should be (SCI, 1), (SCI, 2), ...
-        Sinsitro frames that were taken as datacubes will be munged later so that the
-        output images are consistent
-        """
-        hdulist =  hdulist = fits.open(filename, 'readonly')
-
-        # Get the main header
-        self.header = hdulist[0].header
-
-        # Check for multi-extension fits
-        self.extension_headers = []
-        sci_extensions = self.get_extensions_by_name(hdulist, 'SCI')
-        if len(sci_extensions) >= 1:
-            self. data = np.zeros((len(sci_extensions), sci_extensions[0].data.shape[0],
-                         sci_extensions[0].data.shape[1]), dtype=np.float32)
-            for i, hdu in enumerate(sci_extensions):
-                self.data[i, :, :] = hdu.data[:, :]
-                self.extension_headers.append(hdu.header)
-
-        else:
-
-            self.data = hdulist[0].data.astype(np.float32)
-
-        try:
-            self.bpm = hdulist['BPM'].data.astype(np.uint8)
-        except KeyError:
-            self.bpm = None
+from Image import Image
 
 
 
 
-    def get_extensions_by_name(self, fits_hdulist, name):
-        """
-        Get a list of the science extensions from a multi-extension fits file (HDU list)
-
-        Parameters
-        ----------
-        fits_hdulist: HDUList
-                  input fits HDUList to search for SCI extensions
-
-        name: str
-          Extension name to collect, e.g. SCI
-
-        Returns
-        -------
-        HDUList: an HDUList object with only the SCI extensions
-        """
-        # The following of using False is just an awful convention and will probably be
-        # deprecated at some point
-        extension_info = fits_hdulist.info(False)
-        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] == name])
-
-
-
-
-
-def parseCommandLine():
-    parser = argparse.ArgumentParser(
-        description='General purpose noise and gain measurement from a set of two flat fields and two biases.')
-
-    parser.add_argument('fitsfile', type=str, nargs=4,
-                        help='four fits files:  bias_1 bias_2 flat_1 flat_2')
-
-    parser.add_argument('--imagepath', dest = 'opt_imagepath' , type = str, default = None)
-    args = parser.parse_args()
-
-    for ii in range (len (args.fitsfile)):
-        if args.opt_imagepath is not None:
-            args.fitsfile[ii] = "%s/%s" % (args.opt_imagepath, args.fitsfile[ii])
-        if not os.path.isfile( args.fitsfile[ii]):
-            print "Fatal: file %s does not exists" % (args.fitsfile[ii])
-            os.exit(0)
-
-    return args
 
 def noisegainExtension (flat1, flat2, bias1, bias2, minx=None, maxx=None, miny = None, maxy=None):
+    """
+    Measure the noise and gain from a pair of flat field , bias images. By default, the central
+      2/8th square of the detector is used for measuring noise and levels.
 
+    Both flat fields have to been observing in the same filter and must have the same exposure level.
+
+    TODO: return actual values, not just print them out
+    TODO: gross outlier rejection, e.g., cosmic ray hits
+
+    :param flat1: flat field 1
+    :param flat2: flat field 2
+    :param bias1: bias 1
+    :param bias2: bias 2
+    :param minx:
+    :param maxx:
+    :param miny:
+    :param maxy:
+    :return:
+    """
 
     if minx is None:
         minx =flat1.shape[1] * 3/ 8
@@ -128,9 +44,6 @@ def noisegainExtension (flat1, flat2, bias1, bias2, minx=None, maxx=None, miny =
         miny =flat1.shape[0] * 3/8
     if maxy is None:
         maxy = flat1.shape[0] * 5/8
-
-
-
 
     flat1lvl = np.mean (flat1[miny:maxy,minx:maxx])
     flat2lvl = np.mean (flat2[miny:maxy,minx:maxx])
@@ -156,6 +69,28 @@ def noisegainExtension (flat1, flat2, bias1, bias2, minx=None, maxx=None, miny =
     print "  Noise [e-]     : % 5.3f " % (readnoise)
 
 
+
+def parseCommandLine():
+
+    parser = argparse.ArgumentParser(
+        description='General purpose noise and gain measurement from a set of two flat fields and two biases.')
+
+    parser.add_argument('fitsfile', type=str, nargs=4,
+                        help='four fits files:  bias_1 bias_2 flat_1 flat_2')
+
+    parser.add_argument('--imagepath', dest = 'opt_imagepath' , type = str, default = None)
+    args = parser.parse_args()
+
+    for ii in range (len (args.fitsfile)):
+        if args.opt_imagepath is not None:
+            args.fitsfile[ii] = "%s/%s" % (args.opt_imagepath, args.fitsfile[ii])
+        if not os.path.isfile( args.fitsfile[ii]):
+            print "Fatal: file %s does not exists" % (args.fitsfile[ii])
+            os.exit(0)
+
+    return args
+
+
 if __name__ == '__main__':
 
 
@@ -165,7 +100,6 @@ if __name__ == '__main__':
     bias2 =Image (args.fitsfile[1])
     flat1 =Image (args.fitsfile[2])
     flat2 =Image (args.fitsfile[3])
-
 
     for ii in range (len (flat1.data)):
         noisegainExtension(flat1.data[ii],flat2.data[ii],bias1.data[ii], bias2.data[ii])
