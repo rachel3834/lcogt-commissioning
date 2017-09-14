@@ -1,5 +1,11 @@
 from astropy.io import fits
 import numpy as np
+import re
+import statistics
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class Image(object):
@@ -11,7 +17,7 @@ class Image(object):
 
     filename = None
 
-    def __init__(self, filename):
+    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False):
         """
         Load an image from a FITS file
 
@@ -42,19 +48,57 @@ class Image(object):
         Sinsitro frames that were taken as datacubes will be munged later so that the
         output images are consistent
         """
-        hdulist =  hdulist = fits.open(filename, 'readonly')
+        hdulist = fits.open(filename, 'readonly')
 
         # Get the main header
         self.header = hdulist[0].header
 
         # Check for multi-extension fits
         self.extension_headers = []
+        self.biassec = []
+        self.ccdsec = []
         sci_extensions = self.get_extensions_by_name(hdulist, 'SCI')
         if len(sci_extensions) >= 1:
-            self. data = np.zeros((len(sci_extensions), sci_extensions[0].data.shape[0],
-                                   sci_extensions[0].data.shape[1]), dtype=np.float32)
+            self.data = np.zeros((len(sci_extensions), sci_extensions[0].data.shape[0],
+                                  sci_extensions[0].data.shape[1]), dtype=np.float32)
             for i, hdu in enumerate(sci_extensions):
-                self.data[i, :, :] = hdu.data[:, :]
+
+                self.data[i, :, :] = hdu.data.astype('float32')[:, :]
+
+                gain = 1.
+                overscan = 0.
+                bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
+                cs = [int(n) for n in re.split(',|:', hdu.header['DATASEC'][1:-1])]
+                self.biassec.append(bs)
+                self.ccdsec.append(cs)
+
+                if overscancorrect:
+                    ovpixels = self.data[
+                               i, bs[2]:bs[3], bs[0]: bs[1]]
+                    overscan = np.median(ovpixels)
+                    std = np.std(ovpixels)
+                    overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
+
+                if gaincorrect:
+                    gain = float(hdu.header['GAIN'])
+                    hdu.header['GAIN'] = "1.0"
+
+                hdu.header['OVLEVEL'] = overscan
+                self.data[i, :, :] = (self.data[i, :, :] - overscan) * gain
+                _logger.debug(
+                    "Correcting image extension corrected #%d with gain / overscan: % 5.3f % 8.1f" % (
+                    i, gain, overscan))
+
+                if skycorrect:
+                    imagepixels = self.data[
+                                  i, cs[2]: cs[3], cs[0]: cs[1]]
+                    skylevel = np.median(imagepixels)
+                    std = np.std(imagepixels)
+                    skylevel = np.mean(imagepixels[np.abs(imagepixels - skylevel) < 5 * std])
+                    hdu.header['SKYLEVEL'] = skylevel
+                    self.data[i, :, :] = self.data[i, :, :] - skylevel
+                    _logger.debug("Sky correct extension #%d with % 8.2f" % (i, skylevel))
+
                 self.extension_headers.append(hdu.header)
 
         else:
@@ -66,6 +110,17 @@ class Image(object):
         except KeyError:
             self.bpm = None
 
+        hdulist.close()
+
+    def getccddata (self, extension):
+        """
+        Returns the data as define by DATASEC in ehader
+        :param extension:
+        :return:
+        """
+        datasec = self.ccdsec[extension]
+        retdata = self.data[extension, :, :]
+        return retdata
 
 
     def get_extensions_by_name(self, fits_hdulist, name):
@@ -88,4 +143,5 @@ class Image(object):
         # deprecated at some point
         extension_info = fits_hdulist.info(False)
         return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] == name])
+
 
