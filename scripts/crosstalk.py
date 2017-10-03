@@ -284,7 +284,7 @@ def fit_gradient(xdata, ydata, pinit):
         exit()
 
     y = fitfunc(p1, xdata)
-    rms = np.sqrt(((ydata - y) * (ydata - y)).sum() / float(len(y)))
+    rms = np.sqrt(((ydata - y) **2).sum() / float(len(y)))
 
     return p1, fitfunc, errfunc, rms
 
@@ -369,7 +369,7 @@ def create_mask(image, Quadrant, fluxmin, fluxmax):
     """
 
     region = image.getccddata(Quadrant)
-    _logger.debug("Datacube min max %f %f " % (region.min(), region.max()))
+    _logger.debug("Input datacube min max %f %f " % (region.min(), region.max()))
     maskidx = statistics.select_pixels_in_flux_range(region, fluxmin, fluxmax)
     if len(maskidx) == 0:
         _logger.warn("No pixels in selected flux range!")
@@ -380,7 +380,6 @@ def correlate_flux(image, sourcequadrant, maskidx):
     quadfluxes = []
 
     for iquad in range(4):
-        _logger.debug('Correlating flux for quadrant ' + str(iquad))
         xdata = image.getccddata(sourcequadrant)[maskidx].flatten()
         ydata = image.getccddata(iquad)[maskidx].flatten()
         quadfluxes.append([xdata, ydata])
@@ -417,7 +416,7 @@ def multicrossanalysis(args):
     # build up statistics for all files we have given to us
     for ii, imagefile in enumerate(args.fitsfile):
 
-        _image = Image(imagefile, gaincorrect=True, overscancorrect=True, skycorrect=True)
+        _image = Image(imagefile, gaincorrect=False, overscancorrect=True, skycorrect=True)
 
         quadfluxes = crossanalysis1(_image, args)
 
@@ -430,7 +429,7 @@ def multicrossanalysis(args):
                 xplot[iquad + 1] = np.concatenate((xplot[iquad + 1], xdata))
                 yplot[iquad + 1] = np.concatenate((yplot[iquad + 1], ydata))
 
-    _logger.debug('Completed analysis, plotting and fitting...')
+    _logger.debug('Completed data fetching, plotting and fitting next...')
 
     fmt = ['r', 'b', 'm', 'g']
     fig = pyplot.figure(1)
@@ -452,13 +451,13 @@ def multicrossanalysis(args):
             pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, wspace=0.3, hspace=0.35)
             pyplot.plot(xdata, ydata, 'k,')
 
-            if iquad != args.opt_quadrant:
+            if iquad != args.opt_quadrant+1:
                 idx = statistics.select_entries_within_bound(xdata, args.fluxmin, args.fluxmax)
 
                 if args.linear:
                     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
                                                                                 fit_gradient)
-                    label = 'p[1]=' + str(round(afit[1], 8)) + '\nsig=' + str(round(stddev, 2))
+                    label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
 
                 elif args.poly:
                     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
@@ -486,12 +485,12 @@ def multicrossanalysis(args):
         pyplot.ylabel('Pixel value [ADU]')
         pyplot.xticks(rotation=15)
         (xmin, xmax, ymin, ymax) = pyplot.axis()
-        if iquad -1!= args.opt_quadrant:
-            pyplot.axis([xmin, xmax, -600.0, 800.0])
+        if iquad != args.opt_quadrant + 1:
+            pyplot.axis([xmin, xmax, -100.0, 100.0])
         else:
             pyplot.axis([xmin, xmax, xmin, xmax])
         pyplot.title('Quadrant ' + str(iquad))
-        if iquad-1 != args.opt_quadrant:
+        if iquad != args.opt_quadrant + 1:
             pyplot.legend(loc='best')
     pyplot.savefig(args.plotfile)
     pyplot.close(1)
@@ -511,18 +510,18 @@ def multicrossanalysis(args):
         ydata = yplot[iquad]
         pyplot.scatter(xdata, ydata, c=fmt[iquad - 1], marker='o', s=0.02)
 
-        if iquad != args.opt_quadrant:
+        if iquad != args.opt_quadrant+ 1:
             idx = statistics.select_entries_within_bound(xdata,
                                                          args.fluxmin, args.fluxmax)
             if args.linear:
                 (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
                                                                             ydata[idx], pinit, fit_gradient)
-                label = 'p[1]=' + str(round(afit[1], 8)) + '\nRMS=' + str(round(stddev, 8))
+                label = 'p[1]=' + str(round(afit[1], 10)) + '\nRMS=' + str(round(stddev, 5))
 
             elif args.poly:
                 (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
                                                                             ydata[idx], pinit, fit_polynomial_zero)
-                label = 'p[1]=' + str(round(afit[1], 5)) + '\np[2]=' + str(round(afit[2], 10))
+                label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
 
             # elif imageobj.model == 'broken_power_law':
             #     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
@@ -531,22 +530,22 @@ def multicrossanalysis(args):
 
             xmodel = np.arange(0, xdata[idx].max(), 100)
             pyplot.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
-            print 'Primary Quadrant=' + str(args.opt_quadrant) + ' quad=' + str(iquad) + ' parameters=' + label
+            print 'Primary Quadrant=' + str(args.opt_quadrant+1) + ' quad=' + str(iquad) + ' parameters=' + label
 
         if iquad in [1, 4]:
-            pyplot.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
+            pyplot.xlabel('Quadrant ' + str(args.opt_quadrant+1) + ' pixel value [ADU]')
         pyplot.ylabel('Pixel value [ADU]')
-        pyplot.xticks(rotation=45)
+        pyplot.xticks(rotation=15)
         # (xmin,xmax,ymin,ymax) = pyplot.axis()
         xmax = xdata[idx].max()
-        if iquad -1!= args.opt_quadrant:
-            pyplot.axis([xmax - 2000, xmax + 1000, -200.0, 200.0])
+        if iquad != args.opt_quadrant + 1:
+            pyplot.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
         else:
             pyplot.axis([0.0, xmax, 0.0, ymax])
 
         pyplot.title('Quadrant ' + str(iquad))
 
-        if iquad -1 != args.opt_quadrant:
+        if iquad  != args.opt_quadrant + 1:
             pyplot.legend(loc='best')
 
     pyplot.savefig(args.plotfile.replace('.png', '_zoom.png'))
@@ -621,7 +620,7 @@ def parseCommandLine():
     parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
                         help='Minimum contaminationg flux')
 
-    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='50000',
+    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='55000',
                         help='Maximum contaminationg flux')
 
     args = parser.parse_args()

@@ -118,8 +118,11 @@ class Image(object):
         :param extension:
         :return:
         """
+        # TODO: Add safety inspection: is extension in range, is image sub area in image?
         datasec = self.ccdsec[extension]
-        retdata = self.data[extension, :, :]
+        sect = self.ccdsec[extension]
+
+        retdata = self.data[extension, sect[2]-1:sect[3]-1, sect[0]-1:sect[1]-1]
         return retdata
 
 

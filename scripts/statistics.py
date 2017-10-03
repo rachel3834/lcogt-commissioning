@@ -244,13 +244,13 @@ def select_entries_within_bound(vector,entry_min,entry_max):
     
     # Identify all entries with values that are too low to include.  Set these 
     # pixels to values where they will be excluded by the next selection cut:
-    mask = vector.copy()
-    idx = where(vector < entry_min)
-    mask[idx] = entry_max + 1000.0
+    #mask = vector.copy()
+    #idx = where(vector < entry_min)
+    #mask[idx] = entry_max + 1000.0
     
     # Now select everything below the maximum threshold, which excludes both too high and 
     # too low entries:
-    idx = where(mask <= entry_max)
+    idx = where( (vector < entry_max) & (vector > entry_min))
    # print 'Number of selected pixels=',len(idx[0])
     return idx
     
