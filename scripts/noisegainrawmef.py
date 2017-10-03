@@ -90,7 +90,7 @@ def parseCommandLine():
         if args.opt_imagepath is not None:
             args.fitsfile[ii] = "%s/%s" % (args.opt_imagepath, args.fitsfile[ii])
         if not os.path.isfile(args.fitsfile[ii]):
-            _logger.error("Fatal: file %s does not exists" % (args.fitsfile[ii]))
+            _logger.error("Fatal: file %s exists not. Carefully type you must." % (args.fitsfile[ii]))
             sys.exit(0)
 
     return args
