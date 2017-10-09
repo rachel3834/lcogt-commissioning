@@ -278,7 +278,8 @@ def fit_gradient(xdata, ydata, pinit):
 
     try:
         (p1, istat) = optimize.leastsq(errfunc, pinit, args=(xdata, ydata))
-    except TypeError:
+    except TypeError as te:
+        print "There was an error!", te
         print xdata
         print ydata
         exit()
@@ -311,7 +312,7 @@ def fit_broken_power_law(xdata, ydata, pinit):
     zero on the y-axis to the given datasets."""
 
     def fitfunc(p, x):
-        y = zeros(len(x))
+        y = np.zeros(len(x))
         idx = np.where(x < 40000.0)
         y[idx] = p[1] * x
         idx = np.where(x > 40000.0)
@@ -599,7 +600,7 @@ def parseCommandLine():
 
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None)
 
-    parser.add_argument('--log_level', dest='log_level', default='DEBUG', choices=['DEBUG', 'INFO'],
+    parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO'],
                         help='Set the debug level')
 
     parser.add_argument('--measure', dest='mode_measure', type=bool, default=True,

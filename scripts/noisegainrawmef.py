@@ -77,7 +77,7 @@ def parseCommandLine():
     parser.add_argument('fitsfile', type=str, nargs=4,
                         help='four fits files:  bias_1 bias_2 flat_1 flat_2')
 
-    parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None)
+    parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None, help="pathname to prepend to fits file names.")
     parser.add_argument('--log_level', dest='log_level', default='WARN', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
@@ -90,7 +90,7 @@ def parseCommandLine():
         if args.opt_imagepath is not None:
             args.fitsfile[ii] = "%s/%s" % (args.opt_imagepath, args.fitsfile[ii])
         if not os.path.isfile(args.fitsfile[ii]):
-            _logger.error("Fatal: file %s exists not. Carefully type you must." % (args.fitsfile[ii]))
+            _logger.error("Fatal: file %s does not exist. Giving up." % (args.fitsfile[ii]))
             sys.exit(0)
 
     return args
