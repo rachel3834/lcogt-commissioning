@@ -8,6 +8,8 @@ The original scripts provided by Rachel Street were tuned for the old 3D cube fi
  format was revised and now uses a MEF format.For continued commissioning and reverification of the
  LCO cameras, these tools are being rewritten by Daniel Harbeck to be compatible with the new format. 
 
+ Note: The scripts explained below are updated; scripts not mentioned here have not been vetted yet and 
+ is vestigial code 
 
 noisegainmef.py
 ===
