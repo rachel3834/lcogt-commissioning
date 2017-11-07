@@ -30,8 +30,7 @@ import warnings
 import statistics
 import archive_access
 import logging
-
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 
 _logger = logging.getLogger(__name__)
 
@@ -276,18 +275,8 @@ def multicrossanalysis(args):
     """Function to analyse a set of increasing exposures of a single pointing with a bright
     star in one quadrant."""
 
-    xplot = {
-        1: 0.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0
-    }
-    yplot = {
-        1: 0.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0
-    }
+    xplot = {}
+    yplot = {}
 
     # build up statistics for all files we have given to us
     for ii, imagefile in enumerate(args.fitsfile):
@@ -308,8 +297,8 @@ def multicrossanalysis(args):
     _logger.debug('Completed data fetching, plotting and fitting next...')
 
     fmt = ['r', 'b', 'm', 'g']
-    fig = pyplot.figure(1)
-    pyplot.rcParams['font.size'] = 10.0
+    fig = plt.figure(1)
+    plt.rcParams['font.size'] = 10.0
     plotord = [2, 3, 1, 4]
     if args.linear:
         pinit = [0.0, 0.0]
@@ -322,10 +311,10 @@ def multicrossanalysis(args):
         ydata = yplot[iquad]
         coeffs[iquad] = []
 
-        for i in range(0, 1, 1):
-            ax = pyplot.subplot(2, 2, q + 1)
-            pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, wspace=0.3, hspace=0.35)
-            pyplot.plot(xdata, ydata, 'k,')
+        for ii in range(0, 1, 1):
+            ax = plt.subplot(2, 2, q + 1)
+            plt.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, wspace=0.3, hspace=0.35)
+            plt.plot(xdata, ydata, 'k,')
 
             if iquad != args.opt_quadrant + 1:
                 idx = statistics.select_entries_within_bound(xdata, args.fluxmin, args.fluxmax)
@@ -334,98 +323,71 @@ def multicrossanalysis(args):
                     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
                                                                                 fit_gradient)
                     label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
-
+                    print ('"CRSTLK%d%d": %s,' % ( (args.opt_quadrant + 1),  iquad, str(round(afit[1],10))))
+                    #print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
                 elif args.poly:
                     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
                                                                                 fit_polynomial_zero)
                     label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
-
-                # elif imageobj.model == 'broken_power_law':
-                #     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
-                #                                                                 ydata[idx], pinit, fit_broken_power_law)
-                #     label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
 
                 if afit[1] > 0.0:
                     coeffs[iquad].append(afit[1])
                 else:
                     coeffs[iquad].append(0.0)
 
-                pyplot.plot(xdata[kdx], ydata[kdx], 'r.')
+                plt.plot(xdata[kdx], ydata[kdx], 'r.')
                 xmodel = np.arange(0, xdata[idx].max(), 100)
-                pyplot.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
+                plt.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
                 ymodel = fitfunc(afit, xdata)
                 ydata = ydata - ymodel
 
         if iquad in [1, 4]:
-            pyplot.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
-        pyplot.ylabel('Pixel value [ADU]')
-        pyplot.xticks(rotation=15)
-        (xmin, xmax, ymin, ymax) = pyplot.axis()
+            plt.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
+        plt.ylabel('Pixel value [ADU]')
+        plt.xticks(rotation=15)
+        (xmin, xmax, ymin, ymax) = plt.axis()
         if iquad != args.opt_quadrant + 1:
-            pyplot.axis([xmin, xmax, -100.0, 100.0])
+            plt.axis([xmin, xmax, -100.0, 100.0])
         else:
-            pyplot.axis([xmin, xmax, xmin, xmax])
-        pyplot.title('Quadrant ' + str(iquad))
+            plt.axis([xmin, xmax, xmin, xmax])
+        plt.title('Quadrant ' + str(iquad))
         if iquad != args.opt_quadrant + 1:
-            pyplot.legend(loc='best')
-    pyplot.savefig(args.plotfile)
-    pyplot.close(1)
+            plt.legend(loc='best')
+    plt.savefig(args.plotfile)
+    plt.close(1)
 
-    fig = pyplot.figure(2)
-    pyplot.rcParams['font.size'] = 10.0
-    plotord = [2, 3, 1, 4]
-    if args.linear:
-        pinit = [0.0, 0.0]
-    elif args.poly:  # or imageobj.model == 'broken_power_law':
-        pinit = [0.0, 0.0, 0.0]
+
+    # Now plot everything again, but zoomed-in
+    fig = plt.figure(2)
     for q, iquad in enumerate(plotord):
-        pyplot.subplot(2, 2, q + 1)
-        pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, \
+        plt.subplot(2, 2, q + 1)
+        plt.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, \
                                wspace=0.3, hspace=0.35)
         xdata = xplot[iquad]
         ydata = yplot[iquad]
-        pyplot.scatter(xdata, ydata, c=fmt[iquad - 1], marker='o', s=0.02)
+        plt.scatter(xdata, ydata, c=fmt[iquad - 1], marker='o', s=0.02)
 
         if iquad != args.opt_quadrant + 1:
-            idx = statistics.select_entries_within_bound(xdata,
-                                                         args.fluxmin, args.fluxmax)
-            if args.linear:
-                (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
-                                                                            ydata[idx], pinit, fit_gradient)
-                label = 'p[1]=' + str(round(afit[1], 10)) + '\nRMS=' + str(round(stddev, 5))
+            plt.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
 
-            elif args.poly:
-                (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
-                                                                            ydata[idx], pinit, fit_polynomial_zero)
-                label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
-
-            # elif imageobj.model == 'broken_power_law':
-            #     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], \
-            #                                                                 ydata[idx], pinit, fit_broken_power_law)
-            #     label = 'p[1]=' + str(round(afit[1], 5)) + '\np[2]=' + str(round(afit[2], 10))
-
-            xmodel = np.arange(0, xdata[idx].max(), 100)
-            pyplot.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
-            print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
 
         if iquad in [1, 4]:
-            pyplot.xlabel('Quadrant ' + str(args.opt_quadrant + 1) + ' pixel value [ADU]')
-        pyplot.ylabel('Pixel value [ADU]')
-        pyplot.xticks(rotation=15)
-        # (xmin,xmax,ymin,ymax) = pyplot.axis()
+            plt.xlabel('Quadrant ' + str(args.opt_quadrant + 1) + ' pixel value [ADU]')
+        plt.ylabel('Pixel value [ADU]')
+        plt.xticks(rotation=15)
         xmax = xdata[idx].max()
         if iquad != args.opt_quadrant + 1:
-            pyplot.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
+            plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
         else:
-            pyplot.axis([0.0, xmax, 0.0, ymax])
+            plt.axis([0.0, xmax, 0.0, ymax])
 
-        pyplot.title('Quadrant ' + str(iquad))
+        plt.title('Quadrant ' + str(iquad))
 
         if iquad != args.opt_quadrant + 1:
-            pyplot.legend(loc='best')
+            plt.legend(loc='best')
 
-    pyplot.savefig(args.plotfile.replace('.png', '_zoom.png'))
-    pyplot.close(2)
+    plt.savefig(args.plotfile.replace('.png', '_zoom.png'))
+    plt.close(2)
 
     return status_code[0]
 
