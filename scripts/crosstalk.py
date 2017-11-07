@@ -14,29 +14,24 @@
 # - Is an iterative approach necessary?  Or minimal improvement?
 ##############################################################################
 
-###################################
-# IMPORTED FUNCTIONS
+from matplotlib import use as useBackend
+useBackend('Agg')
 import argparse
 import os
 import sys
+
 from Image import Image
 from astropy.io import fits
 import numpy as np
 from scipy import optimize
-from sys import argv, exit
-from os import path, mkdir
-from shutil import copy, move
-import glob
+from sys import exit
+from os import path
 import warnings
-from datetime import datetime, timedelta
 import statistics
-from matplotlib import use as useBackend
-
-useBackend('Agg')
-from matplotlib import pyplot
 import archive_access
-
 import logging
+
+from matplotlib import pyplot
 
 _logger = logging.getLogger(__name__)
 
@@ -54,126 +49,6 @@ status_code = {0: 'OK',
 verbose = True
 
 
-# ############################################
-# # IMAGE CLASS
-# class CrossImage:
-#
-#     def __init__(self,image_file):
-#
-#         fitsobj = fits.open(image_file)
-#         self.header = fitsobj[0].header
-#         self.datacube = fitsobj[0].data.astype('float')
-#         fitsobj.close()
-#
-#         if int(self.header['NAXIS']) != 3:
-#             self.istat = -4
-#             if verbose==True: print 'ERROR: Input image is not in the required raw 3D data format'
-#             exit()
-#
-#         # Ymax,Xmax
-#         self.raw_frame_dims = ( int(self.header['NAXIS1']), int(self.header['NAXIS2']) )
-#         if int(self.header['NAXIS1']) > 4000:
-#             self.bias_sec = ( 1, 4200, 4117, 4200 )
-#             self.image_sec = ( 30, 4112, 1, 4200 )
-#         elif '1 1' in self.header['CCDSUM']:
-#             self.bias_sec = ( 1, 2048, 2055, 2080 )   # Windowed; actually starts at col 2049
-#             self.image_sec = ( 30, 2048, 1, 2048 )
-#         elif '2 2' in self.header['CCDSUM']:
-#             self.bias_sec = ( 1, 1024, 1025, 1040 )
-#             self.image_sec = ( 16, 1024, 1, 1024 )
-#         self.naxis1 = self.image_sec[1]*2
-#         self.naxis2 = self.image_sec[3]*2
-#
-#         gainhdr = str(self.header['GAIN'])
-#         gainlist = gainhdr.replace('[','').replace(']','').split(',')
-#         self.gain = []
-#         if '[' in gainhdr or ',' in gainhdr or len(gainlist) > 1:
-#             for value in gainlist:
-#                 self.gain.append(float(value))
-#         else:
-#             self.gain.append(float(gainhdr))
-#
-#         # Sanity check: There's either one gain for the whole frame, or one
-#         # value per quadrant.  No other option makes sense here:
-#         if len(self.gain) != 1 and (len(self.gain)) != 4:
-#             self.istat = -7
-#             if verbose==True:
-#                 print 'ERROR: Wrong number of GAIN value(s) in the FITS header keyword'
-#
-#         self.quad_flux = {
-#                             1: [],
-#                             2: [],
-#                             3: [],
-#                             4: []
-#                             }
-#         self.quad_background = {
-#                             1: 0.0,
-#                             2: 0.0,
-#                             3: 0.0,
-#                             4: 0.0
-#                             }
-#         self.flux_min = 2000.0
-#         self.flux_max = 50000.0       	# Default: 75000.0
-#         self.model = 'linear' 	     # One of { linear, polynomial, broken_power_law }
-#
-#     def overscan_statistics(self,iquad):
-#         self.overscan_median = np.median(self.datacube[iquad,self.bias_sec[0]:self.bias_sec[1],\
-#                                         self.bias_sec[2]:self.bias_sec[3]])
-#
-#         regiondata = self.datacube[iquad,self.bias_sec[0]:self.bias_sec[1],\
-#                                         self.bias_sec[2]:self.bias_sec[3]]
-#         idx = np.where(regiondata < 1e9)
-#         for it in range(1,3,1):
-#             mean = regiondata[idx].mean()
-#             std = regiondata[idx].std()
-#             idx1 = np.where(regiondata >= (mean-3.0*std))
-#             idx2 = np.where(regiondata <= (mean+3.0*std))
-#             idx = np.intersect1d(idx1[0],idx2[0])
-#         self.overscan_mean = regiondata[idx].mean()
-#         self.overscan_std = regiondata[idx].std()
-#         print 'Overscan '+str(iquad+1)+' stats: ', self.overscan_mean, \
-#                                 self.overscan_median,self.overscan_std
-#
-#     def debias_quadrants(self):
-#         for iquad in range(0,4,1):
-#             self.overscan_statistics(iquad)
-#             self.datacube[iquad,:,:] = self.datacube[iquad,:,:] - self.overscan_mean
-#         print 'Debiased all quadrants'
-#
-#     def subtract_bkgd(self):
-#         print('On-sky data in use, subtracting sky background...')
-#         for iquad in range(0,4,1):
-#             imagedata = self.datacube[iquad,self.image_sec[0]:self.image_sec[1],self.image_sec[2]:self.image_sec[3]]
-#             (mean,stddev) = statistics.calcRMSclip2D(imagedata,3.0,3)
-#             self.datacube[iquad,:,:] = self.datacube[iquad,:,:] - mean
-#             self.quad_background[iquad] = mean
-#             print 'Subtracted '+str(mean)+' background from Q'+(str(iquad+1))
-#
-#     def normalize_gain(self):
-#         for iquad in range(0,4,1):
-#             if len(self.gain) == 1:
-#                 self.datacube[iquad,:,:] = ( self.quadimage * self.gain[0] )
-#             elif len(self.gain) == 4:
-#                 self.datacube[iquad,:,:] = ( self.datacube[iquad,:,:] * self.gain[iquad] )
-#         self.header['GAIN'] = 1.0
-#
-#     def create_mask(self,Quadrant):
-#         print 'Datacube min max: ',self.datacube[Quadrant-1,:,:].min(), self.datacube[Quadrant-1,:,:].max()
-#         self.region = self.datacube[Quadrant-1,self.image_sec[0]:self.image_sec[1],self.image_sec[2]:self.image_sec[3]]
-#         self.maskidx = statistics.select_pixels_in_flux_range(self.region,self.flux_min,self.flux_max)
-#         self.region = self.region[self.maskidx]
-#         if len(self.region) == 0:
-#             print 'Warning: All pixels masked from quadrant!'
-#
-#     def correlate_flux(self):
-#         for iquad in range(0,4,1):
-#             print 'Correlating flux for quadrant '+str(iquad+1)
-#             qregion = self.datacube[iquad,self.image_sec[0]:self.image_sec[1], \
-#                         self.image_sec[2]:self.image_sec[3]]
-#             xdata = self.region
-#             ydata = qregion[self.maskidx]
-#             ydata = ydata.flatten()
-#             self.quad_flux[iquad+1] = [xdata,ydata]
 #
 #     def apply_correction(self,Camera,Binning,Coefficients,debugname=None):
 #         if debugname != None:
@@ -285,7 +160,7 @@ def fit_gradient(xdata, ydata, pinit):
         exit()
 
     y = fitfunc(p1, xdata)
-    rms = np.sqrt(((ydata - y) **2).sum() / float(len(y)))
+    rms = np.sqrt(((ydata - y) ** 2).sum() / float(len(y)))
 
     return p1, fitfunc, errfunc, rms
 
@@ -452,7 +327,7 @@ def multicrossanalysis(args):
             pyplot.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, wspace=0.3, hspace=0.35)
             pyplot.plot(xdata, ydata, 'k,')
 
-            if iquad != args.opt_quadrant+1:
+            if iquad != args.opt_quadrant + 1:
                 idx = statistics.select_entries_within_bound(xdata, args.fluxmin, args.fluxmax)
 
                 if args.linear:
@@ -511,7 +386,7 @@ def multicrossanalysis(args):
         ydata = yplot[iquad]
         pyplot.scatter(xdata, ydata, c=fmt[iquad - 1], marker='o', s=0.02)
 
-        if iquad != args.opt_quadrant+ 1:
+        if iquad != args.opt_quadrant + 1:
             idx = statistics.select_entries_within_bound(xdata,
                                                          args.fluxmin, args.fluxmax)
             if args.linear:
@@ -531,10 +406,10 @@ def multicrossanalysis(args):
 
             xmodel = np.arange(0, xdata[idx].max(), 100)
             pyplot.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
-            print 'Primary Quadrant=' + str(args.opt_quadrant+1) + ' quad=' + str(iquad) + ' parameters=' + label
+            print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
 
         if iquad in [1, 4]:
-            pyplot.xlabel('Quadrant ' + str(args.opt_quadrant+1) + ' pixel value [ADU]')
+            pyplot.xlabel('Quadrant ' + str(args.opt_quadrant + 1) + ' pixel value [ADU]')
         pyplot.ylabel('Pixel value [ADU]')
         pyplot.xticks(rotation=15)
         # (xmin,xmax,ymin,ymax) = pyplot.axis()
@@ -546,7 +421,7 @@ def multicrossanalysis(args):
 
         pyplot.title('Quadrant ' + str(iquad))
 
-        if iquad  != args.opt_quadrant + 1:
+        if iquad != args.opt_quadrant + 1:
             pyplot.legend(loc='best')
 
     pyplot.savefig(args.plotfile.replace('.png', '_zoom.png'))
@@ -566,8 +441,7 @@ def correct_crosstalk(data_dir, out_dir, ImageList, ConfigFile):
     Coefficients = read_coefficients(ConfigFile)
 
     for i, frame in enumerate(FrameList):
-        uframe = archive_access.fetch_frame(path.join(data_dir, frame), \
-                                            out_dir)
+        uframe = archive_access.fetch_frame(path.join(data_dir, frame), out_dir)
         imageobj = CrossImage(uframe)
 
         camera = imageobj.header['INSTRUME']
@@ -621,7 +495,7 @@ def parseCommandLine():
     parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
                         help='Minimum contaminationg flux')
 
-    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='55000',
+    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='52000',
                         help='Maximum contaminationg flux')
 
     args = parser.parse_args()
