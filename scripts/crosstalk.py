@@ -204,28 +204,28 @@ def fit_broken_power_law(xdata, ydata, pinit):
     return p1, fitfunc, errfunc
 
 
-def iterative_model_fit(xdata, ydata, pinit, fit_function, sigclip=3.0):
+def iterative_model_fit(xdata, ydata, pinit, fit_function, sigclip=5.0):
     """Fit a function iteratively with sigma clipping"""
 
-    def calc_resids(afit, ydata, fitfunc):
+    def calc_resids(afit, ydata, fitfunc,nsig):
         yfit = fitfunc(afit, xdata)
         resids = ydata - yfit
-        jdx = np.where(resids <= 200.0)
-        kdx = np.where(resids >= -200.0)
-        idx = np.intersect1d(jdx, kdx)
+        rms = np.std (resids)
+        idx = np.where( np.abs(resids) <= nsig * rms)
+
         return idx, resids
 
     a1 = 9e36
     afit = [0.0, 0.001]
     (afit, fitfunc, errfunc, rms) = fit_function(xdata, ydata, pinit)
-    (idx, resids) = calc_resids(afit, ydata, fitfunc)
+    (idx, resids) = calc_resids(afit, ydata, fitfunc, sigclip)
     i = 0
     cont = True
     while cont == True:
         i = i + 1
         a1 = afit[1]
         (afit, fitfunc, errfunc, rms) = fit_function(xdata[idx], ydata[idx], pinit)
-        (idx, resids) = calc_resids(afit, ydata, fitfunc)
+        (idx, resids) = calc_resids(afit, ydata, fitfunc, sigclip)
         stddev = resids.std()
 
         if (abs(a1 - afit[1]) > 1e-5) or i == 10:
@@ -300,94 +300,76 @@ def multicrossanalysis(args):
     fig = plt.figure(1)
     plt.rcParams['font.size'] = 10.0
     plotord = [2, 3, 1, 4]
-    if args.linear:
-        pinit = [0.0, 0.0]
-    elif args.poly:
-        pinit = [0.0, 0.0, 0.0]
-    coeffs = {}
 
-    for q, iquad in enumerate(plotord):
-        xdata = xplot[iquad]
-        ydata = yplot[iquad]
-        coeffs[iquad] = []
 
-        for ii in range(0, 1, 1):
-            ax = plt.subplot(2, 2, q + 1)
-            plt.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, wspace=0.3, hspace=0.35)
-            plt.plot(xdata, ydata, 'k,')
+    for zoomlevel in [1,2]:
+        if args.linear:
+            pinit = [0.0, 0.0]
+        elif args.poly:
+            pinit = [0.0, 0.0, 0.0]
+        coeffs = {}
+
+        for q, iquad in enumerate(plotord):
+            xdata = xplot[iquad]
+            ydata = yplot[iquad]
+
+            coeffs[iquad] = []
+
+            for ii in range(0, 1, 1):
+                ax = plt.subplot(2, 2, q + 1)
+                plt.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, wspace=0.3, hspace=0.35)
+                plt.plot(xdata, ydata, 'k,')
+
+                if iquad != args.opt_quadrant + 1:
+                    idx = statistics.select_entries_within_bound(xdata, args.fluxmin, args.fluxmax)
+
+                    if args.linear:
+                        (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
+                                                                                fit_gradient, sigclip=3)
+                        label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
+                        if zoomlevel == 1:
+                            print ('"CRSTLK%d%d": %s,' % ( (args.opt_quadrant + 1),  iquad, str(round(afit[1],5))))
+                            #print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
+                    elif args.poly:
+                        (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
+                                                                                fit_polynomial_zero)
+                        label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
+
+                    if afit[1] > 0.0:
+                        coeffs[iquad].append(afit[1])
+                    else:
+                        coeffs[iquad].append(0.0)
+
+                    plt.plot(xdata[kdx], ydata[kdx], 'r,')
+                    xmodel = np.arange(0, xdata[idx].max(), 100)
+                    plt.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
+                    ymodel = fitfunc(afit, xdata)
+                    ydata = ydata - ymodel
+
+            if iquad in [1, 4]:
+                plt.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
+            plt.ylabel('Pixel value [ADU]')
+            plt.xticks(rotation=15)
+            (xmin, xmax, ymin, ymax) = plt.axis()
+
 
             if iquad != args.opt_quadrant + 1:
-                idx = statistics.select_entries_within_bound(xdata, args.fluxmin, args.fluxmax)
+                if zoomlevel == 1:
+                    plt.axis([xmin, xmax, -100.0, 100.0])
+                    plotfile = args.plotfile
+                if zoomlevel == 2:
+                    plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
+                    plotfile = args.plotfile.replace('.png', '_zoom.png')
+            else:
+                plt.axis([xmin, xmax, xmin, xmax])
+            plt.title('Quadrant ' + str(iquad))
+            if iquad != args.opt_quadrant + 1:
+                plt.legend(loc='best')
 
-                if args.linear:
-                    (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
-                                                                                fit_gradient)
-                    label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
-                    print ('"CRSTLK%d%d": %s,' % ( (args.opt_quadrant + 1),  iquad, str(round(afit[1],10))))
-                    #print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
-                elif args.poly:
-                    (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
-                                                                                fit_polynomial_zero)
-                    label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
+        #plt.show()
+        plt.savefig(plotfile)
+        plt.close(1)
 
-                if afit[1] > 0.0:
-                    coeffs[iquad].append(afit[1])
-                else:
-                    coeffs[iquad].append(0.0)
-
-                plt.plot(xdata[kdx], ydata[kdx], 'r.')
-                xmodel = np.arange(0, xdata[idx].max(), 100)
-                plt.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
-                ymodel = fitfunc(afit, xdata)
-                ydata = ydata - ymodel
-
-        if iquad in [1, 4]:
-            plt.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
-        plt.ylabel('Pixel value [ADU]')
-        plt.xticks(rotation=15)
-        (xmin, xmax, ymin, ymax) = plt.axis()
-        if iquad != args.opt_quadrant + 1:
-            plt.axis([xmin, xmax, -100.0, 100.0])
-        else:
-            plt.axis([xmin, xmax, xmin, xmax])
-        plt.title('Quadrant ' + str(iquad))
-        if iquad != args.opt_quadrant + 1:
-            plt.legend(loc='best')
-    plt.savefig(args.plotfile)
-    plt.close(1)
-
-
-    # Now plot everything again, but zoomed-in
-    fig = plt.figure(2)
-    for q, iquad in enumerate(plotord):
-        plt.subplot(2, 2, q + 1)
-        plt.subplots_adjust(left=0.125, bottom=0.15, right=0.9, top=0.9, \
-                               wspace=0.3, hspace=0.35)
-        xdata = xplot[iquad]
-        ydata = yplot[iquad]
-        plt.scatter(xdata, ydata, c=fmt[iquad - 1], marker='o', s=0.02)
-
-        if iquad != args.opt_quadrant + 1:
-            plt.plot(xmodel, fitfunc(afit, xmodel), 'k-', label=label)
-
-
-        if iquad in [1, 4]:
-            plt.xlabel('Quadrant ' + str(args.opt_quadrant + 1) + ' pixel value [ADU]')
-        plt.ylabel('Pixel value [ADU]')
-        plt.xticks(rotation=15)
-        xmax = xdata[idx].max()
-        if iquad != args.opt_quadrant + 1:
-            plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
-        else:
-            plt.axis([0.0, xmax, 0.0, ymax])
-
-        plt.title('Quadrant ' + str(iquad))
-
-        if iquad != args.opt_quadrant + 1:
-            plt.legend(loc='best')
-
-    plt.savefig(args.plotfile.replace('.png', '_zoom.png'))
-    plt.close(2)
 
     return status_code[0]
 
