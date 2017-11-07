@@ -49,7 +49,6 @@ class Image(object):
         output images are consistent
         """
         hdulist = fits.open(filename, 'readonly')
-
         # Get the main header
         self.header = hdulist[0].header
 
@@ -57,7 +56,7 @@ class Image(object):
         self.extension_headers = []
         self.biassec = []
         self.ccdsec = []
-        sci_extensions = self.get_extensions_by_name(hdulist, 'SCI')
+        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE'])
         if len(sci_extensions) >= 1:
             self.data = np.zeros((len(sci_extensions), sci_extensions[0].data.shape[0],
                                   sci_extensions[0].data.shape[1]), dtype=np.float32)
@@ -67,7 +66,10 @@ class Image(object):
 
                 gain = 1.
                 overscan = 0.
-                bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
+                if (hdu.header['BIASSEC'] == 'UNKNOWN'):
+                    bs = None
+                else:
+                    bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
                 cs = [int(n) for n in re.split(',|:', hdu.header['DATASEC'][1:-1])]
                 self.biassec.append(bs)
                 self.ccdsec.append(cs)
@@ -145,6 +147,6 @@ class Image(object):
         # The following of using False is just an awful convention and will probably be
         # deprecated at some point
         extension_info = fits_hdulist.info(False)
-        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] == name])
+        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] in name])
 
 

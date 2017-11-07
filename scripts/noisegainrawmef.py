@@ -8,13 +8,14 @@ import numpy as np
 import math
 import argparse
 from Image import Image
+import matplotlib.pyplot as plt
 
 import logging
 
 _logger = logging.getLogger(__name__)
 
 
-def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=None, maxy=None):
+def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=None, maxy=None, showImages=False):
     """
     Measure the noise and gain from a pair of flat field , bias images. By default, the central
       2/8th square of the detector is used for measuring noise and levels.
@@ -36,13 +37,13 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     """
 
     if minx is None:
-        minx = flat1.shape[1] * 7 / 16
+        minx = flat1.shape[1] * 8 / 16
     if maxx is None:
-        maxx = flat1.shape[1] * 9 / 16
+        maxx = flat1.shape[1] * 10 / 16
     if miny is None:
-        miny = flat1.shape[0] * 7 / 16
+        miny = flat1.shape[0] * 8 / 16
     if maxy is None:
-        maxy = flat1.shape[0] * 9 / 16
+        maxy = flat1.shape[0] * 10 / 16
 
     flat1lvl = np.median(flat1[miny:maxy, minx:maxx])
     flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
@@ -55,18 +56,23 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     deltaflat = (flat1 - flat2)[miny:maxy, minx:maxx]
     deltabias = (bias1 - bias2)[miny:maxy, minx:maxx]
     biasnoise = np.std(deltabias)
-    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 4 * biasnoise])
+    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 10 * biasnoise])
     flatnoise = np.std(deltaflat)
-    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 4 * flatnoise])
+    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 10 * flatnoise])
 
     flatlevel = (flat1lvl + flat2lvl) / 2 - (bias1lvl + bias2lvl) / 2
-
     gain = 2 * flatlevel / (flatnoise ** 2 - biasnoise ** 2)
     readnoise = gain * biasnoise / math.sqrt(2)
 
-    # plt.imshow(deltaflat, clim=(-3 * flatnoise,3 * flatnoise))
-    # plt.colorbar()
-    # plt.show()
+    if showImages:
+        plt.imshow(deltaflat - np.median (deltaflat), clim=(-5 * flatnoise,5 * flatnoise))
+        plt.colorbar()
+        plt.title ("Delta flat")
+        plt.show()
+        plt.imshow(deltabias, clim=(-3 * biasnoise,3 * biasnoise))
+        plt.colorbar()
+        plt.title ("Delta Bias")
+        plt.show()
     return (gain, readnoise)
 
 
@@ -81,6 +87,7 @@ def parseCommandLine():
     parser.add_argument('--log_level', dest='log_level', default='WARN', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
+    parser.add_argument ('--showimages', action='store_true', help="Show difference flat and bias images.")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -106,5 +113,5 @@ if __name__ == '__main__':
     flat2 = Image(args.fitsfile[3])
 
     for ii in range(len(flat1.data)):
-        (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii])
+        (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages)
         print ("Extension %1d  Gain % 5.3f e-/ADU  Noise % 5.2f e-" % (ii, gain, noise))
