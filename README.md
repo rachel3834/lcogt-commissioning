@@ -62,6 +62,13 @@ python crosstalk.py --quadrant 2 --linear --imagepath /nfs/archive/engineering/c
 Paramters:
 
 --quadrant [N] parameter defines which extension number (start counting at 0 ) is considered the contaminating quadrant.
+  When loading a raw image in ds9 with the -mosaicimage iraf option, this is where the quadrants are:
+<pre>  
+       4|3
+       -+- 
+       1|2
+</pre>
+  the input parameter needs those quadrant ids -1 (should change code one day though!)
 
 --linear will determine linear crosstalk relation
 

@@ -2,7 +2,6 @@
 #     	      	      	      	      	STATISTICS FUNCTIONS
 ########################################################################################################
 
-############################
 # IMPORT FUNCTIONS
 from numpy import array, where, nan, isnan, logical_not
 from numpy import median, zeros, arange, intersect1d, fft
@@ -23,12 +22,12 @@ def calcRMSclip(RegionData,sigClip,niter):
     idx = where(RegionData < 1e9)
     #print RegionData[idx].mean(dtype='float64')
     for it in range(0,niter,1):
-      	mean = RegionData[idx].mean(dtype='float64')
-	std = RegionData[idx].std(dtype='float64')
-	idx1 = where(RegionData >= (mean-sigClip*std))
-	idx2 = where(RegionData <= (mean+sigClip*std))
-	idx = intersect1d(idx1[0],idx2[0])
-	#print it,mean,std,(mean-sigClip*std),(mean+sigClip*std),len(idx)
+        mean = RegionData[idx].mean(dtype='float64')
+    std = RegionData[idx].std(dtype='float64')
+    idx1 = where(RegionData >= (mean-sigClip*std))
+    idx2 = where(RegionData <= (mean+sigClip*std))
+    idx = intersect1d(idx1[0],idx2[0])
+    #print it,mean,std,(mean-sigClip*std),(mean+sigClip*std),len(idx)
     mean = RegionData[idx].mean(dtype='float64')
     std = RegionData[idx].std(dtype='float64')
     
@@ -47,12 +46,12 @@ def calcRMSclip2Didx(RegionData,sigClip,niter):
     idx = where(RegionData < 1e9)
     #print RegionData[idx].mean(dtype='float64')
     for it in range(0,niter,1):
-      	mean = RegionData[idx].mean(dtype='float64')
-	std = RegionData[idx].std(dtype='float64')
-	idx1 = where(RegionData >= (mean-sigClip*std))
-	idx2 = where(RegionData <= (mean+sigClip*std))
-	idx = intersect1d(idx1[0],idx2[0])
-	#print it,mean,std,(mean-sigClip*std),(mean+sigClip*std),len(idx)
+        mean = RegionData[idx].mean(dtype='float64')
+    std = RegionData[idx].std(dtype='float64')
+    idx1 = where(RegionData >= (mean-sigClip*std))
+    idx2 = where(RegionData <= (mean+sigClip*std))
+    idx = intersect1d(idx1[0],idx2[0])
+    #print it,mean,std,(mean-sigClip*std),(mean+sigClip*std),len(idx)
     mean = RegionData[idx].mean(dtype='float64')
     std = RegionData[idx].std(dtype='float64')
     
@@ -132,7 +131,7 @@ def maskedmedian3D(DataCube,alpha):
     
     # Calculate the median:
     median_frame = median(amask,axis=0)
-    print median_frame
+    print (median_frame)
     exit()
     
     return median_frame
@@ -156,17 +155,17 @@ def histpix(RegionData, plotfile,xlimit_min=None,xlimit_max=None,mean=None,stdde
     pyplot.axis([xmin,xmax,ymin,ymax])
     
     if mean != None and stddev != None:
-      	# Indicate the mean value with a vertical line:
-      	xdata = array( [mean-stddev, mean+stddev] )
-      	ydata = zeros(2)
-      	ydata.fill( (ymin + (ymax-ymin)/2.0) )
-      	pyplot.plot(xdata,ydata,'r-')
+        # Indicate the mean value with a vertical line:
+        xdata = array( [mean-stddev, mean+stddev] )
+        ydata = zeros(2)
+        ydata.fill( (ymin + (ymax-ymin)/2.0) )
+        pyplot.plot(xdata,ydata,'r-')
     
-      	# Indicate the stddev with a horizontal line:
-      	xdata = zeros(2)
-      	xdata.fill(mean)
-      	ydata = array( [ymin,ymax] )
-      	pyplot.plot(xdata,ydata,'r-')
+        # Indicate the stddev with a horizontal line:
+        xdata = zeros(2)
+        xdata.fill(mean)
+        ydata = array( [ymin,ymax] )
+        pyplot.plot(xdata,ydata,'r-')
     
     pyplot.xlabel('Pixel value [ADU]')
     pyplot.ylabel('Frequency')
@@ -188,12 +187,12 @@ def calcdeltastddev(DataArray,sigClip,niter):
     
     idx = where(DataArray < 1e9)
     for it in range(0,niter,1):
-      	mean = DataArray[idx].mean(dtype='float64')
-	stddev = DataArray[idx].std(dtype='float64')
-	idx1 = where(DataArray >= (mean-sigClip*stddev))
-	idx2 = where(DataArray <= (mean+sigClip*stddev))
-	idx = intersect1d(idx1[0],idx2[0])
-	print 'stats: ', it,mean,stddev,(mean-sigClip*stddev),(mean+sigClip*stddev),len(idx)
+        mean = DataArray[idx].mean(dtype='float64')
+    stddev = DataArray[idx].std(dtype='float64')
+    idx1 = where(DataArray >= (mean-sigClip*stddev))
+    idx2 = where(DataArray <= (mean+sigClip*stddev))
+    idx = intersect1d(idx1[0],idx2[0])
+    print ('stats: ', it,mean,stddev,(mean-sigClip*stddev),(mean+sigClip*stddev),len(idx))
     mean = DataArray[idx].mean(dtype='float64')
     stddev = DataArray[idx].std(dtype='float64')  
     final_stats = (mean,stddev)
@@ -259,19 +258,19 @@ def select_entries_within_bound(vector,entry_min,entry_max):
 if __name__ == '__main__':
 
     if len(argv) < 3:
-	print 'Call sequence: python statistics [image path] sigclip niter'
-	exit()
+        print ('Call sequence: python statistics [image path] sigclip niter')
+        exit()
     else:
-	ImageFile = argv[1]
-	sigClip = float(argv[2])
-	niter = int(float(argv[3]))
+        ImageFile = argv[1]
+        sigClip = float(argv[2])
+        niter = int(float(argv[3]))
 
-	# Read the input image:
-	imageheader = fits.getheader()
-	imagedata = fits.getdata()
+        # Read the input image:
+        imageheader = fits.getheader()
+        imagedata = fits.getdata()
 
-	#(mean,stddev) = calcRMSclip2D(imagedata,sigClip,niter)
-	#print 'Mean = ',mean
-	#print 'Std. deviation = ',stddev
+        #(mean,stddev) = calcRMSclip2D(imagedata,sigClip,niter)
+        #print 'Mean = ',mean
+        #print 'Std. deviation = ',stddev
         
-	select_pixels_in_flux_range(imagedata,500.0,40000.0)
+        select_pixels_in_flux_range(imagedata,500.0,40000.0)

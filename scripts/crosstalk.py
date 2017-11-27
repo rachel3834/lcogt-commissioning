@@ -28,7 +28,7 @@ from sys import exit
 from os import path
 import warnings
 import statistics
-import archive_access
+#import archive_access
 import logging
 import matplotlib.pyplot as plt
 
@@ -90,8 +90,8 @@ def read_coefficients(ConfigFile):
         return Coefficients
 
     if path.isfile(ConfigFile) == False:
-        print 'ERROR: Cannot read co-efficients configuration file'
-        print 'Looking for ' + ConfigFile
+        print ('ERROR: Cannot read co-efficients configuration file')
+        print ('Looking for ' + ConfigFile)
         exit()
 
     Coefficients = {}
@@ -153,9 +153,9 @@ def fit_gradient(xdata, ydata, pinit):
     try:
         (p1, istat) = optimize.leastsq(errfunc, pinit, args=(xdata, ydata))
     except TypeError as te:
-        print "There was an error!", te
-        print xdata
-        print ydata
+        print ("There was an error!", te)
+        print (xdata)
+        print (ydata)
         exit()
 
     y = fitfunc(p1, xdata)
@@ -174,8 +174,8 @@ def fit_polynomial_zero(xdata, ydata, pinit):
     try:
         (p1, istat) = optimize.leastsq(errfunc, pinit, args=(xdata, ydata))
     except TypeError:
-        print xdata
-        print ydata
+        print (xdata)
+        print (ydata)
         exit()
 
     return p1, fitfunc, errfunc
@@ -197,8 +197,8 @@ def fit_broken_power_law(xdata, ydata, pinit):
     try:
         (p1, istat) = optimize.leastsq(errfunc, pinit, args=(xdata, ydata))
     except TypeError:
-        print xdata
-        print ydata
+        print (xdata)
+        print (ydata)
         exit()
 
     return p1, fitfunc, errfunc
@@ -376,7 +376,7 @@ def multicrossanalysis(args):
 
 def correct_crosstalk(data_dir, out_dir, ImageList, ConfigFile):
     if path.isfile(ImageList) == False:
-        print 'ERROR: Cannot find imagelist ' + ImageList
+        print ('ERROR: Cannot find imagelist ' + ImageList)
         exit()
     fileobj = open(ImageList, 'r')
     FrameList = fileobj.readlines()
@@ -391,16 +391,16 @@ def correct_crosstalk(data_dir, out_dir, ImageList, ConfigFile):
         camera = imageobj.header['INSTRUME']
         binning = int(float(str(imageobj.header['CCDSUM']).split(' ')[0]))
         if camera not in Coefficients.keys():
-            print 'ERROR: No calibration available for camera ' + camera
+            print ('ERROR: No calibration available for camera ' + camera)
             return status_code[-6]
         if binning not in Coefficients[camera].keys():
-            print 'ERROR: No calibration available for camera ' + camera + \
-                  ' and binning ' + str(binning) + 'x' + str(binning)
+            print ('ERROR: No calibration available for camera ' + camera + \
+                  ' and binning ' + str(binning) + 'x' + str(binning))
             return status_code[-6]
 
         else:
-            print 'Applying calibration for ' + camera + ' and binning ' + \
-                  str(binning) + 'x' + str(binning) + ' to frame ' + path.basename(uframe)
+            print ('Applying calibration for ' + camera + ' and binning ' + \
+                  str(binning) + 'x' + str(binning) + ' to frame ' + path.basename(uframe))
             imageobj.apply_correction(camera, binning, Coefficients, \
                                       debugname=uframe.replace('.fits', '_diff.fits'))
             filename = uframe.replace('e00.fits', 'e01c.fits')
@@ -492,7 +492,7 @@ if __name__ == '__main__':
 
     if args.mode_measure:
         status = multicrossanalysis(args)
-        print status
+        print (status)
 
         # elif argv[1].lower() == '-read_config':
         #     ConfigFile = argv[2]
