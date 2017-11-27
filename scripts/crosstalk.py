@@ -204,7 +204,7 @@ def fit_broken_power_law(xdata, ydata, pinit):
     return p1, fitfunc, errfunc
 
 
-def iterative_model_fit(xdata, ydata, pinit, fit_function, sigclip=5.0):
+def iterative_model_fit(xdata, ydata, pinit, fit_function, sigclip=3.0):
     """Fit a function iteratively with sigma clipping"""
 
     def calc_resids(afit, ydata, fitfunc,nsig):
@@ -355,13 +355,13 @@ def multicrossanalysis(args):
 
             if iquad != args.opt_quadrant + 1:
                 if zoomlevel == 1:
-                    plt.axis([xmin, xmax, -100.0, 100.0])
+                    plt.axis([0, 65000, -100.0, 100.0])
                     plotfile = args.plotfile
                 if zoomlevel == 2:
                     plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
                     plotfile = args.plotfile.replace('.png', '_zoom.png')
             else:
-                plt.axis([xmin, xmax, xmin, xmax])
+                plt.axis([0, 65000, 0, 65000])
             plt.title('Quadrant ' + str(iquad))
             if iquad != args.opt_quadrant + 1:
                 plt.legend(loc='best')
@@ -439,7 +439,7 @@ def parseCommandLine():
     parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
                         help='Minimum contaminationg flux')
 
-    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='52000',
+    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='53000',
                         help='Maximum contaminationg flux')
 
     args = parser.parse_args()
@@ -492,7 +492,6 @@ if __name__ == '__main__':
 
     if args.mode_measure:
         status = multicrossanalysis(args)
-        print (status)
 
         # elif argv[1].lower() == '-read_config':
         #     ConfigFile = argv[2]

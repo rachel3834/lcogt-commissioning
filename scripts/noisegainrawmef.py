@@ -107,10 +107,10 @@ if __name__ == '__main__':
 
     args = parseCommandLine()
 
-    bias1 = Image(args.fitsfile[0])
-    bias2 = Image(args.fitsfile[1])
-    flat1 = Image(args.fitsfile[2])
-    flat2 = Image(args.fitsfile[3])
+    bias1 = Image(args.fitsfile[0], overscancorrect=True)
+    bias2 = Image(args.fitsfile[1], overscancorrect=True)
+    flat1 = Image(args.fitsfile[2], overscancorrect=True)
+    flat2 = Image(args.fitsfile[3], overscancorrect=True)
 
     for ii in range(len(flat1.data)):
         (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages)
