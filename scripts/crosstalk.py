@@ -14,8 +14,7 @@
 # - Is an iterative approach necessary?  Or minimal improvement?
 ##############################################################################
 
-from matplotlib import use as useBackend
-useBackend('Agg')
+
 import argparse
 import os
 import sys
@@ -26,10 +25,10 @@ import numpy as np
 from scipy import optimize
 from sys import exit
 from os import path
-import warnings
 import statistics
-#import archive_access
 import logging
+from matplotlib import use as useBackend
+useBackend('Agg')
 import matplotlib.pyplot as plt
 
 _logger = logging.getLogger(__name__)
@@ -124,9 +123,11 @@ def outputimage(Header, ImageData, Filename):
     for key, value in Header.items():
         if key not in ['NAXIS1', 'NAXIS2']:
             newhdulist[0].header[key] = value
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
+    try:
         newhdulist.writeto(Filename, clobber=True, output_verify='ignore')
+    except Exception as  e:
+        _logger.error ("While saving output: " + e)
+
     newhdulist.close()
     return 0
 
@@ -136,9 +137,10 @@ def output3Dimage(Header, ImageData, Filename):
     newhdulist = fits.HDUList([newhdu])
     for key, value in Header.items():
         newhdulist[0].header[key] = value
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        newhdulist.writeto(Filename, clobber=True, output_verify='ignore')
+        try:
+            newhdulist.writeto(Filename, clobber=True, output_verify='ignore')
+        except Exception as e:
+            _logger.error ("while writing " + e )
     newhdulist.close()
     return 0
 
@@ -374,44 +376,9 @@ def multicrossanalysis(args):
     return status_code[0]
 
 
-def correct_crosstalk(data_dir, out_dir, ImageList, ConfigFile):
-    if path.isfile(ImageList) == False:
-        print ('ERROR: Cannot find imagelist ' + ImageList)
-        exit()
-    fileobj = open(ImageList, 'r')
-    FrameList = fileobj.readlines()
-    fileobj.close()
-
-    Coefficients = read_coefficients(ConfigFile)
-
-    for i, frame in enumerate(FrameList):
-        uframe = archive_access.fetch_frame(path.join(data_dir, frame), out_dir)
-        imageobj = CrossImage(uframe)
-
-        camera = imageobj.header['INSTRUME']
-        binning = int(float(str(imageobj.header['CCDSUM']).split(' ')[0]))
-        if camera not in Coefficients.keys():
-            print ('ERROR: No calibration available for camera ' + camera)
-            return status_code[-6]
-        if binning not in Coefficients[camera].keys():
-            print ('ERROR: No calibration available for camera ' + camera + \
-                  ' and binning ' + str(binning) + 'x' + str(binning))
-            return status_code[-6]
-
-        else:
-            print ('Applying calibration for ' + camera + ' and binning ' + \
-                  str(binning) + 'x' + str(binning) + ' to frame ' + path.basename(uframe))
-            imageobj.apply_correction(camera, binning, Coefficients, \
-                                      debugname=uframe.replace('.fits', '_diff.fits'))
-            filename = uframe.replace('e00.fits', 'e01c.fits')
-            iexec = output3Dimage(imageobj.header, imageobj.datacube, filename)
-
-    return status_code[0]
-
-
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='Measure or correct cross talk of images.')
+        description='Measure cross talk of multi-amplifier FITS images.')
 
     parser.add_argument('fitsfile', type=str, nargs='+',
                         help='Fis files for cross talk measurement')
@@ -458,50 +425,8 @@ def parseCommandLine():
 
 
 if __name__ == '__main__':
-    # debug = False
-    # HelpText = """                       CROSSTALK
-    #
-    # This script is designed to analyse raw Sinistro frames to measure the crosstalk
-    # between quadrants.
-    #
-    # Call sequence:
-    # python crosstalk.py -option [arguments]
-    #
-    # where options are:
-    #    -measure : to measure the crosstalk coefficients for one primary quadrant
-    #      	Arguments: DataLoc ImageList Quadrant PlotFile
-    #      	  data_dir is the full path to the input data directory
-    #                out_dir is the full path to the output data directory
-    #      	  ImageList is an ASCII list of frames to be analysed together
-    #      	  Quadrant indicates which quadrant {1-4} should be used as a reference
-    #      	  PlotFile is the full path to the output plot
-    #
-    #               -lab flag must be set if lab-based data are used
-    #
-    #    -read_config : [DEBUG] read the configuration
-    #      	Arguments: ConfigFile
-    #   ConfigFile is the full path to the configuration file
-    #   	    -correct : to apply the correction for crosstalk to a set of images
-    #      	Arguments: DataLoc ImageList ConfigFile
-    #      	  DataLoc is the full path to the data directory
-    #      	  ImageList is an ASCII list of frames to be analysed together
-    #   ConfigFile is the full path to the configuration file
-    # """
 
     args = parseCommandLine()
 
     if args.mode_measure:
         status = multicrossanalysis(args)
-
-        # elif argv[1].lower() == '-read_config':
-        #     ConfigFile = argv[2]
-        #     Coefficients = read_coefficients(ConfigFile)
-        #     print Coefficients
-        #
-        # elif argv[1].lower() == '-correct':
-        #     data_dir = argv[2]
-        #     out_dir = argv[3]
-        #     ImageList = argv[4]
-        #     ConfigFile = argv[5]
-        #     status = correct_crosstalk(data_dir, out_dir,ImageList,ConfigFile)
-        #     print status
