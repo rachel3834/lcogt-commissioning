@@ -78,3 +78,33 @@ Paramters:
 The following fits images wil be analysed for cross talk. While the software was written with the 
 LCO Sinistro cameras in mind, the current version o this script should work with any camera as 
 long as the output of amplifiers is stored in equally dimensioned fits extensions. 
+
+
+submitXtalkObs.py
+===
+
+X-Talk calibration submission tool Submit to POND the request to observe a
+bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.
+
+<pre>
+optional arguments:
+  -h, --help            show this help message and exit
+  --name NAME           Name of star for X talk measurement. Will be resolved
+                        via simbad. If resolve failes, program will exit.
+                        future version will automatically select a star based
+                        on time of observation.
+  --defocus DEFOCUS     Amount to defocus star.
+  --site {lsc,cpt,coj,elp}
+                        To which site to submit
+  --dome {doma,domb,domc}
+                        To which enclosure to submit
+  --telescope TELESCOPE
+  --instrument {fl03,fl04,fl05,fl12,fl15,fl16}
+                        To which instrumetn to submit
+  --start START         When to start x-talk calibration. If not given,
+                        defaults to "NOW"
+  --user USER           Which user name to use for submission
+  --CONFIRM             If set, block will be submitted.
+  --log_level {DEBUG,INFO,WARN}
+                        Set the debug level
+</pre>

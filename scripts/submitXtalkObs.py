@@ -69,7 +69,7 @@ def createRequestsForStar(context):
 
                 'group': 'Sinistro x talk commissioing',
                 'user': context.user,
-
+                'proposal' : 'calibration',
                 'ag_mode': 0,
 
                 'defocus': context.defocus
@@ -90,17 +90,16 @@ def createRequestsForStar(context):
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='Submit observations for cross talk coefficient measuremnt.')
+        description='X-Talk calibration submission tool\nSubmit to POND the request to observe a bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.')
 
-    parser.add_argument('--name', type=str, help='Name of star')
-    parser.add_argument('--quadrant', type=int, help="Place objsect into which quadrant")
-    parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star")
-    parser.add_argument('--site', default='coj')
-    parser.add_argument('--dome', default='doma')
+    parser.add_argument('--name', required=True,  type=str, help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, program will exit.\n future version will automatically select a star based on time of observation.  ')
+    parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
+    parser.add_argument('--site', default='coj', choices=['lsc', 'cpt', 'coj', 'elp'], help="To which site to submit")
+    parser.add_argument('--dome', default='doma',choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
-    parser.add_argument('--instrument', default='fl12')
-    parser.add_argument('--start', default=None)
-    parser.add_argument('--user', default='daniel_harbeck')
+    parser.add_argument('--instrument', default='fl12', choices=['fl03', 'fl04', 'fl05', 'fl12', 'fl15', 'fl16', ] ,help="To which instrumetn to submit")
+    parser.add_argument('--start', default=None, help="When to start x-talk calibration. If not given, defaults to \"NOW\"")
+    parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted.')
 
