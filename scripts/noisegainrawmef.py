@@ -37,14 +37,14 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     """
 
     if minx is None:
-        minx = flat1.shape[1] * 8 / 16
+        minx = (int)  (flat1.shape[1] * 8 / 16 )
     if maxx is None:
-        maxx = flat1.shape[1] * 10 / 16
+        maxx = (int) (flat1.shape[1] * 10 / 16)
     if miny is None:
-        miny = flat1.shape[0] * 8 / 16
+        miny = (int) (flat1.shape[0] * 8 / 16 )
     if maxy is None:
-        maxy = flat1.shape[0] * 10 / 16
-
+        maxy = (int) (flat1.shape[0] * 10 / 16)
+    _logger.debug("imstat region is [%d:%d, %d:%d]" % (minx,maxx,miny,maxy))
     flat1lvl = np.median(flat1[miny:maxy, minx:maxx])
     flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
     bias1lvl = np.median(bias1[miny:maxy, minx:maxx])
@@ -111,6 +111,8 @@ if __name__ == '__main__':
     bias2 = Image(args.fitsfile[1], overscancorrect=True)
     flat1 = Image(args.fitsfile[2], overscancorrect=True)
     flat2 = Image(args.fitsfile[3], overscancorrect=True)
+
+    print ("Calculating noise / gain based on:\n Bias 1 %s\n Bias 2 %s\n Flat 1 %s\n Flat 2 %s\n" % (args.fitsfile[0],args.fitsfile[1],args.fitsfile[2],args.fitsfile[3],))
 
     for ii in range(len(flat1.data)):
         (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages)
