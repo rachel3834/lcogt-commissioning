@@ -28,7 +28,7 @@ from os import path
 import statistics
 import logging
 from matplotlib import use as useBackend
-useBackend('Agg')
+#useBackend('Agg')
 import matplotlib.pyplot as plt
 
 _logger = logging.getLogger(__name__)
@@ -259,7 +259,10 @@ def correlate_flux(image, sourcequadrant, maskidx):
     for iquad in range(4):
         xdata = image.getccddata(sourcequadrant)[maskidx].flatten()
         ydata = image.getccddata(iquad)[maskidx].flatten()
-        quadfluxes.append([xdata, ydata])
+
+        # now make sure that we only see crostalk, and not additional stellar stuff in the fied.
+        selectidx = ydata < 1e-2 * xdata # TODO: paramterize maximum allowable crosstalk.
+        quadfluxes.append([xdata[selectidx], ydata[selectidx]])
 
     return quadfluxes
 
@@ -327,7 +330,7 @@ def multicrossanalysis(args):
 
                     if args.linear:
                         (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
-                                                                                fit_gradient, sigclip=3)
+                                                                                fit_gradient, sigclip=5)
                         label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
                         if zoomlevel == 1:
                             print ('"CRSTLK%d%d": %s,' % ( (args.opt_quadrant + 1),  iquad, str(round(afit[1],5))))
@@ -381,7 +384,7 @@ def parseCommandLine():
         description='Measure cross talk of multi-amplifier FITS images.')
 
     parser.add_argument('fitsfile', type=str, nargs='+',
-                        help='Fis files for cross talk measurement')
+                        help='Fits files for cross talk measurement')
 
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None)
 
@@ -393,6 +396,8 @@ def parseCommandLine():
 
     parser.add_argument('--linear', action='store_true')
     parser.add_argument('--poly', action='store_true')
+
+    parser.add_argument('--useheader', action="store_true", help="use OBJECT line to determine quadrant. ")
 
     parser.add_argument('--outputdir', dest='outdir', type=str, default='.',
                         help='Fie containing input or output xtalk measurements')
