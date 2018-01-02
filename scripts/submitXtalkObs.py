@@ -12,14 +12,14 @@ quadrantOffsets = {0: [-450, 450],
                    2: [450, -450],
                    3: [-450, -450]}
 
-goodXTalkTargets = ['HD20782', '91 Aqr']
+goodXTalkTargets = ['91 Aqr', 'HD30562']
 
 
 def getRADecForQuadrant(starcoo, quadrant):
     dra = Angle(quadrantOffsets[quadrant][0], unit=u.arcsec)
     ddec = Angle(quadrantOffsets[quadrant][1], unit=u.arcsec)
 
-    return SkyCoord(starcoo.ra + dra, starcoo.dec + ddec)
+    return SkyCoord(starcoo.ra - dra, starcoo.dec - ddec)
 
 
 def createRequestsForStar(context):
@@ -50,7 +50,7 @@ def createRequestsForStar(context):
             'observatory': context.dome,
             'telescope': context.telescope,
             'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-            'priority': 30,
+            'priority': 32,
         }
 
         my_block = block.Block.build(**block_params)
@@ -71,7 +71,7 @@ def createRequestsForStar(context):
                 'group': 'Sinistro x talk commissioing',
                 'user': context.user,
                 'proposal': 'calibration',
-                'ag_mode': 0,
+
 
                 'defocus': context.defocus
 
