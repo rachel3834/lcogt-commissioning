@@ -27,6 +27,7 @@ from sys import exit
 from os import path
 import statistics
 import logging
+import re
 from matplotlib import use as useBackend
 #useBackend('Agg')
 import matplotlib.pyplot as plt
@@ -405,7 +406,7 @@ def parseCommandLine():
     parser.add_argument('--plotfile', dest='plotfile', type=str, default='xtalk.png',
                         help='File for crosstalk graph')
 
-    parser.add_argument('--quadrant', dest='opt_quadrant', type=int, default='0',
+    parser.add_argument('--quadrant', dest='opt_quadrant', type=int,
                         help='Quadrant containing bright star. Start counting at 0')
 
     parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
@@ -434,4 +435,37 @@ if __name__ == '__main__':
     args = parseCommandLine()
 
     if args.mode_measure:
-        status = multicrossanalysis(args)
+
+        if args.opt_quadrant is not None:
+
+
+            status = multicrossanalysis(args)
+
+        else:
+            print ("Trying to identofy location of contaminating source based on OBJECT name")
+
+            QtoFitsdict = dict()
+            fitsfiles = args.fitsfile
+
+            for file in fitsfiles:
+                hdul = fits.open (file)
+                obj = hdul[0].header['OBJECT']
+                hdul.close()
+                m = re.search ("x talk q (\\d)", obj)
+                if m:
+
+                    quadrant = m.group(1)
+                    print (obj, " -> ",    quadrant)
+
+                    if quadrant in QtoFitsdict:
+                        QtoFitsdict[quadrant].append (file)
+                    else:
+                        QtoFitsdict[quadrant] = [file]
+
+            for quadrant in QtoFitsdict:
+                args.opt_quadrant = int (quadrant)
+                args.fitsfile = QtoFitsdict[quadrant]
+
+                print (quadrant, args.fitsfile)
+                multicrossanalysis(args)
+
