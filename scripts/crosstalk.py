@@ -462,10 +462,10 @@ if __name__ == '__main__':
                     else:
                         QtoFitsdict[quadrant] = [file]
 
+            originalplotfile = args.plotfile
             for quadrant in QtoFitsdict:
                 args.opt_quadrant = int (quadrant)
                 args.fitsfile = QtoFitsdict[quadrant]
-
-                print (quadrant, args.fitsfile)
+                args.plotfile = originalplotfile.replace(".png", "_%d.png" % int(quadrant))
                 multicrossanalysis(args)
 

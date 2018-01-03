@@ -57,7 +57,7 @@ def createRequestsForStar(context):
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant)
 
-        for exptime in [1, 3, 6, 12]:
+        for exptime in [2, 6, 12, 24]:
             moleculeargs = {
                 'inst_name': context.instrument,
                 'bin': 1,
