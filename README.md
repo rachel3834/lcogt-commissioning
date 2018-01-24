@@ -108,3 +108,8 @@ optional arguments:
   --log_level {DEBUG,INFO,WARN}
                         Set the debug level
 </pre>
+
+An example of an actual submission is like:
+<pre>
+python submitXtalkObs.py --site coj --instrument fl12 --start "20180124 18:17" --name "15 Sex" --CONFIRM
+</pre>
