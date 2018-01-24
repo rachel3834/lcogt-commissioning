@@ -12,7 +12,7 @@ quadrantOffsets = {0: [-450, 450],
                    2: [450, -450],
                    3: [-450, -450]}
 
-goodXTalkTargets = ['91 Aqr', 'HD30562']
+goodXTalkTargets = ['91 Aqr', 'HD30562', '15 Sex']
 
 
 def getRADecForQuadrant(starcoo, quadrant):
