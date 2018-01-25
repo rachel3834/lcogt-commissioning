@@ -1,5 +1,7 @@
 import argparse
 import logging
+import ephem
+import math
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
@@ -12,8 +14,65 @@ quadrantOffsets = {0: [-450, 450],
                    2: [450, -450],
                    3: [-450, -450]}
 
-goodXTalkTargets = ['91 Aqr', 'HD30562', '15 Sex']
+_site_lonlat = {}
+_site_lonlat['bpl'] = (-119.863103, 34.433161)
+_site_lonlat['coj'] = (149.0708466, -31.2728196)
+_site_lonlat['cpt'] = (20.8124, -32.3826)
+_site_lonlat['elp'] = (-104.015173, 30.679833)
+_site_lonlat['lsc'] = (-70.8049, -30.1673666667)
+_site_lonlat['ogg'] = (-156.2589, 34.433161)
+_site_lonlat['sqa'] = (-120.04222167, 34.691453333)
+_site_lonlat['tfn'] = (-16.511544, 28.300433)
 
+
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex']
+
+
+
+
+def getAutoCandidate (context):
+
+    if (context.site not in _site_lonlat):
+        _logger.error ("Site %s is not known. Giving up" % context.site)
+        exit (1)
+
+
+
+    site = ephem.Observer()
+    lon,lat = _site_lonlat[context.site]
+    site.lat = lat * math.pi/180
+    site.lon = lon * math.pi/180
+    site.date = ephem.Date (context.start + dt.timedelta(minutes=30))
+
+    moon = ephem.Moon()
+    moon.compute (site)
+    print ("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase*100))
+
+    for starcandidate in goodXTalkTargets:
+        if 'auto'in  starcandidate:
+            continue
+        radec = SkyCoord.from_name(starcandidate)
+        s = ephem.FixedBody()
+        s._ra=radec.ra.degree * math.pi/180
+        s._dec=radec.dec.degree * math.pi/180
+        s.compute (site)
+
+        separation =  (ephem.separation((moon.ra,moon.dec), (s.ra, s.dec)))
+
+        alt = s.alt * 180 / math.pi
+        separation = separation * 180 / math.pi
+
+        altok = alt > 40
+        sepok = separation > 30
+
+        if (altok and sepok):
+            print ("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt,separation))
+            return starcandidate
+        else:
+            print ("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
+
+    print ("No viable start was found! full moon? giving up!")
+    exit (1)
 
 def getRADecForQuadrant(starcoo, quadrant):
     dra = Angle(quadrantOffsets[quadrant][0], unit=u.arcsec)
@@ -22,21 +81,15 @@ def getRADecForQuadrant(starcoo, quadrant):
     return SkyCoord(starcoo.ra - dra, starcoo.dec - ddec)
 
 
+
 def createRequestsForStar(context):
 
     timePerQuadrant = 10 # in minutes
+    start = context.start
 
     # create one block per quadrant
     for quadrant in quadrantOffsets:
 
-        if context.start is None:
-            start = dt.datetime.utcnow()
-        else:
-            try:
-                start = dt.datetime.strptime(context.start, "%Y%m%d %H:%M")
-            except ValueError:
-                _logger.error("Invalidt start time argument: ", context.start)
-                exit(1)
 
         start = start + dt.timedelta(minutes= quadrant * timePerQuadrant)
         end = start + dt.timedelta(minutes=timePerQuadrant)
@@ -111,6 +164,22 @@ def parseCommandLine():
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
+
+    if args.start is None:
+        args.start = dt.datetime.utcnow()
+    else:
+        try:
+            args.start = dt.datetime.strptime(args.start, "%Y%m%d %H:%M")
+        except ValueError:
+            _logger.error("Invalidt start time argument: ", args.start)
+            exit(1)
+
+
+    if ('auto' in args.name):
+        # automatically find the best target
+        args.name = getAutoCandidate (args)
+        pass
 
     try:
         _logger.debug("Resolving target name")
