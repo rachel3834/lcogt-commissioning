@@ -143,7 +143,7 @@ def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='X-Talk calibration submission tool\nSubmit to POND the request to observe a bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.')
 
-    parser.add_argument('--name', required=True, type=str, choices=goodXTalkTargets, 
+    parser.add_argument('--name', default='auto', type=str, choices=goodXTalkTargets,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, program will exit.\n future version will automatically select a star based on time of observation.  ')
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--site', default='coj', choices=['lsc', 'cpt', 'coj', 'elp'], help="To which site to submit")
