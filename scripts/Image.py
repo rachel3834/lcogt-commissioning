@@ -73,7 +73,7 @@ class Image(object):
                 self.biassec.append(bs)
                 self.ccdsec.append(cs)
 
-                if overscancorrect:
+                if overscancorrect & (bs is not None):
                     ovpixels = self.data[
                                i, bs[2]:bs[3], bs[0]: bs[1]]
                     overscan = np.median(ovpixels)
