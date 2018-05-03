@@ -83,6 +83,12 @@ def parseCommandLine():
     parser.add_argument('fitsfile', type=str, nargs=4,
                         help='four fits files:  bias_1 bias_2 flat_1 flat_2')
 
+
+    parser.add_argument('--minx', type=int, default=None)
+    parser.add_argument('--maxx', type=int, default=None)
+    parser.add_argument('--miny', type=int, default=None)
+    parser.add_argument('--maxy', type=int, default=None)
+
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None, help="pathname to prepend to fits file names.")
     parser.add_argument('--log_level', dest='log_level', default='WARN', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
@@ -115,5 +121,7 @@ if __name__ == '__main__':
     print ("Calculating noise / gain based on:\n Bias 1 %s\n Bias 2 %s\n Flat 1 %s\n Flat 2 %s\n" % (args.fitsfile[0],args.fitsfile[1],args.fitsfile[2],args.fitsfile[3],))
 
     for ii in range(len(flat1.data)):
-        (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages)
+        (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
+                                           minx=args.minx, maxx=args.maxx, miny=args.miny, maxy=args.maxy, )
+
         print ("Extension %1d  Gain % 5.3f e-/ADU  Noise % 5.2f e-" % (ii, gain, noise))
