@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
         inhdu = fits.open(imagename, 'readonly')
 
-        header =  inhdu[0].header
+        header =  inhdu[1].header
         indata = inhdu[1].data
         _logger.info(indata.shape)
         naxis1 = indata.shape[1]
@@ -58,12 +58,16 @@ if __name__ == '__main__':
 
         # this is in fits corodia te conventions [x1:x2,y1:y2], but pixel count start at zero
 
-        quadrants = [ [         0, naxis1half  ,            0,  naxis2half ,0,0],
-                      [         0, naxis1half ,   naxis2half   , naxis2       ,0,1],
-                      [naxis1half, naxis1       , naxis2half   , naxis2       ,1,1],
-                      [naxis1half, naxis1       ,             0, naxis2half ,1,0],
+        quadrants = [ [         0, naxis1half,           0, naxis2half,0,0],
+                      [         0, naxis1half,  naxis2half, naxis2    ,0,1],
+                      [naxis1half, naxis1    ,  naxis2half, naxis2    ,1,1],
+                      [naxis1half, naxis1    ,            0,naxis2half,1,0],
                       ]
         outhdu = fits.HDUList()
+        primary = fits.PrimaryHDU()
+
+        primary.header = header
+        outhdu.append(primary)
 
         for quadrant in quadrants:
 
