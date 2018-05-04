@@ -361,7 +361,7 @@ def multicrossanalysis(args):
 
             if iquad != args.opt_quadrant + 1:
                 if zoomlevel == 1:
-                    plt.axis([0, 65000, -100.0, 100.0])
+                    plt.axis([0, 65000, -1000.0, 1000.0])
                     plotfile = args.plotfile
                 if zoomlevel == 2:
                     plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])

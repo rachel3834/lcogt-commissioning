@@ -69,7 +69,11 @@ class Image(object):
                     bs = None
                 else:
                     bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
-                cs = [int(n) for n in re.split(',|:', hdu.header['DATASEC'][1:-1])]
+                print ("CCDSEC: %s " % hdu.header['DATASEC'])
+                if (hdu.header['DATASEC'] is None):
+                    cs = [1,hdu.header['NAXIS1'], 1,hdu.header['NAXIS2']]
+                else:
+                    cs = [int(n) for n in re.split(',|:', hdu.header['DATASEC'][1:-1])]
                 self.biassec.append(bs)
                 self.ccdsec.append(cs)
 
@@ -94,11 +98,11 @@ class Image(object):
                     imagepixels = self.data[
                                   i, cs[2]: cs[3], cs[0]: cs[1]]
                     skylevel = np.median(imagepixels)
-                    std = np.std(imagepixels)
+                    std = np.std(imagepixels - skylevel)
                     skylevel = np.mean(imagepixels[np.abs(imagepixels - skylevel) < 5 * std])
                     hdu.header['SKYLEVEL'] = skylevel
-                    self.data[i, :, :] = self.data[i, :, :] - skylevel
-                    _logger.debug("Sky correct extension #%d with % 8.2f" % (i, skylevel))
+                    self.data[i, :, :] = self.data[i, :,:] - skylevel
+                    _logger.debug("Sky correct extension #%d with % 8.2f \pm  % 8.2f" % (i, skylevel, std))
 
                 self.extension_headers.append(hdu.header)
 
