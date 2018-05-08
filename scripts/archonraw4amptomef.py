@@ -1,12 +1,8 @@
-import sys
 import os
 import numpy as np
-import math
 import argparse
-from Image import Image
 from astropy.io import fits
 
-import matplotlib.pyplot as plt
 
 import logging
 
