@@ -33,14 +33,6 @@ def parseCommandLine():
 
 if __name__ == '__main__':
 
-
-    quadrants = [ [   0, 2079,    0, 2057,0,0], # this is in fits corodia te conventions [x1:x2,y1:y2]
-                  [   0, 2079, 2058, 4115,0,1],
-                  [2080, 4159, 2058, 4115,1,1],
-                  [2080, 4159,    0, 2057,1,0],
-                  ]
-
-
     args = parseCommandLine()
     for imagename in args.inputfiles:
 
@@ -80,11 +72,13 @@ if __name__ == '__main__':
 
             _logger.debug ("%s %s" % (quadrant, data.shape))
             imext = fits.ImageHDU(data)
-            imext.header['DATASEC'] = "[%i:%i,%i,%i]" % (18,2048,1,2048)
-            imext.header['BIASSEC'] = "[%i:%i,%i,%i]" % (data.shape[1]+1-10,data.shape[1]+1, 1, data.shape[0]+1)
+          #  imext.header['DATASEC'] = "[%i:%i,%i,%i]" % (18,2048,1,2048)
+          #  imext.header['BIASSEC'] = "[%i:%i,%i,%i]" % (data.shape[1]+1-10,data.shape[1]+1, 1, data.shape[0]+1)
             outhdu.append (imext)
 
-        outhdu.writeto ('test.fits', clobber=True)
+        outname = os.path.basename(imagename).replace (".fits.fz", "_mef.fits")
+        print ("Writing out to %s " % outname )
+        outhdu.writeto (outname, clobber=True)
 
 
 
