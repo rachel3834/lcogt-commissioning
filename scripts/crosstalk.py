@@ -353,7 +353,7 @@ def multicrossanalysis(args):
                     ydata = ydata - ymodel
 
             if iquad in [1, 4]:
-                plt.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
+                plt.xlabel('Quadrant ' + str(args.opt_quadrant + 1) + ' pixel value [ADU]')
             plt.ylabel('Pixel value [ADU]')
             plt.xticks(rotation=15)
             (xmin, xmax, ymin, ymax) = plt.axis()
@@ -361,7 +361,7 @@ def multicrossanalysis(args):
 
             if iquad != args.opt_quadrant + 1:
                 if zoomlevel == 1:
-                    plt.axis([0, 65000, -1000.0, 1000.0])
+                    plt.axis([0, 65000, -100.0, 100.0])
                     plotfile = args.plotfile
                 if zoomlevel == 2:
                     plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
@@ -412,7 +412,7 @@ def parseCommandLine():
     parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
                         help='Minimum contaminationg flux')
 
-    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='53000',
+    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='63000',
                         help='Maximum contaminationg flux')
 
     args = parser.parse_args()

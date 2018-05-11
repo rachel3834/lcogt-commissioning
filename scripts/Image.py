@@ -16,7 +16,7 @@ class Image(object):
 
     filename = None
 
-    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False):
+    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False, minx=400, maxx=1000,miny=570,maxy=1000):
         """
         Load an image from a FITS file
 
@@ -55,13 +55,18 @@ class Image(object):
         self.extension_headers = []
         self.biassec = []
         self.ccdsec = []
+
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE'])
+        minx = minx if minx is not None else 0
+        miny = miny if miny is not None else 0
+        maxx = maxx if maxx is not None else sci_extensions[0].data.shape[1]
+        maxy = maxy if maxy is not None else sci_extensions[0].data.shape[0]
+
         if len(sci_extensions) >= 1:
-            self.data = np.zeros((len(sci_extensions), sci_extensions[0].data.shape[0],
-                                  sci_extensions[0].data.shape[1]), dtype=np.float32)
+            self.data = np.zeros( ( len(sci_extensions), maxy-miny, maxx-minx ), dtype=np.float32)
             for i, hdu in enumerate(sci_extensions):
 
-                self.data[i, :, :] = hdu.data.astype('float32')[:, :]
+                self.data[i, :, :] = hdu.data.astype('float32')[miny:maxy, minx:maxx]
 
                 gain = 1.
                 overscan = 0.
@@ -78,8 +83,8 @@ class Image(object):
                 self.ccdsec.append(cs)
 
                 if overscancorrect & (bs is not None):
-                    ovpixels = self.data[
-                               i, bs[2]:bs[3], bs[0]: bs[1]]
+                    ovpixels = hdu.data[
+                               bs[2]:bs[3], bs[0]: bs[1]  ]
                     overscan = np.median(ovpixels)
                     std = np.std(ovpixels)
                     overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
@@ -96,7 +101,7 @@ class Image(object):
 
                 if skycorrect:
                     imagepixels = self.data[
-                                  i, cs[2]: cs[3], cs[0]: cs[1]]
+                                  i, :,:]
                     skylevel = np.median(imagepixels)
                     std = np.std(imagepixels - skylevel)
                     skylevel = np.mean(imagepixels[np.abs(imagepixels - skylevel) < 5 * std])
