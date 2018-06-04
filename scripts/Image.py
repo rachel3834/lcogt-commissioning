@@ -16,7 +16,7 @@ class Image(object):
 
     filename = None
 
-    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False, minx=400, maxx=1000,miny=570,maxy=1000):
+    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False, minx=None, maxx=None,miny=None,maxy=None):
         """
         Load an image from a FITS file
 
@@ -87,7 +87,7 @@ class Image(object):
                                bs[2]:bs[3], bs[0]: bs[1]  ]
                     overscan = np.median(ovpixels)
                     std = np.std(ovpixels)
-                    overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
+                    overscan = np.median(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
 
                 if gaincorrect:
                     gain = float(hdu.header['GAIN'])

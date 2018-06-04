@@ -68,8 +68,8 @@ if __name__ == '__main__':
 
             _logger.debug ("%s %s" % (quadrant, data.shape))
             imext = fits.ImageHDU(data)
-          #  imext.header['DATASEC'] = "[%i:%i,%i,%i]" % (18,2048,1,2048)
-          #  imext.header['BIASSEC'] = "[%i:%i,%i,%i]" % (data.shape[1]+1-10,data.shape[1]+1, 1, data.shape[0]+1)
+            imext.header['DATASEC'] = "[%i:%i,%i,%i]" % (18,2048,1,2048)
+            imext.header['BIASSEC'] = "[%i:%i,%i,%i]" % (data.shape[1]+1-10,data.shape[1]+1, 1, data.shape[0]+1)
             outhdu.append (imext)
 
         outname = os.path.basename(imagename).replace (".fits.fz", "_mef.fits")
