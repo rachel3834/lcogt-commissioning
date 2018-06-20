@@ -37,13 +37,13 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     """
 
     if minx is None:
-        minx = (int)  (flat1.shape[1] * 2 / 4 )
+        minx = (int)  (flat1.shape[1] * 3 / 8 )
     if maxx is None:
-        maxx = (int) (flat1.shape[1] * 3 / 4)
+        maxx = (int) (flat1.shape[1] * 5 / 8)
     if miny is None:
-        miny = (int) (flat1.shape[0] * 2 / 4 )
+        miny = (int) (flat1.shape[0] * 3 / 8 )
     if maxy is None:
-        maxy = (int) (flat1.shape[0] * 3 / 4)
+        maxy = (int) (flat1.shape[0] * 5 / 8)
     _logger.debug("imstat region is [%d:%d, %d:%d], derived fomr dimensions %s " % (minx,maxx,miny,maxy, str(flat1.shape)))
     flat1lvl = np.median(flat1[miny:maxy, minx:maxx])
     flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
