@@ -96,7 +96,7 @@ def createRequestsForStar(context):
             'observatory': context.dome,
             'telescope': context.telescope,
             'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-            'priority': 30,
+            'priority': 40,
         }
 
         my_block = block.Block.build(**block_params)
