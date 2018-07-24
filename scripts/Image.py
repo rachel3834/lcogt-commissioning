@@ -74,7 +74,7 @@ class Image(object):
                     bs = None
                 else:
                     bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
-                print ("CCDSEC: %s " % hdu.header['DATASEC'])
+                _logger.debug("CCDSEC: %s " % hdu.header['DATASEC'])
                 if (hdu.header['DATASEC'] is None):
                     cs = [1,hdu.header['NAXIS1'], 1,hdu.header['NAXIS2']]
                 else:
@@ -87,15 +87,15 @@ class Image(object):
                                bs[2]:bs[3], bs[0]: bs[1]  ]
                     overscan = np.median(ovpixels)
                     std = np.std(ovpixels)
-                    overscan = np.median(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
-
+                    overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
+                    #_logger.info ("Measuring overscanlevel %f from %s ext %d" % (overscan, filename, i))
                 if gaincorrect:
                     gain = float(hdu.header['GAIN'])
                     hdu.header['GAIN'] = "1.0"
 
                 hdu.header['OVLEVEL'] = overscan
                 self.data[i, :, :] = (self.data[i, :, :] - overscan) * gain
-                _logger.debug(
+                _logger.info(
                     "Correcting image extension corrected #%d with gain / overscan: % 5.3f % 8.1f" % (
                     i, gain, overscan))
 

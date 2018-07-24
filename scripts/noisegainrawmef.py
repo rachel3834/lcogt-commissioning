@@ -90,7 +90,7 @@ def parseCommandLine():
     parser.add_argument('--maxy', type=int, default=None)
 
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None, help="pathname to prepend to fits file names.")
-    parser.add_argument('--log_level', dest='log_level', default='WARN', choices=['DEBUG', 'INFO', 'WARN'],
+    parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
     parser.add_argument ('--showimages', action='store_true', help="Show difference flat and bias images.")
