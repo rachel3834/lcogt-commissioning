@@ -24,7 +24,7 @@ _site_lonlat['ogg'] = (-156.2589, 34.433161)
 _site_lonlat['sqa'] = (-120.04222167, 34.691453333)
 _site_lonlat['tfn'] = (-16.511544, 28.300433)
 
-goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex']
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
 
 
 def getAutoCandidate(context):
@@ -56,7 +56,7 @@ def getAutoCandidate(context):
         alt = s.alt * 180 / math.pi
         separation = separation * 180 / math.pi
 
-        altok = alt > 40
+        altok = alt > 35
         sepok = separation > 30
 
         if (altok and sepok):
@@ -96,7 +96,7 @@ def createRequestsForStar(context):
             'observatory': context.dome,
             'telescope': context.telescope,
             'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-            'priority': 40,
+            'priority': 20,
         }
 
         my_block = block.Block.build(**block_params)
