@@ -57,16 +57,19 @@ class Image(object):
         self.ccdsec = []
 
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE'])
-        minx = minx if minx is not None else 0
-        miny = miny if miny is not None else 0
-        maxx = maxx if maxx is not None else sci_extensions[0].data.shape[1]
-        maxy = maxy if maxy is not None else sci_extensions[0].data.shape[0]
+
+        # Find out where the on-sky data are located.
+        _logger.debug("CCDSEC: %s " % sci_extensions[0].header['DATASEC'])
+        if (sci_extensions[0].header['DATASEC'] is None):
+            cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
+        else:
+            cs = [int(n) for n in re.split(',|:', sci_extensions[0].header['DATASEC'][1:-1])]
 
         if len(sci_extensions) >= 1:
-            self.data = np.zeros( ( len(sci_extensions), maxy-miny, maxx-minx ), dtype=np.float32)
-            for i, hdu in enumerate(sci_extensions):
+            # Generate intenral stoarge array for pre-processed data
+            self.data = np.zeros( ( len(sci_extensions), cs[3]-cs[2],cs[1] - cs[0]), dtype=np.float32)
 
-                self.data[i, :, :] = hdu.data.astype('float32')[miny:maxy, minx:maxx]
+            for i, hdu in enumerate(sci_extensions):
 
                 gain = 1.
                 overscan = 0.
@@ -74,40 +77,41 @@ class Image(object):
                     bs = None
                 else:
                     bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
-                _logger.debug("CCDSEC: %s " % hdu.header['DATASEC'])
-                if (hdu.header['DATASEC'] is None):
-                    cs = [1,hdu.header['NAXIS1'], 1,hdu.header['NAXIS2']]
-                else:
-                    cs = [int(n) for n in re.split(',|:', hdu.header['DATASEC'][1:-1])]
+
                 self.biassec.append(bs)
                 self.ccdsec.append(cs)
 
                 if overscancorrect & (bs is not None):
+                    # cut first and last colums  of overscan regions
                     ovpixels = hdu.data[
-                               bs[2]:bs[3], bs[0]: bs[1]  ]
+                               bs[2]+1:bs[3]-1, bs[0]+1: bs[1]-1  ]
                     overscan = np.median(ovpixels)
                     std = np.std(ovpixels)
-                    overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 3 * std])
-                    #_logger.info ("Measuring overscanlevel %f from %s ext %d" % (overscan, filename, i))
+                    overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 2 * std])
+
                 if gaincorrect:
                     gain = float(hdu.header['GAIN'])
                     hdu.header['GAIN'] = "1.0"
 
                 hdu.header['OVLEVEL'] = overscan
-                self.data[i, :, :] = (self.data[i, :, :] - overscan) * gain
-                _logger.info(
-                    "Correcting image extension corrected #%d with gain / overscan: % 5.3f % 8.1f" % (
-                    i, gain, overscan))
+                self.data[i, :, :] = (hdu.data[cs[2]:cs[3],cs[0]:cs[1]] - overscan) * gain
+
+
+
+                #self.data[i] = np.asarray(self.data[i, cs[2]:cs[3],cs[0]:cs[1]])
 
                 if skycorrect:
                     imagepixels = self.data[
                                   i, :,:]
                     skylevel = np.median(imagepixels)
                     std = np.std(imagepixels - skylevel)
-                    skylevel = np.mean(imagepixels[np.abs(imagepixels - skylevel) < 5 * std])
+                    skylevel = np.median(imagepixels[np.abs(imagepixels - skylevel) < 3 * std])
                     hdu.header['SKYLEVEL'] = skylevel
                     self.data[i, :, :] = self.data[i, :,:] - skylevel
-                    _logger.debug("Sky correct extension #%d with % 8.2f \pm  % 8.2f" % (i, skylevel, std))
+
+                _logger.info(
+                    "Correcting image extension corrected #%d with gain / overscan / sky: % 5.3f % 8.1f  % 8.2f" % (
+                        i, gain, overscan, skylevel))
 
                 self.extension_headers.append(hdu.header)
 
