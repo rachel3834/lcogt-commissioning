@@ -262,7 +262,7 @@ def correlate_flux(image, sourcequadrant, maskidx):
         ydata = image.getccddata(iquad)[maskidx].flatten()
 
         # now make sure that we only see crostalk, and not additional stellar stuff in the fied.
-        selectidx = ydata < 1e-2 * xdata # TODO: paramterize maximum allowable crosstalk.
+        selectidx = ydata < 1e-3 * xdata # TODO: paramterize maximum allowable crosstalk.
         quadfluxes.append([xdata[selectidx], ydata[selectidx]])
 
     return quadfluxes
@@ -361,7 +361,7 @@ def multicrossanalysis(args):
 
             if iquad != args.opt_quadrant + 1:
                 if zoomlevel == 1:
-                    plt.axis([0, 65000, -100.0, 100.0])
+                    plt.axis([0, 65000, -60.0, 60.0])
                     plotfile = args.plotfile
                 if zoomlevel == 2:
                     plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
@@ -409,10 +409,10 @@ def parseCommandLine():
     parser.add_argument('--quadrant', dest='opt_quadrant', type=int,
                         help='Quadrant containing bright star. Start counting at 0')
 
-    parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
+    parser.add_argument('--minflux', dest='fluxmin', type=float, default='10000',
                         help='Minimum contaminationg flux')
 
-    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='63000',
+    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='50000',
                         help='Maximum contaminationg flux')
 
     args = parser.parse_args()
