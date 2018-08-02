@@ -2,9 +2,4 @@ astropy
 numpy
 matplotlib
 ephem
-
---extra-index-url=http://buildsba.lco.gtn/python
-
-lcogtpond==0.3.14
-lcogtproto==0.4.3
-
+requests
