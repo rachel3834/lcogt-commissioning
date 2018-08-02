@@ -5,7 +5,10 @@ import math
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
-from lcogtpond import block, molecule, pointing
+import requests
+
+LAKE_URL = 'http://lake.lco.gtn'
+
 
 _logger = logging.getLogger(__name__)
 
@@ -86,10 +89,13 @@ def createRequestsForStar(context):
 
         start = absolutestart + dt.timedelta(minutes=(quadrant) * timePerQuadrant)
         end = start + dt.timedelta(minutes=timePerQuadrant)
+        start = str(start).replace(' ','T')
+        end = str(end).replace(' ','T')
 
-        print("Block for %s Q %d from %s to %s" % (context.name, quadrant, start, end))
+        print("Block for %s Q %d from %s to %s" % (context.name, quadrant, str(start), str(end)))
 
         block_params = {
+            "molecules" : [],
             'start': start,
             'end': end,
             'site': context.site,
@@ -99,33 +105,44 @@ def createRequestsForStar(context):
             'priority': 20,
         }
 
-        my_block = block.Block.build(**block_params)
-
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
 
         for exptime in [2, 4, 6, 12]:
             moleculeargs = {
                 'inst_name': context.instrument,
                 'bin': 1,
-                'exp_time': exptime,
-                'exp_cnt': 1,
-                'filters': 'rp',
-                'pointing': pointing.sidereal(name="%s x talk q %d" % (context.name, quadrant),
-                                              coord=pointing.ra_dec(ra=offsetPointing.ra.degree,
-                                                                    dec=offsetPointing.dec.degree)),
+                'exposure_time': exptime,
+                'exposure_count': 1,
+                'bin_x' : 1,
+                'bin_y' : 2,
+
+                'filter': 'rp',
+                'pointing': { "type" : "SP",
+                              "name" : "%s x talk q %d" % (context.name, quadrant),
+                              "coord_type" : "RD",
+                              "coord_sys" : "ICRS",
+                              "epoch" : "2000",
+                              "equinox" : "2000",
+                              "ra" :  "%10f" % offsetPointing.ra.degree,
+                              "dec" : "%7f" % offsetPointing.dec.degree,
+                              },
 
                 'group': 'Sinistro x talk commissioning',
-                'user': context.user,
-                'proposal': 'calibration',
-                'defocus': context.defocus
+                'user_id': context.user,
+                'prop_id': 'calibration',
+                'defocus': context.defocus,
+                'type' : 'EXPOSE'
             }
 
-            my_molecule = molecule.Expose.build(**moleculeargs)
-            my_block.add_molecule(my_molecule)
+            block_params['molecules'].append (moleculeargs)
 
         if args.opt_confirmed:
-            print("Save block ...")
-            my_block.save()
+            response = requests.post(LAKE_URL + '/blocks/', json=block_params)
+            try:
+                response.raise_for_status()
+                print('Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
+            except Exception:
+                print('Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
 
 
 def parseCommandLine():
