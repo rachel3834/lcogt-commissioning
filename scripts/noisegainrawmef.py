@@ -37,14 +37,14 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     """
 
     if minx is None:
-        minx = (int)  (flat1.shape[1] * 8 / 16 )
+        minx = (int)  (flat1.shape[1] * 3 / 8 )
     if maxx is None:
-        maxx = (int) (flat1.shape[1] * 10 / 16)
+        maxx = (int) (flat1.shape[1] * 5 / 8)
     if miny is None:
-        miny = (int) (flat1.shape[0] * 8 / 16 )
+        miny = (int) (flat1.shape[0] * 3 / 8 )
     if maxy is None:
-        maxy = (int) (flat1.shape[0] * 10 / 16)
-    _logger.debug("imstat region is [%d:%d, %d:%d]" % (minx,maxx,miny,maxy))
+        maxy = (int) (flat1.shape[0] * 5 / 8)
+    _logger.debug("imstat region is [%d:%d, %d:%d], derived fomr dimensions %s " % (minx,maxx,miny,maxy, str(flat1.shape)))
     flat1lvl = np.median(flat1[miny:maxy, minx:maxx])
     flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
     bias1lvl = np.median(bias1[miny:maxy, minx:maxx])
@@ -90,7 +90,7 @@ def parseCommandLine():
     parser.add_argument('--maxy', type=int, default=None)
 
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None, help="pathname to prepend to fits file names.")
-    parser.add_argument('--log_level', dest='log_level', default='WARN', choices=['DEBUG', 'INFO', 'WARN'],
+    parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
     parser.add_argument ('--showimages', action='store_true', help="Show difference flat and bias images.")

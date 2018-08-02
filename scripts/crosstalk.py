@@ -262,7 +262,7 @@ def correlate_flux(image, sourcequadrant, maskidx):
         ydata = image.getccddata(iquad)[maskidx].flatten()
 
         # now make sure that we only see crostalk, and not additional stellar stuff in the fied.
-        selectidx = ydata < 1e-2 * xdata # TODO: paramterize maximum allowable crosstalk.
+        selectidx = ydata < 1e-3 * xdata # TODO: paramterize maximum allowable crosstalk.
         quadfluxes.append([xdata[selectidx], ydata[selectidx]])
 
     return quadfluxes
@@ -334,7 +334,7 @@ def multicrossanalysis(args):
                                                                                 fit_gradient, sigclip=5)
                         label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
                         if zoomlevel == 1:
-                            print ('"CRSTLK%d%d": %s,' % ( (args.opt_quadrant + 1),  iquad, str(round(afit[1],5))))
+                            print ('archon.header.CRSTLK%d%d = %9f' % ( (args.opt_quadrant + 1),  iquad, (round(afit[1],5))))
                             #print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
                     elif args.poly:
                         (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
@@ -353,7 +353,7 @@ def multicrossanalysis(args):
                     ydata = ydata - ymodel
 
             if iquad in [1, 4]:
-                plt.xlabel('Quadrant ' + str(args.opt_quadrant) + ' pixel value [ADU]')
+                plt.xlabel('Quadrant ' + str(args.opt_quadrant + 1) + ' pixel value [ADU]')
             plt.ylabel('Pixel value [ADU]')
             plt.xticks(rotation=15)
             (xmin, xmax, ymin, ymax) = plt.axis()
@@ -361,7 +361,7 @@ def multicrossanalysis(args):
 
             if iquad != args.opt_quadrant + 1:
                 if zoomlevel == 1:
-                    plt.axis([0, 65000, -100.0, 100.0])
+                    plt.axis([0, 65000, -60.0, 60.0])
                     plotfile = args.plotfile
                 if zoomlevel == 2:
                     plt.axis([xmax - 10000, xmax + 1000, -100.0, 100.0])
@@ -409,10 +409,10 @@ def parseCommandLine():
     parser.add_argument('--quadrant', dest='opt_quadrant', type=int,
                         help='Quadrant containing bright star. Start counting at 0')
 
-    parser.add_argument('--minflux', dest='fluxmin', type=float, default='5000',
+    parser.add_argument('--minflux', dest='fluxmin', type=float, default='10000',
                         help='Minimum contaminationg flux')
 
-    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='53000',
+    parser.add_argument('--maxflux', dest='fluxmax', type=float, default='50000',
                         help='Maximum contaminationg flux')
 
     args = parser.parse_args()
