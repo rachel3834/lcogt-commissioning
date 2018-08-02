@@ -16,21 +16,21 @@
 
 
 import argparse
-import os
-import sys
-
-from Image import Image
-from astropy.io import fits
-import numpy as np
-from scipy import optimize
-from sys import exit
-from os import path
-import statistics
 import logging
+import os
 import re
-from matplotlib import use as useBackend
-#useBackend('Agg')
+import sys
+from os import path
+from sys import exit
+
+# useBackend('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
+from astropy.io import fits
+from scipy import optimize
+
+import statistics
+from Image import Image
 
 _logger = logging.getLogger(__name__)
 
