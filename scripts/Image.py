@@ -55,6 +55,7 @@ class Image(object):
         self.extension_headers = []
         self.biassec = []
         self.ccdsec = []
+        self.extver = []
 
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE'])
 
@@ -79,6 +80,10 @@ class Image(object):
                     bs = None
                 else:
                     bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
+
+                extver = hdu.header['EXTVER']
+                extver = extver if extver is not None else i + 1
+                self.extver.append (extver)
 
                 self.biassec.append(bs)
                 self.ccdsec.append(cs)

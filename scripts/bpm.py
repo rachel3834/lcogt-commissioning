@@ -101,20 +101,21 @@ if __name__ == '__main__':
         exit(1)
 
 
-    numext = biasfiles[0].data.shape[0]
-    outputdata = np.zeros(biasfiles[0].data.shape)
+    referenceImage = biasfiles[0]
+
+    numext = referenceImage.data.shape[0]
+    outputdata = np.zeros(referenceImage.data.shape)
 
     for ext in range(numext):
 
+        extver = referenceImage.extver[ext]
 
-        _logger.info("Process extension %d of %d" % (ext, numext))
+        _logger.info ("Process extension # %d -> extver %s" % (ext+1, extver))
+        if ext+1 != extver:
+            _logger.warn ("Extension number and extver are out of sync. be aware!")
 
         extensionaveraged = combineData(biasfiles, extension = ext)
         biasbpm = createbpmFromBiasextension(extensionaveraged)
-
-        extensionaveraged = combineData(flatfiles, extension = ext)
-        flatbpm = createbpmFromFlatextension(extensionaveraged)
-
 
         darkbpm = None
         if len (darkfiles) > 3:
@@ -123,12 +124,21 @@ if __name__ == '__main__':
         else:
             _logger.info ("Ommitting dark bpm due to lack of sufficient files")
 
+        extensionaveraged = combineData(flatfiles, extension = ext)
+        flatbpm = createbpmFromFlatextension(extensionaveraged)
+
+        # add up all BPM fields.
         outputdata[ext] = biasbpm + flatbpm + (darkbpm if darkbpm is not None else 0)
 
-        #plt.imshow (outputdata[ext], clim=(0,1))
+        #plt.imshow (outputdata[ext], clim=(0,3))
         #plt.show();
 
 
-    hdu = fits.PrimaryHDU(outputdata)
-    hdul = fits.HDUList ([hdu])
-    hdu.writeto(args.outputfilename)
+    hdul = fits.HDUList ()
+    for ii in range (len (outputdata)):
+        hdu = fits.ImageHDU (outputdata[ii])
+        hdu.header['EXTNAME'] = 'BPM'
+        hdu.header['EXTVER'] = '%d' % (ii)
+        hdul.append (hdu)
+
+    hdul.writeto(args.outputfilename)
