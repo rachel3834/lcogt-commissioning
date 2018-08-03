@@ -16,7 +16,7 @@ class Image(object):
 
     filename = None
 
-    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False, minx=None, maxx=None,miny=None,maxy=None):
+    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False, trim=True, minx=None, maxx=None,miny=None,maxy=None):
         """
         Load an image from a FITS file
 
@@ -60,14 +60,16 @@ class Image(object):
 
         # Find out where the on-sky data are located.
         _logger.debug("CCDSEC: %s " % sci_extensions[0].header['DATASEC'])
-        if (sci_extensions[0].header['DATASEC'] is None):
+
+        if (( sci_extensions[0].header['DATASEC'] is None) or not trim):
+            _logger.info ("Not trimming")
             cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
         else:
             cs = [int(n) for n in re.split(',|:', sci_extensions[0].header['DATASEC'][1:-1])]
 
         if len(sci_extensions) >= 1:
             # Generate intenral stoarge array for pre-processed data
-            self.data = np.zeros( ( len(sci_extensions), cs[3]-cs[2],cs[1] - cs[0]), dtype=np.float32)
+            self.data = np.zeros( ( len(sci_extensions), cs[3]-cs[2] + 1 ,cs[1] - cs[0] + 1), dtype=np.float32)
 
             for i, hdu in enumerate(sci_extensions):
 
@@ -94,12 +96,13 @@ class Image(object):
                     hdu.header['GAIN'] = "1.0"
 
                 hdu.header['OVLEVEL'] = overscan
-                self.data[i, :, :] = (hdu.data[cs[2]:cs[3],cs[0]:cs[1]] - overscan) * gain
+                self.data[i, :, :] = (hdu.data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan) * gain
 
 
 
                 #self.data[i] = np.asarray(self.data[i, cs[2]:cs[3],cs[0]:cs[1]])
 
+                skylevel = 0
                 if skycorrect:
                     imagepixels = self.data[
                                   i, :,:]
@@ -160,5 +163,6 @@ class Image(object):
         # deprecated at some point
         extension_info = fits_hdulist.info(False)
         return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] in name])
+
 
 
