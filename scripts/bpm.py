@@ -22,6 +22,8 @@ def parseCommandLine():
     parser.add_argument('--outputfilename', dest='outputfilename', type=str, default='bpm.fits',
                         help='Outputfilename')
 
+    parser.add_argument ('--showimages', action='store_true', help="Show bpm of each extension")
+
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -85,31 +87,28 @@ if __name__ == '__main__':
 
     for ii in args.fitsfiles:
         if "-b00" in ii:
-           biasfiles.append (Image(ii, overscancorrect=True, trim=False))
+           biasfiles.append (Image(ii, overscancorrect=True, trim=True))
         if "-d00" in ii:
-            darkfiles.append (Image(ii, overscancorrect=True, trim=False))
+            darkfiles.append (Image(ii, overscancorrect=True, trim=True))
         if "-f00" in ii:
-            flatfiles.append (Image(ii, overscancorrect=True, trim=False))
-
+            flatfiles.append (Image(ii, overscancorrect=True, trim=True))
 
     if len (biasfiles) < 3:
-        _logger.error ("There are not enough bias files defined to continue. Giving up.")
+        _logger.fatal ("*** There are not enough bias files defined to continue. Giving up.")
         exit(1)
 
     if len (flatfiles) < 3:
-        _logger.error ("There are not enough flat files defined to continue. Giving up.")
+        _logger.fatal ("*** There are not enough flat files defined to continue. Giving up.")
         exit(1)
 
-
+    # we refer all image dimensions etc to the first bias in the list
     referenceImage = biasfiles[0]
-
     numext = referenceImage.data.shape[0]
     outputdata = np.zeros(referenceImage.data.shape)
 
     for ext in range(numext):
 
         extver = referenceImage.extver[ext]
-
         _logger.info ("Process extension # %d -> extver %s" % (ext+1, extver))
         if ext+1 != extver:
             _logger.warn ("Extension number and extver are out of sync. be aware!")
@@ -130,8 +129,9 @@ if __name__ == '__main__':
         # add up all BPM fields.
         outputdata[ext] = biasbpm + flatbpm + (darkbpm if darkbpm is not None else 0)
 
-        #plt.imshow (outputdata[ext], clim=(0,3))
-        #plt.show();
+        if args.showimages:
+            plt.imshow (outputdata[ext], clim=(0,3))
+            plt.show();
 
 
     hdul = fits.HDUList ()

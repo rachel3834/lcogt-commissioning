@@ -83,6 +83,8 @@ class Image(object):
 
                 extver = hdu.header['EXTVER']
                 extver = extver if extver is not None else i + 1
+                if extver != i+1:
+                    _logger.warn ("extver %d is not equal exteionsion numner %d." % (extver,i+1))
                 self.extver.append (extver)
 
                 self.biassec.append(bs)
@@ -102,10 +104,6 @@ class Image(object):
 
                 hdu.header['OVLEVEL'] = overscan
                 self.data[i, :, :] = (hdu.data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan) * gain
-
-
-
-                #self.data[i] = np.asarray(self.data[i, cs[2]:cs[3],cs[0]:cs[1]])
 
                 skylevel = 0
                 if skycorrect:
