@@ -1,18 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 23 15:10:03 2016
-
-@author: rstreet
-"""
 import argparse
 import logging
 import os
 import sys
 import numpy as np
 from astropy.io import fits
-from sys import argv
 from Image import Image
-import math
 import matplotlib.pyplot as plt
 
 _logger = logging.getLogger(__name__)
@@ -123,7 +115,15 @@ if __name__ == '__main__':
         extensionaveraged = combineData(flatfiles, extension = ext)
         flatbpm = createbpmFromFlatextension(extensionaveraged)
 
-        outputdata[ext] = biasbpm + flatbpm
+
+        darkbpm = None
+        if len (darkfiles) > 3:
+            extensionaveraged = combineData(darkfiles, extension = ext)
+            darkbpm = createbpmFromBiasextension(extensionaveraged)
+        else:
+            _logger.info ("Ommitting dark bpm due to lack of sufficient files")
+
+        outputdata[ext] = biasbpm + flatbpm + (darkbpm if darkbpm is not None else 0)
 
         #plt.imshow (outputdata[ext], clim=(0,1))
         #plt.show();
