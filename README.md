@@ -113,3 +113,47 @@ An example of an actual submission is like:
 <pre>
 python submitXtalkObs.py --site coj --instrument fl12 --start "20180124 18:17" --name "15 Sex" --CONFIRM
 </pre>
+
+
+
+bpm.py
+===
+
+Create a BANZAI-compatible bad pixel mask out of a set of bias, dark, and flat field frames.
+
+At the minimum, a set of three bias images have to be given as a parameter. A bpm will be calcualted for each image
+ extension based on all bias, dark, and flat iamges given. Images of boas, dark, flat will be median combined before
+  analysis.
+
+For biases: All pixels with a value larger than 20 times the varaince in the bias will be flagged as bad.
+For darks: All pixels with a value larger than 20 times the varaince in the bias will be flagged as bad.
+For flats: All pixels with a vlaues smaller than 20% of the median level wil be flagged as bad.
+
+
+Pixel values indicate in the bpm > 0 indicate a bad pixel; the coding is as:
+0&001 - bad because identified as bad in bias
+0&010 - bad because identified as bad in dark
+0&100 - bad because identified as bad in flat
+
+
+
+Usage: 
+<pre> dharbeck@dharbeck-lco2:~/Software/lcogt-commissioning/scripts$ python bpm.py --help
+      usage: bpm.py [-h] [--log_level {DEBUG,INFO}]
+                    [--outputfilename OUTPUTFILENAME] [--showimages]
+                    fitsfiles [fitsfiles ...]
+      
+      Create a bad pixel mask out of biases, darks, and flat fields
+      
+      positional arguments:
+        fitsfiles             Input FITS files for bpm creation.
+      
+      optional arguments:
+        -h, --help            show this help message and exit
+        --log_level {DEBUG,INFO}
+                              Set the debug level
+        --outputfilename OUTPUTFILENAME
+                              Outputfilename
+        --showimages          Show bpm of each extension
+
+</pre>
