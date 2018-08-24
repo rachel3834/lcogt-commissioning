@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import scipy.ndimage as ndimage
 import sys
 import numpy as np
 from astropy.io import fits
@@ -40,28 +41,36 @@ def parseCommandLine():
 
 def combineData (listoffiles, extension=0, scale=False):
 
+
+
     _logger.debug("Averaging %d files..." % len(listoffiles))
     ccdsec = listoffiles[0].ccdsec[extension]
     stack = np.zeros( (len(listoffiles),  ccdsec[3]-ccdsec[2]+1,ccdsec[1] - ccdsec[0]+1), dtype=np.float32)
     for ii in range (len(listoffiles)):
         stack[ii] = listoffiles[ii].data[extension]
-    averageimage = np.median (stack, axis=0)
 
+    averageimage = np.median (stack, axis=0)
     return averageimage
 
 
 def createbpmFromBiasextension (extdata):
 
+
+
     variance = np.std(extdata)
     level = np.median (extdata)
     level = np.median (extdata[np.abs(extdata-level) < 5*variance])
+    variance = np.std(extdata[np.abs(extdata-level) < 20*variance])
 
-    baddata = np.abs (extdata - level) > variance*20
+    _logger.debug("Generating median-filter subtracted bias")
+    smoothedbias = extdata - level
+    smoothedbias = smoothedbias - ndimage.median_filter(smoothedbias,7)
+
+    baddata = np.abs (smoothedbias) > variance*10
     extdata *=0
     extdata[baddata] = 1
     _logger.info ("BPM from Bias: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
-    #plt.imshow (extdata, clim=(0,1))
-    #plt.show();
+
 
     return extdata
 
@@ -135,11 +144,13 @@ if __name__ == '__main__':
         else:
             _logger.info ("Ommitting dark bpm due to lack of sufficient files")
 
-        extensionaveraged = combineData(flatfiles, extension = ext)
-        flatbpm = createbpmFromFlatextension(extensionaveraged)
+        flatbpm = None
+        if len(flatfiles) > 3:
+            extensionaveraged = combineData(flatfiles, extension = ext)
+            flatbpm = createbpmFromFlatextension(extensionaveraged)
 
         # add up all BPM fields.
-        outputdata[ext] = (biasbpm + flatbpm + (darkbpm if darkbpm is not None else 0)).astype(np.uint8)
+        outputdata[ext] = (biasbpm + (flatbpm if flatbpm is not None else 0)+ (darkbpm if darkbpm is not None else 0)).astype(np.uint8)
 
         if args.showimages:
             plt.imshow (outputdata[ext], clim=(0,3))
@@ -149,18 +160,23 @@ if __name__ == '__main__':
     hdul = fits.HDUList ()
     phdu = fits.PrimaryHDU(header=referenceImage.header)
     phdu.header['OBSTYPE'] = 'BPM'
-    # phdu.header['SITEID'] = referenceImage.header['SITEID']
-    # phdu.header['INSTRUME'] = referenceImage.header['INSTRUME']
-    # phdu.header['CCDSUM'] = referenceImage.header['CCDSUM']
 
 
     hdul.append (phdu)
     for ii in range (len (outputdata)):
-        print ("extension %d  detsec %s" % (ii,referenceImage.extension_headers[ii]['DETSEC'] ))
+        _logger.info ("extension %d  detsec %s" % (ii,referenceImage.extension_headers[ii]['DETSEC'] ))
         hdu = fits.ImageHDU (outputdata[ii].astype(np.uint8), header=referenceImage.extension_headers[ii])
         hdu.header['EXTNAME'] = 'BPM'
         hdu.header['EXTVER'] = '%d' % (ii+1)
         hdul.append (hdu)
 
+    # BANZAI legacy from pre-fzcompress
+
+    keywordd_to_ext1 = ['SITEID','INSTRUME','CCDSUM','DAY-OBS']
+    for key in keywordd_to_ext1:
+        _logger.debug ("Copy keyword %s to extention 1 for BANZAI" % key)
+        hdul[1].header[key] = referenceImage.header[key]
+
+
     _logger.info ("Writing output file %s to disk" % args.outputfilename)
-    hdul.writeto(args.outputfilename)
+    hdul.writeto(args.outputfilename, overwrite=True)
