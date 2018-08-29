@@ -153,15 +153,21 @@ if __name__ == '__main__':
             extensionaveraged = combineData(darkfiles, extension = ext)
             darkbpm = createbpmFromDarkextension(extensionaveraged)
         else:
-            _logger.info ("Ommitting dark bpm due to lack of sufficient files")
+            _logger.info ("Ommitting DARK bpm due to lack of sufficient files")
 
         flatbpm = None
         if len(flatfiles) > 3:
             extensionaveraged = combineData(flatfiles, extension = ext)
             flatbpm = createbpmFromFlatextension(extensionaveraged)
+        else:
+            _logger.info ("Ommitting FLAT bpm due to lack of sufficient files")
 
         # add up all BPM fields.
-        outputdata[ext] = (biasbpm + (flatbpm if flatbpm is not None else 0)+ (darkbpm if darkbpm is not None else 0)).astype(np.uint8)
+        outputdata[ext] = (
+                biasbpm +
+                (flatbpm if flatbpm is not None else 0) +
+                (darkbpm if darkbpm is not None else 0)
+        ).astype(np.uint8)
 
         if args.showbpmimages:
             showanextenstion(outputdata[ext], title="Final BPM for ext #%d" %ext)
@@ -169,7 +175,6 @@ if __name__ == '__main__':
     hdul = fits.HDUList ()
     phdu = fits.PrimaryHDU(header=referenceImage.header)
     phdu.header['OBSTYPE'] = 'BPM'
-
 
     hdul.append (phdu)
     for ii in range (len (outputdata)):
