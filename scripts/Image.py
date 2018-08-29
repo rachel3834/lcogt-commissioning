@@ -83,7 +83,7 @@ class Image(object):
                 extver = hdu.header['EXTVER']
                 #extver = extver if extver is not None else i + 1
                 if extver != i+1:
-                    _logger.warn ("extver %d does not equal extension numner %d." % (extver,i+1))
+                    _logger.warning ("extver %d does not equal extension numner %d." % (extver,i+1))
                 self.extver.append (extver)
 
                 self.biassec.append(bs)
@@ -114,8 +114,8 @@ class Image(object):
                     hdu.header['SKYLEVEL'] = skylevel
                     self.data[i, :, :] = self.data[i, :,:] - skylevel
 
-                _logger.info(
-                    "Correcting image extension corrected #%d with gain / overscan / sky: % 5.3f % 8.1f  % 8.2f" % (
+                _logger.debug(
+                    "Correcting image extension #%d with gain / overscan / sky: % 5.3f % 8.1f  % 8.2f" % (
                         i, gain, overscan, skylevel))
 
                 self.extension_headers.append(hdu.header)

@@ -40,8 +40,7 @@ def parseCommandLine():
 
 
 def combineData (listoffiles, extension=0, scale=False):
-
-
+    """ Stack a set of images by median averaging"""
 
     _logger.debug("Averaging %d files..." % len(listoffiles))
     ccdsec = listoffiles[0].ccdsec[extension]
@@ -54,23 +53,29 @@ def combineData (listoffiles, extension=0, scale=False):
 
 
 def createbpmFromBiasextension (extdata):
+    """
+    Build a bad pixel mask based on a bias image extension. Ideally, the input image is already a stack
 
+    The strategy is to find pixels with a significant high level above background.
 
+    """
 
-    variance = np.std(extdata)
-    level = np.median (extdata)
-    level = np.median (extdata[np.abs(extdata-level) < 5*variance])
+    # estimate the variance of the images; subtract a smoothed version of image to get rid of gradients
+    _logger.debug("Generating median-filter subtracted bias")
+
+    smoothedbias = extdata - ndimage.median_filter(extdata,7)
+
+    # level / variance iteration 1:
+    variance = np.std(smoothedbias)
+    level = np.median (smoothedbias)
+    # now level / variance w/ outlier rejection
+    level = np.median (extdata[np.abs(smoothedbias-level) < 5*variance])
     variance = np.std(extdata[np.abs(extdata-level) < 20*variance])
 
-    _logger.debug("Generating median-filter subtracted bias")
-    smoothedbias = extdata - level
-    smoothedbias = smoothedbias - ndimage.median_filter(smoothedbias,7)
-
-    baddata = np.abs (smoothedbias) > variance*10
+    baddata = np.abs (smoothedbias) > variance*15
     extdata *=0
     extdata[baddata] = 1
     _logger.info ("BPM from Bias: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
-
 
     return extdata
 
@@ -132,7 +137,7 @@ if __name__ == '__main__':
         extver = referenceImage.extver[ext]
         _logger.info ("Process extension # %d -> extver %s" % (ext+1, extver))
         if ext+1 != extver:
-            _logger.warn ("Extension number and extver are out of sync. be aware!")
+            _logger.warning ("Extension number and extver are out of sync. be aware!")
 
         extensionaveraged = combineData(biasfiles, extension = ext)
         biasbpm = createbpmFromBiasextension(extensionaveraged)
