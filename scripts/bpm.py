@@ -17,13 +17,15 @@ def parseCommandLine():
     parser.add_argument('fitsfiles', type=str, nargs='+',
                         help='Input FITS files for bpm creation.')
 
-    parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO'],
+    parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO'],
                         help='Set the debug level')
 
     parser.add_argument('--outputfilename', dest='outputfilename', type=str, default='bpm.fits',
                         help='Outputfilename')
 
-    parser.add_argument ('--showimages', action='store_true', help="Show bpm of each extension")
+    parser.add_argument ('--showbpmimages', action='store_true', help="Show bpm of each extension for inspection")
+    parser.add_argument ('--showstackedinput', action='store_true', help="Show stacked bias, dark, flat images for inspection")
+    parser.add_argument ('--biassigma', type=float, default=15, help="rejection limit in sigma above background for bias")
 
     args = parser.parse_args()
 
@@ -52,7 +54,7 @@ def combineData (listoffiles, extension=0, scale=False):
     return averageimage
 
 
-def createbpmFromBiasextension (extdata):
+def createbpmFromBiasextension (extdata, sigma=15):
     """
     Build a bad pixel mask based on a bias image extension. Ideally, the input image is already a stack
 
@@ -72,15 +74,15 @@ def createbpmFromBiasextension (extdata):
     level = np.median (extdata[np.abs(smoothedbias-level) < 5*variance])
     variance = np.std(extdata[np.abs(extdata-level) < 20*variance])
 
-    baddata = np.abs (smoothedbias) > variance*15
-    extdata *=0
+    baddata = np.abs (smoothedbias) > variance * sigma
+    extdata *= 0
     extdata[baddata] = 1
     _logger.info ("BPM from Bias: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
 
     return extdata
 
 
-def createbpmFromDarkextension (extdata):
+def createbpmFromDarkextension (extdata, sigma=15):
 
     variance = np.std(extdata)
     level = np.median (extdata)
@@ -89,9 +91,6 @@ def createbpmFromDarkextension (extdata):
     extdata *=0
     extdata[baddata] = 2
     _logger.info ("BPM from Dark: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
-    #plt.imshow (extdata, clim=(0,1))
-    #plt.show();
-
     return extdata
 
 
@@ -101,12 +100,17 @@ def createbpmFromFlatextension (extdata):
     baddata = extdata < level*0.2
     extdata *=0
     extdata[baddata] = 4
-    #plt.imshow (extdata, clim=(0,1))
-    #plt.show();
-    _logger.info ("BPM from Flat: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
 
+    _logger.info ("BPM from Flat: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
     return extdata
 
+
+
+def showanextenstion(data,title=None, minx=None,maxx=None):
+    plt.imshow(data)
+    if title is not None:
+        plt.title(title)
+    plt.show()
 
 if __name__ == '__main__':
     args = parseCommandLine()
@@ -140,7 +144,9 @@ if __name__ == '__main__':
             _logger.warning ("Extension number and extver are out of sync. be aware!")
 
         extensionaveraged = combineData(biasfiles, extension = ext)
-        biasbpm = createbpmFromBiasextension(extensionaveraged)
+        if args.showstackedinput:
+            showanextenstion(extensionaveraged, title="Stacked bias ext #%d" %ext)
+        biasbpm = createbpmFromBiasextension(extensionaveraged, sigma = args.biassigma)
 
         darkbpm = None
         if len (darkfiles) > 3:
@@ -157,10 +163,8 @@ if __name__ == '__main__':
         # add up all BPM fields.
         outputdata[ext] = (biasbpm + (flatbpm if flatbpm is not None else 0)+ (darkbpm if darkbpm is not None else 0)).astype(np.uint8)
 
-        if args.showimages:
-            plt.imshow (outputdata[ext], clim=(0,3))
-            plt.show();
-
+        if args.showbpmimages:
+            showanextenstion(outputdata[ext], title="Final BPM for ext #%d" %ext)
 
     hdul = fits.HDUList ()
     phdu = fits.PrimaryHDU(header=referenceImage.header)
@@ -176,12 +180,10 @@ if __name__ == '__main__':
         hdul.append (hdu)
 
     # BANZAI legacy from pre-fzcompress
-
     keywordd_to_ext1 = ['SITEID','INSTRUME','CCDSUM','DAY-OBS']
     for key in keywordd_to_ext1:
         _logger.debug ("Copy keyword %s to extention 1 for BANZAI" % key)
         hdul[1].header[key] = referenceImage.header[key]
-
 
     _logger.info ("Writing output file %s to disk" % args.outputfilename)
     hdul.writeto(args.outputfilename, overwrite=True)
