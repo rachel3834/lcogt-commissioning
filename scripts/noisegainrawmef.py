@@ -44,21 +44,22 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
         miny = (int) (flat1.shape[0] * 3 / 8 )
     if maxy is None:
         maxy = (int) (flat1.shape[0] * 5 / 8)
-    _logger.debug("imstat region is [%d:%d, %d:%d], derived fomr dimensions %s " % (minx,maxx,miny,maxy, str(flat1.shape)))
+
     flat1lvl = np.median(flat1[miny:maxy, minx:maxx])
     flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
     bias1lvl = np.median(bias1[miny:maxy, minx:maxx])
     bias2lvl = np.median(bias2[miny:maxy, minx:maxx])
-    _logger.debug(" Flat levels: % 8f % 8f" % (flat1lvl, flat2lvl))
-    _logger.debug(" Bias levels: % 8f % 8f" % (bias1lvl, bias2lvl))
+
 
     # Measure noise of flat and biad differential iamges
     deltaflat = (flat1 - flat2)[miny:maxy, minx:maxx]
     deltabias = (bias1 - bias2)[miny:maxy, minx:maxx]
     biasnoise = np.std(deltabias)
-    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 10 * biasnoise])
+    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 7 * biasnoise])
     flatnoise = np.std(deltaflat)
-    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 10 * flatnoise])
+    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 7 * flatnoise])
+    _logger.debug(" Levels (flat,flat,bias,bias), and noise (flat, bias): [%d:%d, %d:%d]: % 7.2f, % 7.2f | % 5.2f, % 5.2f | % 7.2f % 5.2f" % (minx,maxx,miny,maxy,flat1lvl, flat2lvl,bias1lvl, bias2lvl, flatnoise,biasnoise))
+
 
     flatlevel = (flat1lvl + flat2lvl) / 2 - (bias1lvl + bias2lvl) / 2
     gain = 2 * flatlevel / (flatnoise ** 2 - biasnoise ** 2)
@@ -73,7 +74,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
         plt.colorbar()
         plt.title ("Delta Bias")
         plt.show()
-    return (gain, readnoise)
+    return (gain, readnoise, flatlevel)
 
 
 def parseCommandLine():
@@ -113,15 +114,36 @@ if __name__ == '__main__':
 
     args = parseCommandLine()
 
-    bias1 = Image(args.fitsfile[0], overscancorrect=True)
-    bias2 = Image(args.fitsfile[1], overscancorrect=True)
-    flat1 = Image(args.fitsfile[2], overscancorrect=True)
-    flat2 = Image(args.fitsfile[3], overscancorrect=True)
+    overscancorrect = False
+    bias1 = Image(args.fitsfile[0], overscancorrect=overscancorrect)
+    bias2 = Image(args.fitsfile[1], overscancorrect=overscancorrect)
+    flat1 = Image(args.fitsfile[2], overscancorrect=overscancorrect)
+    flat2 = Image(args.fitsfile[3], overscancorrect=overscancorrect)
 
     print ("Calculating noise / gain based on:\n Bias 1 %s\n Bias 2 %s\n Flat 1 %s\n Flat 2 %s\n" % (args.fitsfile[0],args.fitsfile[1],args.fitsfile[2],args.fitsfile[3],))
 
+    gains = []
+    levels= []
+
     for ii in range(len(flat1.data)):
-        (gain, noise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
+        (gain, noise, level) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
                                            minx=args.minx, maxx=args.maxx, miny=args.miny, maxy=args.maxy, )
 
-        print ("Extension %1d  Gain % 5.3f e-/ADU  Noise % 5.2f e-" % (ii, gain, noise))
+
+        print ("Extension %1d  Level: % 7.1f  Gain % 5.3f e-/ADU  Noise % 5.2f e-" % (ii, level, gain, noise))
+
+        gains.append( gain)
+        levels.append (level)
+
+    # sanity check on gain and levels:
+
+    gains = gains / gains[0]
+    levels = levels/levels[0]
+    print ("Sanity checks of relative gain and levels above bias:")
+    print ("Relative gains:  ", end="")
+    for ii in range(len(gains)):
+         print (" % 4.2f" % gains[ii], end="")
+    print ("\nRelative levels: ", end="")
+    for ii in range(len(levels)):
+        print (" % 4.2f" % levels[ii], end="")
+    print()
