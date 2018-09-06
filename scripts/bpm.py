@@ -172,6 +172,10 @@ if __name__ == '__main__':
         if args.showbpmimages:
             showanextenstion(outputdata[ext], title="Final BPM for ext #%d" %ext)
 
+        nbad = sum (i > 0 for i in outputdata[ext].flatten())
+        _logger.info ("Extension %d  has %d identified bad pixels." % (ext,nbad))
+
+
     hdul = fits.HDUList ()
     phdu = fits.PrimaryHDU(header=referenceImage.header)
     phdu.header['OBSTYPE'] = 'BPM'

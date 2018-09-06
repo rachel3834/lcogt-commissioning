@@ -157,7 +157,7 @@ def parseCommandLine():
     parser.add_argument('--dome', default='doma', choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', default='fl12',
-                        choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16', ],
+                        choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16','fa03', 'fa04', 'fa05', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ],
                         help="To which instrumetn to submit")
     parser.add_argument('--start', default=None,
                         help="When to start x-talk calibration. If not given, defaults to \"NOW\"")
@@ -168,7 +168,7 @@ def parseCommandLine():
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted.')
 
-    parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
+    parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
     args = parser.parse_args()
