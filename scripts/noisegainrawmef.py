@@ -9,6 +9,7 @@ import math
 import argparse
 from Image import Image
 import matplotlib.pyplot as plt
+from astropy.io import fits
 
 import logging
 
@@ -81,7 +82,7 @@ def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='General purpose noise and gain measurement from a set of two flat fields and two biases.')
 
-    parser.add_argument('fitsfile', type=str, nargs=4,
+    parser.add_argument('fitsfile', type=str, nargs='+',
                         help='four fits files:  bias_1 bias_2 flat_1 flat_2')
 
 
@@ -110,40 +111,147 @@ def parseCommandLine():
     return args
 
 
-if __name__ == '__main__':
 
-    args = parseCommandLine()
+def sortinputfitsfiles (listoffiles, sortby='exptime'):
+    """ go through the list of input and sort files by bias and flat type. Find pairs of flats that are of the same exposure time / closest in illumination level."""
 
-    overscancorrect = False
-    bias1 = Image(args.fitsfile[0], overscancorrect=overscancorrect)
-    bias2 = Image(args.fitsfile[1], overscancorrect=overscancorrect)
-    flat1 = Image(args.fitsfile[2], overscancorrect=overscancorrect)
-    flat2 = Image(args.fitsfile[3], overscancorrect=overscancorrect)
+    sortedlistofFiles= {}
 
-    print ("Calculating noise / gain based on:\n Bias 1 %s\n Bias 2 %s\n Flat 1 %s\n Flat 2 %s\n" % (args.fitsfile[0],args.fitsfile[1],args.fitsfile[2],args.fitsfile[3],))
+    filemetrics = {}
+
+    for ii in listoffiles:
+        hdu = fits.open (ii)
+        if sortby == 'exptime':
+            exptime = -1
+            # f&*& fpack!
+            if 'EXPTIME' in hdu[0].header:
+                exptime = hdu[0].header['EXPTIME']
+            if 'EXPTIME' in hdu[1].header:
+                exptime = hdu[1].header['EXPTIME']
+            if exptime > -1:
+                filemetrics [ii] = str(exptime)
+
+    for ii in filemetrics:
+        _logger.debug ("%s -> %s" % (ii, filemetrics[ii]))
+
+
+    # find the biases
+    for filename in listoffiles:
+        if 'b00' in filename:
+            # identified a bias exposure
+            if 'bias' not in sortedlistofFiles:
+                sortedlistofFiles['bias'] = []
+            if  len(sortedlistofFiles['bias']) < 2:
+                sortedlistofFiles['bias'].append (filename)
+
+    # pair the flat fields
+    if sortby == 'exptime':
+        unique = set(filemetrics.values())
+        #print ("Unique exptimes: %s " % unique)
+        for et in unique:
+            if float(et) > 0.001:
+                sortedlistofFiles[str(et)] = []
+
+        for filename in filemetrics.keys():
+            if 'x00' in filename:
+                # identified a bias exposure
+                #print ("%s, %s" % (filename, filemetrics[filename]))
+                if  len( sortedlistofFiles[filemetrics[filename]]) < 2:
+                    sortedlistofFiles[filemetrics[filename]].append (filename)
+
+    return sortedlistofFiles
+
+
+def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = False):
+    bias1 = Image(fbias1, overscancorrect=overscancorrect)
+    bias2 = Image(fbias2, overscancorrect=overscancorrect)
+    flat1 = Image(fflat1, overscancorrect=overscancorrect)
+    flat2 = Image(fflat2, overscancorrect=overscancorrect)
+
+    print ("Based on:\n Bias 1 %s\n Bias 2 %s\n Flat 1 %s\n Flat 2 %s\n" % (fbias1,fbias2,fflat1,fflat2))
 
     gains = []
     levels= []
+    noises = []
 
     for ii in range(len(flat1.data)):
         (gain, noise, level) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
-                                           minx=args.minx, maxx=args.maxx, miny=args.miny, maxy=args.maxy, )
+                                              minx=args.minx, maxx=args.maxx, miny=args.miny, maxy=args.maxy, )
 
 
         print ("Extension %1d  Level: % 7.1f  Gain % 5.3f e-/ADU  Noise % 5.2f e-" % (ii, level, gain, noise))
 
         gains.append( gain)
         levels.append (level)
+        noises.append (noise)
 
     # sanity check on gain and levels:
+    retval = (gains,levels, noises)
 
     gains = gains / gains[0]
     levels = levels/levels[0]
     print ("Sanity checks of relative gain and levels above bias:")
     print ("Relative gains:  ", end="")
     for ii in range(len(gains)):
-         print (" % 4.2f" % gains[ii], end="")
+        print (" % 4.2f" % gains[ii], end="")
     print ("\nRelative levels: ", end="")
     for ii in range(len(levels)):
         print (" % 4.2f" % levels[ii], end="")
     print()
+    return retval
+
+def graphresults (alllevels, allgains, allnoises):
+
+
+    _logger.debug ("Plotting gain vs level")
+    plt.figure()
+    for ext in alllevels:
+        plt.plot ( alllevels[ext], allgains[ext], 'o', label = "extension %s" % ext)
+
+    plt.legend()
+    plt.xlabel(("Exposure level [ADU]"))
+    plt.ylabel ("Gain [e-/ADU]")
+    plt.savefig("levelgain.png")
+    plt.close()
+
+    _logger.debug ("Plotting ptc")
+    plt.figure()
+    print (alllevels)
+    for ext in alllevels:
+        plt.loglog (alllevels[ext], allnoises[ext], 'o', label = "extension %s" %ext )
+    plt.legend()
+    plt.xlim([1,64000])
+    plt.ylim([1,300])
+    plt.xlabel ("Exposure Level [ADU]")
+    plt.ylabel ("Noise [ADU]")
+    plt.savefig ("ptc.png")
+    plt.close()
+
+if __name__ == '__main__':
+
+    args = parseCommandLine()
+
+    sortedinputlist = sortinputfitsfiles(args.fitsfile)
+
+    alllevels = {}
+    allgains = {}
+    allnoises = {}
+
+    for ii in sortedinputlist:
+        if 'bias' not in ii:
+            if len (sortedinputlist[ii]) == 2:
+                print ("\nNoise / Gain measuremnt based on metric %s" % ii)
+                print ("===========================================")
+                gains, levels, noises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[ii][0],sortedinputlist[ii][1])
+
+                for ii in range (len(levels)):
+                    if ii not in alllevels:
+                        alllevels[ii] = []
+                        allgains[ii] = []
+                        allnoises[ii] = []
+
+                    alllevels[ii].append (levels[ii])
+                    allgains[ii].append (gains[ii])
+                    allnoises[ii].append(noises[ii])
+
+    graphresults (alllevels, allgains, allnoises)
