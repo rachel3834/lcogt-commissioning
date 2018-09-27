@@ -56,9 +56,11 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     deltaflat = (flat1 - flat2)[miny:maxy, minx:maxx]
     deltabias = (bias1 - bias2)[miny:maxy, minx:maxx]
     biasnoise = np.std(deltabias)
-    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 7 * biasnoise])
+    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 10 * biasnoise])
     flatnoise = np.std(deltaflat)
-    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 7 * flatnoise])
+    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 10 * flatnoise])
+
+
     _logger.debug(" Levels (flat,flat,bias,bias), and noise (flat, bias): [%d:%d, %d:%d]: % 7.2f, % 7.2f | % 5.2f, % 5.2f | % 7.2f % 5.2f" % (minx,maxx,miny,maxy,flat1lvl, flat2lvl,bias1lvl, bias2lvl, flatnoise,biasnoise))
 
 
@@ -75,7 +77,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
         plt.colorbar()
         plt.title ("Delta Bias")
         plt.show()
-    return (gain, readnoise, flatlevel)
+    return (gain, readnoise, flatlevel, flatnoise)
 
 
 def parseCommandLine():
@@ -148,7 +150,7 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
     if sortby == 'exptime':
         unique = set(filemetrics.values())
         #print ("Unique exptimes: %s " % unique)
-        for et in unique:
+        for et in sorted(unique, key=float):
             if float(et) > 0.001:
                 sortedlistofFiles[str(et)] = []
 
@@ -162,7 +164,7 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
     return sortedlistofFiles
 
 
-def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = False):
+def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = True):
     bias1 = Image(fbias1, overscancorrect=overscancorrect)
     bias2 = Image(fbias2, overscancorrect=overscancorrect)
     flat1 = Image(fflat1, overscancorrect=overscancorrect)
@@ -173,9 +175,10 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = False):
     gains = []
     levels= []
     noises = []
+    shotnoises = []
 
     for ii in range(len(flat1.data)):
-        (gain, noise, level) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
+        (gain, noise, level,shotnoise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
                                               minx=args.minx, maxx=args.maxx, miny=args.miny, maxy=args.maxy, )
 
 
@@ -184,9 +187,10 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = False):
         gains.append( gain)
         levels.append (level)
         noises.append (noise)
+        shotnoises.append (shotnoise)
 
     # sanity check on gain and levels:
-    retval = (gains,levels, noises)
+    retval = (gains,levels, noises,shotnoises)
 
     gains = gains / gains[0]
     levels = levels/levels[0]
@@ -200,7 +204,7 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = False):
     print()
     return retval
 
-def graphresults (alllevels, allgains, allnoises):
+def graphresults (alllevels, allgains, allnoises, allshotnoises):
 
 
     _logger.debug ("Plotting gain vs level")
@@ -218,7 +222,7 @@ def graphresults (alllevels, allgains, allnoises):
     plt.figure()
     print (alllevels)
     for ext in alllevels:
-        plt.loglog (alllevels[ext], allnoises[ext], 'o', label = "extension %s" %ext )
+        plt.loglog (alllevels[ext], allshotnoises[ext], 'o', label = "extension %s" %ext )
     plt.legend()
     plt.xlim([1,64000])
     plt.ylim([1,300])
@@ -236,22 +240,26 @@ if __name__ == '__main__':
     alllevels = {}
     allgains = {}
     allnoises = {}
+    allshotnoises = {}
+
 
     for ii in sortedinputlist:
         if 'bias' not in ii:
             if len (sortedinputlist[ii]) == 2:
                 print ("\nNoise / Gain measuremnt based on metric %s" % ii)
                 print ("===========================================")
-                gains, levels, noises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[ii][0],sortedinputlist[ii][1])
+                gains, levels, noises, shotnoises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[ii][0],sortedinputlist[ii][1])
 
                 for ii in range (len(levels)):
                     if ii not in alllevels:
                         alllevels[ii] = []
                         allgains[ii] = []
                         allnoises[ii] = []
+                        allshotnoises[ii] = []
 
                     alllevels[ii].append (levels[ii])
                     allgains[ii].append (gains[ii])
                     allnoises[ii].append(noises[ii])
+                    allshotnoises[ii].append(shotnoises[ii])
 
-    graphresults (alllevels, allgains, allnoises)
+    graphresults (alllevels, allgains, allnoises, allshotnoises)
