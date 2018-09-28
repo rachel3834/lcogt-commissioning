@@ -102,7 +102,7 @@ def createRequestsForStar(context):
             'observatory': context.dome,
             'telescope': context.telescope,
             'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-            'priority': 20,
+            'priority': 30,
         }
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)

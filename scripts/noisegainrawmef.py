@@ -155,7 +155,7 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
                 sortedlistofFiles[str(et)] = []
 
         for filename in filemetrics.keys():
-            if 'x00' in filename:
+            if ('x00' in filename) or ('f00' in filename):
                 # identified a bias exposure
                 #print ("%s, %s" % (filename, filemetrics[filename]))
                 if  len( sortedlistofFiles[filemetrics[filename]]) < 2:
@@ -207,10 +207,25 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = True):
 def graphresults (alllevels, allgains, allnoises, allshotnoises):
 
 
+
     _logger.debug ("Plotting gain vs level")
     plt.figure()
     for ext in alllevels:
-        plt.plot ( alllevels[ext], allgains[ext], 'o', label = "extension %s" % ext)
+
+        gains = np.asarray(allgains[ext])
+        levels = np.asarray (alllevels[ext])
+        statdata = gains[levels<35000]
+
+        mediangain = np.median (statdata)
+        stdgain = np.std(statdata)
+        goodgains = (np.abs( statdata - mediangain ) < 3 * stdgain)
+        bestgain = np.mean (statdata[goodgains])
+
+        plt.plot ( alllevels[ext], allgains[ext], 'o', label = "extension %s data" % (ext))
+        plt.hlines(bestgain, 0,64000, label="Ext %d gain: %5.2f e-/ADU" % (ext,bestgain))
+        print ("Best gain for ext %d: %5.2f" % (ext, bestgain))
+
+    plt.ylim([2,4])
 
     plt.legend()
     plt.xlabel(("Exposure level [ADU]"))
@@ -220,14 +235,14 @@ def graphresults (alllevels, allgains, allnoises, allshotnoises):
 
     _logger.debug ("Plotting ptc")
     plt.figure()
-    print (alllevels)
+    #print (alllevels)
     for ext in alllevels:
-        plt.loglog (alllevels[ext], allshotnoises[ext], 'o', label = "extension %s" %ext )
+        plt.loglog (alllevels[ext], allshotnoises[ext], '.', label = "extension %s" %ext )
     plt.legend()
     plt.xlim([1,64000])
-    plt.ylim([1,300])
+    plt.ylim([5,300])
     plt.xlabel ("Exposure Level [ADU]")
-    plt.ylabel ("Noise [ADU]")
+    plt.ylabel ("Measured Noise [ADU]")
     plt.savefig ("ptc.png")
     plt.close()
 
