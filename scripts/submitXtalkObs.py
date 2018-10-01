@@ -140,9 +140,9 @@ def createRequestsForStar(context):
             response = requests.post(LAKE_URL + '/blocks/', json=block_params)
             try:
                 response.raise_for_status()
-                print('Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
+                _logger.info ('Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
             except Exception:
-                print('Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
+                _logger.error ('Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
 
 
 def parseCommandLine():
@@ -158,7 +158,7 @@ def parseCommandLine():
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', default='fl12',
                         choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16','fa03', 'fa04', 'fa05', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ],
-                        help="To which instrumetn to submit")
+                        help="To which instrument to submit")
     parser.add_argument('--start', default=None,
                         help="When to start x-talk calibration. If not given, defaults to \"NOW\"")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
