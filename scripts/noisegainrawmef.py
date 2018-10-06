@@ -4,12 +4,17 @@ Program to calculate the noise and gain for each extension of a given mef file
 
 import sys
 import os
+import os.path
 import numpy as np
 import math
 import argparse
 from Image import Image
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from astropy.table import Table
+import astropy.time as astt
+import sqlite3
+
 
 import logging
 
@@ -50,6 +55,11 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
     bias1lvl = np.median(bias1[miny:maxy, minx:maxx])
     bias2lvl = np.median(bias2[miny:maxy, minx:maxx])
+
+    leveldifference = abs (flat1lvl - bias2lvl - (flat2lvl-bias2lvl))
+    avglevel = (flat1lvl-bias2lvl + flat2lvl-bias2lvl) / 2
+    if (leveldifference > avglevel * 0.1):
+        _logger.warning("flat level difference % 8f is large compared to level % 8f. Result will be questionable" % (leveldifference,flat1lvl-bias1lvl))
 
 
     # Measure noise of flat and biad differential iamges
@@ -97,7 +107,9 @@ def parseCommandLine():
     parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
+    parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime','filterlevel'])
     parser.add_argument ('--showimages', action='store_true', help="Show difference flat and bias images.")
+    parser.add_argument ('--database', default="noisegain.sql")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -121,8 +133,10 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
 
     filemetrics = {}
 
-    for ii in listoffiles:
-        hdu = fits.open (ii)
+    for filecandidate in listoffiles:
+
+        hdu = fits.open (filecandidate)
+
         if sortby == 'exptime':
             exptime = -1
             # f&*& fpack!
@@ -131,10 +145,25 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
             if 'EXPTIME' in hdu[1].header:
                 exptime = hdu[1].header['EXPTIME']
             if exptime > -1:
-                filemetrics [ii] = str(exptime)
+                filemetrics [filecandidate] = str(exptime)
 
-    for ii in filemetrics:
-        _logger.debug ("%s -> %s" % (ii, filemetrics[ii]))
+        if sortby == 'filterlevel':
+            filter = None
+            if ('FILTER') in hdu[0].header:
+                filter = hdu[0].header['FILTER']
+            if ('FILTER') in hdu[1].header:
+                filter = hdu[1].header['FILTER']
+            if filter is not None:
+
+                image = Image (filecandidate, overscancorrect=True)
+                level = np.mean(image.data[0])
+                _logger.debug ("Input file metrics %s %s %s" % (filecandidate,filter, level))
+                filemetrics[filecandidate] = (filter, level)
+
+        hdu.close()
+
+    for filecandidate in filemetrics:
+        _logger.debug ("%s -> %s" % (filecandidate, filemetrics[filecandidate]))
 
 
     # find the biases
@@ -148,8 +177,9 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
 
     # pair the flat fields
     if sortby == 'exptime':
+        # task is simple: just find flats with the same exposure time
         unique = set(filemetrics.values())
-        #print ("Unique exptimes: %s " % unique)
+
         for et in sorted(unique, key=float):
             if float(et) > 0.001:
                 sortedlistofFiles[str(et)] = []
@@ -160,6 +190,43 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
                 #print ("%s, %s" % (filename, filemetrics[filename]))
                 if  len( sortedlistofFiles[filemetrics[filename]]) < 2:
                     sortedlistofFiles[filemetrics[filename]].append (filename)
+
+
+    if sortby == 'filterlevel':
+        tempsortedListofFiles = {}
+
+        for filename in filemetrics.keys():
+            (filter,level) = filemetrics[filename]
+            if level < 10:
+                continue
+
+            if (filter not in tempsortedListofFiles.keys()):
+                tempsortedListofFiles[filter] = {}
+                ## a new level detected
+                tempsortedListofFiles[filter][level] = [filename, ]
+                _logger.info ("Starting first entry in a hopeful pair: %s %s %s" % (filename, filter, level) )
+                continue
+
+            matchfound = False
+            for knownfilter in tempsortedListofFiles.keys():
+                for knownlevel in tempsortedListofFiles[knownfilter].keys():
+                    if (0.9 < knownlevel / level) and (knownlevel / level  < 1.1):
+
+                        if len(tempsortedListofFiles[knownfilter][knownlevel]) < 2:
+                            _logger.info ("adding to set: %s level of %f is within 10 percent of level %f" % (filename, level, knownlevel))
+                            tempsortedListofFiles[knownfilter][knownlevel].append (filename)
+                            matchfound =True
+                            continue
+
+            if not matchfound:
+                tempsortedListofFiles[filter][level] = [filename, ]
+                _logger.info ("Starting new level pair with file %s " % (filename))
+
+
+        for knownfilter in tempsortedListofFiles.keys():
+            for knownlevel in tempsortedListofFiles[knownfilter].keys():
+                sortedlistofFiles["%s% 8f" %(knownfilter,knownlevel)] = tempsortedListofFiles[knownfilter][knownlevel]
+
 
     return sortedlistofFiles
 
@@ -246,35 +313,129 @@ def graphresults (alllevels, allgains, allnoises, allshotnoises):
     plt.savefig ("ptc.png")
     plt.close()
 
+
+
+class noisegaindbinterface:
+    ''' Storage model for flat field based noise gain measurements'''
+
+    createstatement = "CREATE TABLE IF NOT EXISTS noisegain (" \
+                  "name TEXT PRIMARY KEY, " \
+                  "dateobs text," \
+                  " camera text," \
+                  " filter text," \
+                  " extension integer,"\
+                  " gain real," \
+                  " readnoise real," \
+                  " level real," \
+                  " differencenoise real)"
+
+    def __init__(self, fname):
+        _logger.debug ("Open data base file %s" % (fname))
+        self.sqlite_file = fname
+        self.conn = sqlite3.connect(self.sqlite_file)
+        self.conn.execute(self.createstatement)
+        self.conn.execute("PRAGMA journal_mode=WAL;")
+        self.conn.commit()
+
+
+    def addmeasurement (self, identifier, dateobs, camera, filter, extension,  gain, readnoise, level, diffnoise, commit=True):
+        with self.conn:
+
+            _logger.debug ("Inserting: %s\n %s %s %s %s %s %s %s %s" %  (identifier,dateobs,camera,filter,extension, gain,readnoise,level,diffnoise))
+            self.conn.execute ("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?)",
+                               (identifier,dateobs,camera,filter,extension, gain,readnoise,level,float(diffnoise)))
+
+        if (commit):
+            self.conn.commit()
+
+
+    def readmeasurements (self, camera=None):
+        query = "select name,dateobs,camera,filter,extension,gain,readnoise,level,differencenoise from noisegain "\
+                "where (camera like ?) ORDER BY dateobs"
+
+        queryargs = (camera if camera is not None else '%', )
+        _logger.info (queryargs)
+
+        cursor = self.conn.execute(query,queryargs)
+
+        allrows = np.asarray (cursor.fetchall())
+        if len(allrows) == 0:
+            _logger.warning ("Zero results returned from query")
+            return None
+
+        t = Table (allrows, names=['identifier', 'dateobs', 'camera','filter', 'extension', 'gain','readnoise','level','diffnoise'])
+        t['dateobs'] = t['dateobs'].astype (str)
+        t['dateobs'] = astt.Time(t['dateobs'], scale='utc', format=None).to_datetime()
+        t['gain'] = t['gain'].astype(float)
+
+        print (t)
+        return t
+
+
+    def close(self):
+
+        _logger.debug ("Closing data base file %s " % (self.sqlite_file))
+        self.conn.commit()
+        self.conn.close()
+
+
+
 if __name__ == '__main__':
 
     args = parseCommandLine()
 
-    sortedinputlist = sortinputfitsfiles(args.fitsfile)
+    database = None
+    database = noisegaindbinterface(args.database)
 
+
+    sortedinputlist = sortinputfitsfiles(args.fitsfile, sortby=args.sortby)
     alllevels = {}
     allgains = {}
     allnoises = {}
     allshotnoises = {}
 
-
-    for ii in sortedinputlist:
-        if 'bias' not in ii:
-            if len (sortedinputlist[ii]) == 2:
-                print ("\nNoise / Gain measuremnt based on metric %s" % ii)
+    for pair_ii in sortedinputlist:
+        if 'bias' not in pair_ii:
+            if len (sortedinputlist[pair_ii]) == 2:
+                print ("\nNoise / Gain measuremnt based on metric %s" % pair_ii)
                 print ("===========================================")
-                gains, levels, noises, shotnoises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[ii][0],sortedinputlist[ii][1])
+                gains, levels, noises, shotnoises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[pair_ii][0],sortedinputlist[pair_ii][1])
 
-                for ii in range (len(levels)):
-                    if ii not in alllevels:
-                        alllevels[ii] = []
-                        allgains[ii] = []
-                        allnoises[ii] = []
-                        allshotnoises[ii] = []
+                hdu = fits.open (sortedinputlist[pair_ii][0])
+                dateobs = None
+                if 'DATE-OBS' in hdu[0].header:
+                    dateobs = hdu[0].header['DATE-OBS']
+                if 'DATE-OBS' in hdu[1].header:
+                    dateobs = hdu[1].header['DATE-OBS']
+                camera = None
+                if 'INSTRUME' in hdu[0].header:
+                    camera = hdu[0].header['INSTRUME']
+                if 'FILTER' in hdu[0].header:
+                    filter = hdu[0].header['FILTER']
 
-                    alllevels[ii].append (levels[ii])
-                    allgains[ii].append (gains[ii])
-                    allnoises[ii].append(noises[ii])
-                    allshotnoises[ii].append(shotnoises[ii])
+                hdu.close()
+
+                for extension in range (len(levels)):
+                    if extension not in alllevels:
+                        alllevels[extension] = []
+                        allgains[extension] = []
+                        allnoises[extension] = []
+                        allshotnoises[extension] = []
+
+
+
+                    database.addmeasurement ("%s-%s-%s" % (os.path.basename(sortedinputlist[pair_ii][0]),os.path.basename(sortedinputlist[pair_ii][1]), extension), dateobs, camera, filter,
+                                             extension, gains[extension], noises[extension], levels[extension], shotnoises[extension])
+
+                    alllevels[extension].append (levels[extension])
+                    allgains[extension].append (gains[extension])
+                    allnoises[extension].append(noises[extension])
+                    allshotnoises[extension].append(shotnoises[extension])
 
     graphresults (alllevels, allgains, allnoises, allshotnoises)
+
+    database.readmeasurements('fa03')
+    if database is not None:
+        database.close()
+
+
