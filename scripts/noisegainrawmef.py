@@ -154,7 +154,7 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
                 filter = hdu[0].header['FILTER']
             if ('FILTER') in hdu[1].header:
                 filter = hdu[1].header['FILTER']
-            if filter is not None:
+            if (filter is not None) and ('b00' not in filecandidate):
 
                 image = Image (filecandidate, overscancorrect=True)
                 level = np.mean(image.data[0])
@@ -348,6 +348,21 @@ class noisegaindbinterface:
 
         if (commit):
             self.conn.commit()
+
+    def getcameras (self):
+        query = "select distinct camera from noisegain"
+
+        cursor = self.conn.execute (query)
+        retarray = []
+
+        allcameras = (cursor.fetchall())
+        if len(allcameras) == 0:
+            _logger.warning ("Zero results returned from query")
+
+        for c in allcameras:
+            retarray.append (c[0])
+        _logger.info ("Distinct cameras: %s" % retarray)
+        return retarray
 
 
     def readmeasurements (self, camera=None):

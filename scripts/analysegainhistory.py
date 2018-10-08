@@ -58,13 +58,7 @@ if __name__ == '__main__':
     database = None
     database = noisegaindbinterface(args.database)
 
-
-    cameras = ['fl05','fa15']
-
-    _logger.info ("These ar the cameras in the databnase: %s" % cameras)
-
-
-    for camera in cameras:
+    for camera in database.getcameras():
 
         dataset = database.readmeasurements(camera)
         extensions = sorted(set(dataset['extension']))
