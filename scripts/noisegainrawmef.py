@@ -107,8 +107,9 @@ def parseCommandLine():
     parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
-    parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime','filterlevel'])
+    parser.add_argument ('--sortby', type=str, default="exptime", choices=['exptime','filterlevel'])
     parser.add_argument ('--showimages', action='store_true', help="Show difference flat and bias images.")
+    parser.add_argument ('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
     parser.add_argument ('--database', default="noisegain.sql")
     args = parser.parse_args()
 
@@ -367,8 +368,11 @@ class noisegaindbinterface:
         t['dateobs'] = t['dateobs'].astype (str)
         t['dateobs'] = astt.Time(t['dateobs'], scale='utc', format=None).to_datetime()
         t['gain'] = t['gain'].astype(float)
+        t['level'] = t['level'].astype(float)
+        t['diffnoise'] = t['diffnoise'].astype(float)
+        t['readnoise'] = t['readnoise'].astype(float)
 
-        print (t)
+
         return t
 
 
@@ -432,9 +436,10 @@ if __name__ == '__main__':
                     allnoises[extension].append(noises[extension])
                     allshotnoises[extension].append(shotnoises[extension])
 
-    graphresults (alllevels, allgains, allnoises, allshotnoises)
+    if args.makepng:
+        graphresults (alllevels, allgains, allnoises, allshotnoises)
 
-    database.readmeasurements('fa03')
+
     if database is not None:
         database.close()
 
