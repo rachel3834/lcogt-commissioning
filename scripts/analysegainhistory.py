@@ -1,7 +1,14 @@
+import errno
+import os
+
+import matplotlib
+matplotlib.use('Agg')
 import argparse
 import logging
 import numpy as np
 from noisegainrawmef import noisegaindbinterface
+
+
 import matplotlib.pyplot as plt
 _logger = logging.getLogger(__name__)
 import matplotlib.dates as mdates
@@ -18,9 +25,10 @@ def parseCommandLine():
         description='Analyse long term gain behaviour in LCO cameras')
 
 
-    parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
+    parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
+    parser.add_argument ('--outputdir', default='gainhistory', help="directory for output graphs")
 
     parser.add_argument ('--database', default="noisegain.sql")
     args = parser.parse_args()
@@ -29,6 +37,15 @@ def parseCommandLine():
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
 
 
+
+    if not os.path.exists(args.outputdir):
+        _logger.info ("Creating output directory [%s]" % args.outputdir)
+        try:
+            os.makedirs(args.outputdir)
+        except OSError as exc: # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
     return args
 
 
@@ -36,7 +53,7 @@ def dateformat (starttime=None,endtime=None):
     """ Utility to prettify a plot with dates.
     """
 
-    #plt.xlim([starttime, endtime])
+    plt.xlim([starttime, endtime])
     plt.gcf().autofmt_xdate()
     years = mdates.YearLocator()   # every year
     months = mdates.MonthLocator(bymonth=[4, 7, 10])  # every month
@@ -51,10 +68,43 @@ def dateformat (starttime=None,endtime=None):
     plt.gca().grid(which='minor')
 
 
+
+def renderHTMLPage (args, cameras):
+    _logger.info ("Now rendering output html page")
+
+    outputfile = "%s/index.html" % (args.outputdir)
+
+    message = """<html>
+<head></head>
+<body><title>LCO Gain History Plots</title>
+"""
+    message += "<p/>Figures updated %s UTC <p/>\n"  % (datetime.datetime.utcnow())
+    message += """
+<h1> Details by Site: </h1>
+"""
+
+    for camera in cameras:
+        message = message + " <h2> %s </h2>\n" % (camera)
+
+        historyname = "gainhist-%s.png" % camera
+        ptcname = "ptchist-%s.png" % camera
+        line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a>'
+        message = message + line
+
+    message = message + "</body></html>"
+
+    with open (outputfile, 'w+') as f:
+        f.write (message)
+        f.close()
+
+
+
 if __name__ == '__main__':
 
     args = parseCommandLine()
     plt.style.use('ggplot')
+    matplotlib.rcParams['savefig.dpi'] = 300
+
     database = None
     database = noisegaindbinterface(args.database)
 
@@ -66,10 +116,10 @@ if __name__ == '__main__':
         plt.figure()
 
         for ext in extensions:
-            _logger.info ("ptc for extension %s" %ext)
+
             l = dataset['level'][dataset['extension'] == ext]
             n = (dataset['diffnoise'][dataset['extension'] == ext])
-            plt.loglog (l,n, '.', label="ext %s" % ext)
+            plt.loglog (l,n, '.', label="ext %s" % ext, markersize=1)
 
         plt.title ("Photon transfer curve %s" % camera)
         plt.xlabel('Level [ADU]')
@@ -77,7 +127,7 @@ if __name__ == '__main__':
         plt.ylim([5,500])
         plt.xlim([1,64000])
         plt.legend()
-        plt.savefig ("ptchist-%s.png" % camera)
+        plt.savefig ("%s/ptchist-%s.png" % (args.outputdir,camera))
         plt.cla()
         plt.close()
 
@@ -87,7 +137,7 @@ if __name__ == '__main__':
         for ext in extensions:
             d = dataset['dateobs'][dataset['extension'] == ext]
             g = dataset['gain'][dataset['extension'] == ext]
-            plt.plot (d,g, '.', label="ext %s" % ext)
+            plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
 
         if 'fa' in camera:
             plt.ylim([2,4])
@@ -99,13 +149,15 @@ if __name__ == '__main__':
         plt.title ('Gain history for %s' % camera)
         dateformat(starttime, endtime)
         plt.legend()
-        plt.savefig ("gainhist-%s.png" % camera)
+        plt.savefig ("%s/gainhist-%s.png" % (args.outputdir,camera))
         plt.cla()
         plt.close()
 
         ##################################3
 
+    renderHTMLPage(args, sorted(database.getcameras()))
     database.close()
+
 
 
 

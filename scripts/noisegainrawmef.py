@@ -163,10 +163,6 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
 
         hdu.close()
 
-    for filecandidate in filemetrics:
-        _logger.debug ("%s -> %s" % (filecandidate, filemetrics[filecandidate]))
-
-
     # find the biases
     for filename in listoffiles:
         if 'b00' in filename:
@@ -274,8 +270,6 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = True):
 
 def graphresults (alllevels, allgains, allnoises, allshotnoises):
 
-
-
     _logger.debug ("Plotting gain vs level")
     plt.figure()
     for ext in alllevels:
@@ -313,7 +307,6 @@ def graphresults (alllevels, allgains, allnoises, allshotnoises):
     plt.ylabel ("Measured Noise [ADU]")
     plt.savefig ("ptc.png")
     plt.close()
-
 
 
 class noisegaindbinterface:
@@ -370,7 +363,7 @@ class noisegaindbinterface:
                 "where (camera like ?) ORDER BY dateobs"
 
         queryargs = (camera if camera is not None else '%', )
-        _logger.info (queryargs)
+        _logger.info ("Read from database with query parameters: %s ", queryargs)
 
         cursor = self.conn.execute(query,queryargs)
 
@@ -387,25 +380,19 @@ class noisegaindbinterface:
         t['diffnoise'] = t['diffnoise'].astype(float)
         t['readnoise'] = t['readnoise'].astype(float)
 
-
         return t
 
 
     def close(self):
-
         _logger.debug ("Closing data base file %s " % (self.sqlite_file))
         self.conn.commit()
         self.conn.close()
 
 
-
 if __name__ == '__main__':
 
     args = parseCommandLine()
-
-    database = None
     database = noisegaindbinterface(args.database)
-
 
     sortedinputlist = sortinputfitsfiles(args.fitsfile, sortby=args.sortby)
     alllevels = {}
@@ -414,10 +401,12 @@ if __name__ == '__main__':
     allshotnoises = {}
 
     for pair_ii in sortedinputlist:
+
         if 'bias' not in pair_ii:
             if len (sortedinputlist[pair_ii]) == 2:
                 print ("\nNoise / Gain measuremnt based on metric %s" % pair_ii)
                 print ("===========================================")
+
                 gains, levels, noises, shotnoises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[pair_ii][0],sortedinputlist[pair_ii][1])
 
                 hdu = fits.open (sortedinputlist[pair_ii][0])
@@ -441,8 +430,6 @@ if __name__ == '__main__':
                         allnoises[extension] = []
                         allshotnoises[extension] = []
 
-
-
                     database.addmeasurement ("%s-%s-%s" % (os.path.basename(sortedinputlist[pair_ii][0]),os.path.basename(sortedinputlist[pair_ii][1]), extension), dateobs, camera, filter,
                                              extension, gains[extension], noises[extension], levels[extension], shotnoises[extension])
 
@@ -453,7 +440,6 @@ if __name__ == '__main__':
 
     if args.makepng:
         graphresults (alllevels, allgains, allnoises, allshotnoises)
-
 
     if database is not None:
         database.close()
