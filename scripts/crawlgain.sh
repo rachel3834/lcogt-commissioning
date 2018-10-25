@@ -1,17 +1,34 @@
 #!/bin/bash
 
-base=/archive/engineering/
-camera=fl04
-site=lsc
+base=/archive/engineering
+cameras="fa?? fl?? fs?? kb??"
+sites="elp cpt lsc ogg coj tfn"
+dates="201809??"
 
 inputselection="*-[bf]00.fits.fz"
 
+NCPU=4
 
-directories=`find ${base}/${site}/${camera} -type d -wholename "*/201[67]*/raw" `
+for site in $sites; do
+ for camera in $cameras; do
 
-for day in $directories
-do
-   echo $day
-   searchpath=$day/$inputselection
-   python noisegainrawmef.py --log_level INFO --sortby filterlevel $searchpath
+  sitecameras=`find ${base}/${site}  -maxdepth 1 -type d -wholename "*/$camera"`
+
+  for sitecamera in $sitecameras; do
+
+   directories=`find "${sitecamera}" -maxdepth 1 -type d  -wholename "*/${dates}" `
+
+   for day in $directories; do
+
+     searchpath=${day}/raw/${inputselection}
+     echo "Searchpath is $searchpath"
+     sem  -j 2 python noisegainrawmef.py --log_level INFO --sortby filterlevel $searchpath
+
+   done
+
+  done
+
+ done
 done
+
+sem --wait

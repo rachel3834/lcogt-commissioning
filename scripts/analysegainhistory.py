@@ -80,7 +80,7 @@ def renderHTMLPage (args, cameras):
 """
     message += "<p/>Figures updated %s UTC <p/>\n"  % (datetime.datetime.utcnow())
     message += """
-<h1> Details by Site: </h1>
+<h1> Details by Camera: </h1>
 """
 
     for camera in cameras:
@@ -124,7 +124,7 @@ if __name__ == '__main__':
         plt.title ("Photon transfer curve %s" % camera)
         plt.xlabel('Level [ADU]')
         plt.ylabel('delta flat Noise [ADU]')
-        plt.ylim([5,500])
+        plt.ylim([5,1000])
         plt.xlim([1,64000])
         plt.legend()
         plt.savefig ("%s/ptchist-%s.png" % (args.outputdir,camera))
