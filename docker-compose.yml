@@ -1,0 +1,10 @@
+version: '3'
+services:
+  noisegain:
+    build: .
+    volumes:
+    - /archive:/archive:ro
+    - /home/dharbeck/noisegain:/database
+    ports:
+    - 80:8000
+

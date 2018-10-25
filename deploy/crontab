@@ -1,0 +1,5 @@
+0 2,17 * * * root /lco/noisegain/deploy/crawlgain.sh >>/var/log/crawlgain.log 2>&1
+
+#* * * * * root /bin/echo "Hello `date`"  >>/proc/1/fd/1 2>&1
+#* * * * * root /bin/echo "Hello `date`"  >>/var/log/echotest
+
