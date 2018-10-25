@@ -110,7 +110,9 @@ if __name__ == '__main__':
 
     for camera in database.getcameras():
 
-        dataset = database.readmeasurements(camera)
+        dataset = database.readmeasurements(camera, levelratio = 0.02)
+        if dataset is None:
+            continue
         extensions = sorted(set(dataset['extension']))
 
         plt.figure()

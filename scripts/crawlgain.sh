@@ -3,11 +3,11 @@
 base=/archive/engineering
 cameras="fa?? fl?? fs?? kb??"
 sites="elp cpt lsc ogg coj tfn"
-dates="201809??"
+dates="201810??"
 
 inputselection="*-[bf]00.fits.fz"
 
-NCPU=4
+NCPU=1
 
 for site in $sites; do
  for camera in $cameras; do
@@ -22,7 +22,7 @@ for site in $sites; do
 
      searchpath=${day}/raw/${inputselection}
      echo "Searchpath is $searchpath"
-     sem  -j 2 python noisegainrawmef.py --log_level INFO --sortby filterlevel $searchpath
+     sem  -j $NCPU python noisegainrawmef.py --log_level INFO --sortby filterlevel $searchpath
 
    done
 

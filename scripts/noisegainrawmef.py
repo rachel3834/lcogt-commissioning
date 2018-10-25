@@ -56,8 +56,10 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     bias1lvl = np.median(bias1[miny:maxy, minx:maxx])
     bias2lvl = np.median(bias2[miny:maxy, minx:maxx])
 
-    leveldifference = abs (flat1lvl - bias2lvl - (flat2lvl-bias2lvl))
-    avglevel = (flat1lvl-bias2lvl + flat2lvl-bias2lvl) / 2
+    avgbiaslevel = 0.5 * (bias2lvl + bias2lvl)
+
+    leveldifference = abs (flat1lvl - flat2lvl)
+    avglevel = (flat1lvl-avgbiaslevel + flat2lvl-avgbiaslevel) / 2
     if (leveldifference > avglevel * 0.1):
         _logger.warning("flat level difference % 8f is large compared to level % 8f. Result will be questionable" % (leveldifference,flat1lvl-bias1lvl))
 
@@ -87,7 +89,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
         plt.colorbar()
         plt.title ("Delta Bias")
         plt.show()
-    return (gain, readnoise, flatlevel, flatnoise)
+    return (gain, readnoise, flatlevel, flatnoise, (flat1lvl-avgbiaslevel), (flat2lvl-avgbiaslevel))
 
 
 def parseCommandLine():
@@ -240,9 +242,11 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = True):
     levels= []
     noises = []
     shotnoises = []
+    level1s = []
+    level2s = []
 
     for ii in range(len(flat1.data)):
-        (gain, noise, level,shotnoise) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
+        (gain, noise, level,shotnoise,level1,level2) = noisegainextension(flat1.data[ii], flat2.data[ii], bias1.data[ii], bias2.data[ii], showImages=args.showimages,
                                               minx=args.minx, maxx=args.maxx, miny=args.miny, maxy=args.maxy, )
 
 
@@ -252,9 +256,11 @@ def dosingleLevelGain(fbias1,fbias2, fflat1, fflat2, overscancorrect = True):
         levels.append (level)
         noises.append (noise)
         shotnoises.append (shotnoise)
+        level1s.append (level1)
+        level2s.append (level2)
 
     # sanity check on gain and levels:
-    retval = (gains,levels, noises,shotnoises)
+    retval = (gains,levels, noises,shotnoises,level1s,level2s)
 
     gains = gains / gains[0]
     levels = levels/levels[0]
@@ -321,7 +327,9 @@ class noisegaindbinterface:
                   " gain real," \
                   " readnoise real," \
                   " level real," \
-                  " differencenoise real)"
+                  " differencenoise real," \
+                  " level1 real," \
+                  " level2 real)"
 
     def __init__(self, fname):
         _logger.debug ("Open data base file %s" % (fname))
@@ -332,17 +340,18 @@ class noisegaindbinterface:
         self.conn.commit()
 
 
-    def addmeasurement (self, identifier, dateobs, camera, filter, extension,  gain, readnoise, level, diffnoise, commit=True):
+    def addmeasurement (self, identifier, dateobs, camera, filter, extension,  gain, readnoise, level, diffnoise, level1,level2, commit=True):
         with self.conn:
 
-            _logger.info ("Inserting: %s\n %s %s %s %s %s %s %s %s" %  (identifier,dateobs,camera,filter,extension, gain,readnoise,level,diffnoise))
-            self.conn.execute ("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?)",
-                               (identifier,dateobs,camera,filter,extension, gain,readnoise,level,float(diffnoise)))
+            _logger.debug ("Inserting: %s\n %s %s %s %s %s %s %s %s %s %s" %  (identifier,dateobs,camera,filter,extension, gain,readnoise,level,diffnoise, level1,level2))
+            self.conn.execute ("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?,?,?)",
+                               (identifier,dateobs,camera,filter,extension, gain,readnoise,level,float(diffnoise), float(level1), float(level2)) )
 
         if (commit):
             self.conn.commit()
 
     def getcameras (self):
+        query = "select distinct camera from noisegain"
         query = "select distinct camera from noisegain"
 
         cursor = self.conn.execute (query)
@@ -358,11 +367,11 @@ class noisegaindbinterface:
         return retarray
 
 
-    def readmeasurements (self, camera=None):
-        query = "select name,dateobs,camera,filter,extension,gain,readnoise,level,differencenoise from noisegain "\
-                "where (camera like ?) ORDER BY dateobs"
+    def readmeasurements (self, camera=None, filter=None, levelratio=None):
+        query = "select name,dateobs,camera,filter,extension,gain,readnoise,level,differencenoise,level1,level2 from noisegain "\
+                "where (camera like ?) AND (filter like ?) ORDER BY dateobs"
 
-        queryargs = (camera if camera is not None else '%', )
+        queryargs = (camera if camera is not None else '%', filter if filter is not None else '%')
         _logger.info ("Read from database with query parameters: %s ", queryargs)
 
         cursor = self.conn.execute(query,queryargs)
@@ -372,13 +381,19 @@ class noisegaindbinterface:
             _logger.warning ("Zero results returned from query")
             return None
 
-        t = Table (allrows, names=['identifier', 'dateobs', 'camera','filter', 'extension', 'gain','readnoise','level','diffnoise'])
+        t = Table (allrows, names=['identifier', 'dateobs', 'camera','filter', 'extension', 'gain','readnoise','level','diffnoise','level1','level2'])
         t['dateobs'] = t['dateobs'].astype (str)
         t['dateobs'] = astt.Time(t['dateobs'], scale='utc', format=None).to_datetime()
         t['gain'] = t['gain'].astype(float)
         t['level'] = t['level'].astype(float)
         t['diffnoise'] = t['diffnoise'].astype(float)
         t['readnoise'] = t['readnoise'].astype(float)
+        t['level1'] = t['level1'].astype(float)
+        t['level2'] = t['level2'].astype(float)
+
+
+        if levelratio is not None:
+            t = t[abs ( (t['level1']-t['level2']) / t['level'])  < levelratio ]
 
         return t
 
@@ -392,13 +407,16 @@ class noisegaindbinterface:
 if __name__ == '__main__':
 
     args = parseCommandLine()
-    database = noisegaindbinterface(args.database)
+    database = noisegaindbinterface(args.database) if args.database is not None else None
+
 
     sortedinputlist = sortinputfitsfiles(args.fitsfile, sortby=args.sortby)
     alllevels = {}
     allgains = {}
     allnoises = {}
     allshotnoises = {}
+    alllevel1s = {}
+    alllevel2s = {}
 
     for pair_ii in sortedinputlist:
 
@@ -407,7 +425,7 @@ if __name__ == '__main__':
                 print ("\nNoise / Gain measuremnt based on metric %s" % pair_ii)
                 print ("===========================================")
 
-                gains, levels, noises, shotnoises = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[pair_ii][0],sortedinputlist[pair_ii][1])
+                gains, levels, noises, shotnoises,level1s,level2s = dosingleLevelGain(sortedinputlist['bias'][0], sortedinputlist['bias'][1],sortedinputlist[pair_ii][0],sortedinputlist[pair_ii][1])
 
                 hdu = fits.open (sortedinputlist[pair_ii][0])
                 dateobs = None
@@ -436,14 +454,19 @@ if __name__ == '__main__':
                         allgains[extension] = []
                         allnoises[extension] = []
                         allshotnoises[extension] = []
+                        alllevel1s[extension] = []
+                        alllevel2s[extension] = []
 
-                    database.addmeasurement ("%s-%s-%s" % (os.path.basename(sortedinputlist[pair_ii][0]),os.path.basename(sortedinputlist[pair_ii][1]), extension), dateobs, camera, filter,
-                                             extension, gains[extension], noises[extension], levels[extension], shotnoises[extension])
+                    if database is not None:
+                        database.addmeasurement ("%s-%s-%s" % (os.path.basename(sortedinputlist[pair_ii][0]),os.path.basename(sortedinputlist[pair_ii][1]), extension), dateobs, camera, filter,
+                                             extension, gains[extension], noises[extension], levels[extension], shotnoises[extension],level1s[extension],level2s[extension])
 
                     alllevels[extension].append (levels[extension])
                     allgains[extension].append (gains[extension])
                     allnoises[extension].append(noises[extension])
                     allshotnoises[extension].append(shotnoises[extension])
+                    alllevel1s[extension].append(level1s[extension])
+                    alllevel2s[extension].append(level2s[extension])
 
     if args.makepng:
         graphresults (alllevels, allgains, allnoises, allshotnoises)
