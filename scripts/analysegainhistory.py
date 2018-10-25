@@ -125,7 +125,7 @@ if __name__ == '__main__':
         plt.xlabel('Level [ADU]')
         plt.ylabel('delta flat Noise [ADU]')
         plt.ylim([5,1000])
-        plt.xlim([1,64000])
+        plt.xlim([1,70000])
         plt.legend()
         plt.savefig ("%s/ptchist-%s.png" % (args.outputdir,camera))
         plt.cla()

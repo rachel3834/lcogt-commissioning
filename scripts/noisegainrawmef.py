@@ -210,7 +210,7 @@ def sortinputfitsfiles (listoffiles, sortby='exptime'):
                     if (0.95 < knownlevel / level) and (knownlevel / level  < 1.05):
 
                         if len(tempsortedListofFiles[knownfilter][knownlevel]) < 2:
-                            _logger.info ("adding to set: %s level of %f is within 10 percent of level %f" % (filename, level, knownlevel))
+                            _logger.info ("adding to set: %s level of %f is within 5 percent of level %f" % (filename, level, knownlevel))
                             tempsortedListofFiles[knownfilter][knownlevel].append (filename)
                             matchfound =True
                             continue
@@ -335,7 +335,7 @@ class noisegaindbinterface:
     def addmeasurement (self, identifier, dateobs, camera, filter, extension,  gain, readnoise, level, diffnoise, commit=True):
         with self.conn:
 
-            _logger.debug ("Inserting: %s\n %s %s %s %s %s %s %s %s" %  (identifier,dateobs,camera,filter,extension, gain,readnoise,level,diffnoise))
+            _logger.info ("Inserting: %s\n %s %s %s %s %s %s %s %s" %  (identifier,dateobs,camera,filter,extension, gain,readnoise,level,diffnoise))
             self.conn.execute ("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?)",
                                (identifier,dateobs,camera,filter,extension, gain,readnoise,level,float(diffnoise)))
 
@@ -416,10 +416,17 @@ if __name__ == '__main__':
                 if 'DATE-OBS' in hdu[1].header:
                     dateobs = hdu[1].header['DATE-OBS']
                 camera = None
+
                 if 'INSTRUME' in hdu[0].header:
                     camera = hdu[0].header['INSTRUME']
+                if 'INSTRUME' in hdu[1].header:
+                    camera = hdu[1].header['INSTRUME']
+
+                filer=None
                 if 'FILTER' in hdu[0].header:
                     filter = hdu[0].header['FILTER']
+                if 'FILTER' in hdu[1].header:
+                    filter = hdu[1].header['FILTER']
 
                 hdu.close()
 
