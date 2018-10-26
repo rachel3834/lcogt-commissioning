@@ -1,13 +1,16 @@
 #!/bin/bash
 
+noisegaindatabase="noisegain.sqlite"
+webpageoutputdir="gainhistory"
+
 base=/archive/engineering
 cameras="fa?? fl?? fs?? kb??"
 sites="elp cpt lsc ogg coj tfn"
-dates="20180[1-8]??"
+dates="2018????"
 
 inputselection="*-[bf]00.fits.fz"
 
-NCPU=1
+NCPU=2
 
 for site in $sites; do
  for camera in $cameras; do
@@ -22,7 +25,7 @@ for site in $sites; do
 
      searchpath=${day}/raw/${inputselection}
      echo "Searchpath is $searchpath"
-     sem  -j $NCPU python noisegainrawmef.py --log_level INFO --sortby filterlevel --database /database/noisegain.sqlite $searchpath
+     sem  -j $NCPU python noisegainrawmef.py --noreprocessing --loglevel INFO --sortby filterlevel --database ${noisegaindatabase} $searchpath
 
    done
 
@@ -33,4 +36,4 @@ done
 
 sem --wait
 
-python analysegainhistory.py --outputdir /database --database /database/noisegain.sqlite
+python analysegainhistory.py --outputdir ${webpageoutputdir} --database ${noisegaindatabase}
