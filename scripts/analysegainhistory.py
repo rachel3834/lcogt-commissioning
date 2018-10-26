@@ -145,6 +145,11 @@ if __name__ == '__main__':
             plt.ylim([2,4])
         if 'fl' in camera:
             plt.ylim([1,3])
+        if 'fs' in camera:
+            plt.ylim([6,8])
+        if 'kb' in camera:
+            plt.ylim([1,3])
+
 
         plt.xlabel('Date Obs')
         plt.ylabel('Gain [e-/ADU]')
