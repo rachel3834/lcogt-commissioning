@@ -22,7 +22,7 @@ for site in $sites; do
 
      searchpath=${day}/raw/${inputselection}
      echo "Searchpath is $searchpath"
-     sem  -j $NCPU python noisegainrawmef.py --log_level INFO --sortby filterlevel --database noisegain.sqlite $searchpath
+     sem  -j $NCPU python noisegainrawmef.py --log_level INFO --sortby filterlevel --database /database/noisegain.sqlite $searchpath
 
    done
 
@@ -33,4 +33,4 @@ done
 
 sem --wait
 
-python analysegainhistory.py --outputdir . --database noisegain.sqlite
+python analysegainhistory.py --outputdir /database --database /database/noisegain.sqlite
