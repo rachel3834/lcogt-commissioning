@@ -80,12 +80,15 @@ class Image(object):
                     bs = None
                 else:
                     bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
-                extver = hdu.header['EXTVER']
-                #extver = extver if extver is not None else i + 1
-                if extver != i+1:
-                    _logger.warning ("extver %d does not equal extension numner %d." % (extver,i+1))
-                self.extver.append (extver)
 
+                try:
+                    extver = hdu.header['EXTVER']
+                    if extver != i+1:
+                        _logger.info ("extver %d does not equal extension numner %d." % (extver,i+1))
+                except:
+                    extver = i + 1
+
+                self.extver.append (extver)
                 self.biassec.append(bs)
                 self.ccdsec.append(cs)
 
