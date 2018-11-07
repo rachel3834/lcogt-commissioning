@@ -88,7 +88,9 @@ def renderHTMLPage (args, cameras):
 
         historyname = "gainhist-%s.png" % camera
         ptcname = "ptchist-%s.png" % camera
-        line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a>'
+        lvlname = "levelgain-%s.png" % camera
+        noisename = "noise-%s.png" % camera
+        line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a> <a href="{lvlname}"><img src="{lvlname}" height="450"/> </a>  <a href="{noisename}"><img src="{noisename}" height="450"/> </a>'
         message = message + line
 
     message = message + "</body></html>"
@@ -98,7 +100,7 @@ def renderHTMLPage (args, cameras):
         f.close()
 
 
-goodfilters = ['up','gp','rp','V','R']
+goodfilters = ['up','gp','rp','U','B','V','R','I']
 
 
 if __name__ == '__main__':
@@ -163,6 +165,56 @@ if __name__ == '__main__':
         plt.close()
 
         ##################################3
+
+
+        ######################################
+        plt.figure()
+        for ext in extensions:
+            d = dataset['level'][dataset['extension'] == ext]
+            g = dataset['gain'][dataset['extension'] == ext]
+            plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
+
+        if 'fa' in camera:
+            plt.ylim([2,4])
+        if 'fl' in camera:
+            plt.ylim([1,3])
+        if 'fs' in camera:
+            plt.ylim([6,8])
+        if 'kb' in camera:
+            plt.ylim([13])
+
+        plt.xlim([0,70000])
+        plt.xlabel('Avg. Level [ADU]')
+        plt.ylabel('Gain [e-/ADU]')
+        plt.title ('Level vs Gain for %s' % camera)
+
+        plt.legend()
+        plt.savefig ("%s/levelgain-%s.png" % (args.outputdir,camera))
+        plt.cla()
+        plt.close()
+
+
+        ######################################
+        plt.figure()
+        for ext in extensions:
+            d = dataset['dateobs'][dataset['extension'] == ext]
+            g = dataset['readnoise'][dataset['extension'] == ext]
+            plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
+
+
+        plt.ylim([5,20])
+
+        dateformat(starttime, endtime)
+        plt.xlabel('Date')
+        plt.ylabel('Readnoise [e-]')
+        plt.title ('Readnoise vs time for %s' % camera)
+
+        plt.legend()
+        plt.savefig ("%s/noise-%s.png" % (args.outputdir,camera))
+        plt.cla()
+        plt.close()
+
+
 
     renderHTMLPage(args, sorted(database.getcameras()))
     database.close()
