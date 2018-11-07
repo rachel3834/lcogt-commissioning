@@ -6,11 +6,11 @@ webpageoutputdir="gainhistory"
 base=/archive/engineering
 cameras="fa?? fl?? fs?? kb??"
 sites="elp cpt lsc ogg coj tfn"
-dates="2018????"
+dates="201811??"
 
 inputselection="*-[bf]00.fits.fz"
 
-NCPU=2
+NCPU=3
 
 for site in $sites; do
  for camera in $cameras; do
