@@ -240,6 +240,7 @@ def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, overscancorrect=True):
     shotnoises = []
     level1s = []
     level2s = []
+    exptimes=[]
 
     for ii in range(len(flat1.data)):
         (gain, noise, level, shotnoise, level1, level2) = noisegainextension(flat1.data[ii], flat2.data[ii],
@@ -256,9 +257,10 @@ def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, overscancorrect=True):
         shotnoises.append(shotnoise)
         level1s.append(level1)
         level2s.append(level2)
+        exptimes.append(flat1.header['EXPTIME'])
 
     # sanity check on gain and levels:
-    retval = (gains, levels, noises, shotnoises, level1s, level2s)
+    retval = (gains, levels, noises, shotnoises, level1s, level2s, exptimes)
 
     gains = gains / gains[0]
     levels = levels / levels[0]
@@ -273,7 +275,7 @@ def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, overscancorrect=True):
     return retval
 
 
-def graphresults(alllevels, allgains, allnoises, allshotnoises):
+def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     _logger.debug("Plotting gain vs level")
     plt.figure()
     for ext in alllevels:
@@ -310,6 +312,21 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises):
     plt.ylabel("Measured Noise [ADU]")
     plt.savefig("ptc.png")
     plt.close()
+
+
+    _logger.debug("Plotting levle vs exptime")
+    plt.figure()
+    # print (alllevels)
+    for ext in alllevels:
+        plt.plot(allexptimes[ext], alllevels[ext], '.', label="extension %s" % ext)
+    plt.legend()
+
+    plt.xlabel("Exposure time [s]")
+    plt.ylabel("Exposure label [ADU]")
+    plt.savefig("texplevel.png")
+    plt.close()
+
+
 
 
 class noisegaindbinterface:
@@ -450,6 +467,7 @@ if __name__ == '__main__':
     allshotnoises = {}
     alllevel1s = {}
     alllevel2s = {}
+    allexptimes = {}
 
     for pair_ii in sortedinputlist:
 
@@ -458,7 +476,7 @@ if __name__ == '__main__':
                 print("\nNoise / Gain measuremnt based on metric %s" % pair_ii)
                 print("===========================================")
 
-                gains, levels, noises, shotnoises, level1s, level2s = dosingleLevelGain(sortedinputlist['bias'][0],
+                gains, levels, noises, shotnoises, level1s, level2s, exptimes = dosingleLevelGain(sortedinputlist['bias'][0],
                                                                                         sortedinputlist['bias'][1],
                                                                                         sortedinputlist[pair_ii][0],
                                                                                         sortedinputlist[pair_ii][1])
@@ -492,6 +510,7 @@ if __name__ == '__main__':
                         allshotnoises[extension] = []
                         alllevel1s[extension] = []
                         alllevel2s[extension] = []
+                        allexptimes[extension] = []
 
                     if database is not None:
                         database.addmeasurement("%s-%s-%s" % (
@@ -506,9 +525,11 @@ if __name__ == '__main__':
                     allshotnoises[extension].append(shotnoises[extension])
                     alllevel1s[extension].append(level1s[extension])
                     alllevel2s[extension].append(level2s[extension])
+                    allexptimes[extension].append(exptimes[extension])
+
 
     if args.makepng:
-        graphresults(alllevels, allgains, allnoises, allshotnoises)
+        graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
 
     if database is not None:
         database.close()
