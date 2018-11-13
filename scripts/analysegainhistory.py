@@ -181,7 +181,7 @@ if __name__ == '__main__':
         if 'fs' in camera:
             plt.ylim([6,8])
         if 'kb' in camera:
-            plt.ylim([13])
+            plt.ylim([1,3])
 
         plt.xlim([0,70000])
         plt.xlabel('Avg. Level [ADU]')
