@@ -334,7 +334,7 @@ def multicrossanalysis(args):
                                                                                 fit_gradient, sigclip=5)
                         label = 'p[1]=' + str(round(afit[1], 10)) + '\nsig=' + str(round(stddev, 2))
                         if zoomlevel == 1:
-                            print ('archon.header.CRSTLK%d%d = %9f' % ( (args.opt_quadrant + 1),  iquad, (round(afit[1],5))))
+                            print ('archon.header.CRSTLK%d%d = %9f' % ( (args.opt_quadrant + 1),  iquad, (round(afit[1],6))))
                             #print 'Primary Quadrant=' + str(args.opt_quadrant + 1) + ' quad=' + str(iquad) + ' parameters=' + label
                     elif args.poly:
                         (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
