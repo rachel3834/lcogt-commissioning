@@ -112,7 +112,7 @@ def parseCommandLine():
     parser.add_argument('--showimages', action='store_true', help="Show difference flat and bias images.")
     parser.add_argument('--noreprocessing', action='store_true', help="Do not reprocess if datra are already in database")
     parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
-    parser.add_argument('--database', default="noisegain.sql")
+    parser.add_argument('--database', default="noisegain.sqlite")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
