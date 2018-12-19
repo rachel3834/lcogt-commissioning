@@ -30,7 +30,7 @@ def parseCommandLine():
 
     parser.add_argument ('--outputdir', default='gainhistory', help="directory for output graphs")
 
-    parser.add_argument ('--database', default="noisegain.sql")
+    parser.add_argument ('--database', default="noisegain.sqlite")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
