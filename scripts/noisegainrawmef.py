@@ -205,15 +205,16 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
 
             matchfound = False
             for knownfilter in tempsortedListofFiles.keys():
-                for knownlevel in tempsortedListofFiles[knownfilter].keys():
-                    if (0.95 < knownlevel / level) and (knownlevel / level < 1.05):
+                if (filter == knownfilter):
+                    for knownlevel in tempsortedListofFiles[knownfilter].keys():
+                        if (0.95 < knownlevel / level) and (knownlevel / level < 1.05):
 
-                        if len(tempsortedListofFiles[knownfilter][knownlevel]) < 2:
-                            _logger.debug("adding to set: %s level of %f is within 5 percent of level %f" % (
-                            filename, level, knownlevel))
-                            tempsortedListofFiles[knownfilter][knownlevel].append(filename)
-                            matchfound = True
-                            continue
+                            if len(tempsortedListofFiles[knownfilter][knownlevel]) < 2:
+                                _logger.debug("adding to set: %s level of %f is within 5 percent of level %f" % (
+                                filename, level, knownlevel))
+                                tempsortedListofFiles[knownfilter][knownlevel].append(filename)
+                                matchfound = True
+                                continue
 
             if not matchfound:
                 tempsortedListofFiles[filter][level] = [filename, ]
