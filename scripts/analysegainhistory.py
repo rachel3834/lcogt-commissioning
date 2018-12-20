@@ -100,7 +100,7 @@ def renderHTMLPage (args, cameras):
         f.close()
 
 
-goodfilters = ['up','gp','rp','U','B','V','R','I']
+goodfilters = ['up','gp','rp','ip','zp','U','B','V','R','I']
 
 
 if __name__ == '__main__':
