@@ -62,6 +62,11 @@ class Image(object):
 
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE'])
 
+        if len (sci_extensions) == 0:
+            _logger.warning ("No SCI extemnstion found in image %s. Aborting." % filename)
+            self.data = None
+            return None
+
         # Find out where the on-sky data are located.
         _logger.debug("CCDSEC: %s " % sci_extensions[0].header['DATASEC'])
 

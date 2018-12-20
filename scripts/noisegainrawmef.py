@@ -157,7 +157,10 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
                 filter = hdu[1].header['FILTER']
             if (filter is not None) and ('b00' not in filecandidate):
                 image = Image(filecandidate, overscancorrect=True)
-                level = np.mean(image.data[0])
+                if image.data == None:
+                    level = np.NAN
+                else:
+                    level = np.mean(image.data[0])
                 _logger.debug("Input file metrics %s %s %s" % (filecandidate, filter, level))
                 filemetrics[filecandidate] = (filter, level)
 
