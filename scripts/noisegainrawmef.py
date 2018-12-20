@@ -157,7 +157,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
                 filter = hdu[1].header['FILTER']
             if (filter is not None) and ('b00' not in filecandidate):
                 image = Image(filecandidate, overscancorrect=True)
-                if image.data == None:
+                if image.data is None:
                     level = np.NAN
                 else:
                     level = np.mean(image.data[0])
