@@ -158,7 +158,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
             if (filter is not None) and ('b00' not in filecandidate):
                 image = Image(filecandidate, overscancorrect=True)
                 if image.data is None:
-                    level = np.NAN
+                    level = -1
                 else:
                     level = np.mean(image.data[0])
                 _logger.debug("Input file metrics %s %s %s" % (filecandidate, filter, level))
