@@ -50,6 +50,9 @@ class Image(object):
         hdulist = fits.open(filename, 'readonly')
         # Get the main header
         self.header = hdulist[0].header
+        if filename.endswith(".fz"):
+            for card in hdulist[1].header:
+                self.header.append (card)
 
         # Check for multi-extension fits
         self.extension_headers = []
