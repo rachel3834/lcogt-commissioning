@@ -15,7 +15,8 @@ import matplotlib.dates as mdates
 import datetime
 
 
-starttime = datetime.datetime(2016, 1, 1)
+starttimeall = datetime.datetime(2016, 1, 1)
+starttimefa = datetime.datetime(2018, 7, 1)
 
 endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=31+4)
 endtime.replace(day =1)
@@ -114,6 +115,10 @@ if __name__ == '__main__':
 
     for camera in database.getcameras():
 
+        starttime = starttimeall
+        if 'fa' in camera:
+           starttime = starttimefa
+
         dataset = database.readmeasurements(camera, levelratio = 0.02, filters=goodfilters)
         if dataset is None:
             continue
@@ -146,7 +151,7 @@ if __name__ == '__main__':
             plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
 
         if 'fa' in camera:
-            plt.ylim([2,4])
+            plt.ylim([2.5,4])
         if 'fl' in camera:
             plt.ylim([1,3])
         if 'fs' in camera:
@@ -175,7 +180,7 @@ if __name__ == '__main__':
             plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
 
         if 'fa' in camera:
-            plt.ylim([2,4])
+            plt.ylim([2.5,4])
         if 'fl' in camera:
             plt.ylim([1,3])
         if 'fs' in camera:
@@ -202,7 +207,15 @@ if __name__ == '__main__':
             plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
 
 
-        plt.ylim([5,20])
+        if 'fa' in camera:
+            plt.ylim([5,10])
+        if 'fl' in camera:
+            plt.ylim([5,15])
+        if 'fs' in camera:
+            plt.ylim([5,15])
+        if 'kb' in camera:
+            plt.ylim([7,20])
+        
 
         dateformat(starttime, endtime)
         plt.xlabel('Date')
