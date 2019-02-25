@@ -60,7 +60,7 @@ class Image(object):
         self.ccdsec = []
         self.extver = []
 
-        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE'])
+        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
 
         if len (sci_extensions) == 0:
             _logger.warning ("No SCI extemnstion found in image %s. Aborting." % filename)

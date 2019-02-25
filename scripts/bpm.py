@@ -25,7 +25,7 @@ def parseCommandLine():
 
     parser.add_argument ('--showbpmimages', action='store_true', help="Show bpm of each extension for inspection")
     parser.add_argument ('--showstackedinput', action='store_true', help="Show stacked bias, dark, flat images for inspection")
-    parser.add_argument ('--biassigma', type=float, default=15, help="rejection limit in sigma above background for bias")
+    parser.add_argument ('--biassigma', type=float, default=30, help="rejection limit in sigma above background for bias")
 
     args = parser.parse_args()
 
@@ -82,12 +82,12 @@ def createbpmFromBiasextension (extdata, sigma=15):
     return extdata
 
 
-def createbpmFromDarkextension (extdata, sigma=15):
+def createbpmFromDarkextension (extdata, sigma=30):
 
     variance = np.std(extdata)
     level = np.median (extdata)
 
-    baddata = np.abs (extdata - level) > variance*20
+    baddata = np.abs (extdata - level) > variance*sigma
     extdata *=0
     extdata[baddata] = 2
     _logger.info ("BPM from Dark: Variance in extension data: % 8.2f +/- %6.3f" % (level,variance))
@@ -121,11 +121,11 @@ if __name__ == '__main__':
 
     for ii in args.fitsfiles:
         if "-b00" in ii:
-           biasfiles.append (Image(ii, overscancorrect=True, trim=True))
+           biasfiles.append (Image(ii, overscancorrect=True, trim=False))
         if "-d00" in ii:
-            darkfiles.append (Image(ii, overscancorrect=True, trim=True))
+            darkfiles.append (Image(ii, overscancorrect=True, trim=False))
         if "-f00" in ii:
-            flatfiles.append (Image(ii, overscancorrect=True, trim=True))
+            flatfiles.append (Image(ii, overscancorrect=True, trim=False))
 
     if len (biasfiles) < 3:
         _logger.fatal ("*** There are not enough bias files defined to continue. Giving up.")
@@ -177,22 +177,23 @@ if __name__ == '__main__':
 
 
     hdul = fits.HDUList ()
-    phdu = fits.PrimaryHDU(header=referenceImage.header)
+    phdu = fits.PrimaryHDU(header=referenceImage.extension_headers[0])
     phdu.header['OBSTYPE'] = 'BPM'
-
     hdul.append (phdu)
+
     for ii in range (len (outputdata)):
-        _logger.info ("extension %d  detsec %s" % (ii,referenceImage.extension_headers[ii]['DETSEC'] ))
+        _logger.info ("extension %d  detsec %s shape %s" % (ii,referenceImage.extension_headers[ii]['DETSEC'], outputdata[ii].shape ))
         hdu = fits.ImageHDU (outputdata[ii].astype(np.uint8), header=referenceImage.extension_headers[ii])
         hdu.header['EXTNAME'] = 'BPM'
+        hdu.header['OBSTYPE'] = 'BPM'
         hdu.header['EXTVER'] = '%d' % (ii+1)
         hdul.append (hdu)
 
     # BANZAI legacy from pre-fzcompress
-    keywordd_to_ext1 = ['SITEID','INSTRUME','CCDSUM','DAY-OBS']
+    keywordd_to_ext1 = ['SITEID','INSTRUME','CCDSUM','DAY-OBS', 'DATE-OBS']
     for key in keywordd_to_ext1:
         _logger.debug ("Copy keyword %s to extention 1 for BANZAI" % key)
-        hdul[1].header[key] = referenceImage.header[key]
+        #hdul[1].header[key] = referenceImage.header[key]
 
     _logger.info ("Writing output file %s to disk" % args.outputfilename)
-    hdul.writeto(args.outputfilename, overwrite=True)
+    hdul.writeto(args.outputfilename, overwrite=True, output_verify='warn')
