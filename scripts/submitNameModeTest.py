@@ -74,11 +74,15 @@ def getAutoCandidate(context):
 
 
 def createRequestsForStar(context):
-    timeperExposure = 4   # in minutes
+    exposuretime = context.exptime   # in minutes
+    overheadperexposure = 7
+    telescopeslew = 60
     start = context.start
+    nexposure = int(context.expcnt)
 
     # create one block per quadrant
-    end = start + dt.timedelta(minutes = 2 * timeperExposure)
+    end = start + dt.timedelta(seconds = nexposure * (exposuretime+overheadperexposure)) \
+          + dt.timedelta(seconds=telescopeslew)
     start = str(start).replace(' ','T')
     end = str(end).replace(' ','T')
 
@@ -108,17 +112,17 @@ def createRequestsForStar(context):
              'observatory': context.dome,
              'telescope': context.telescope,
              'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-             'priority': 40,
+             'priority': 32,
              "is_too": False,
-             "max_airmass": "2.0000000",
+             "max_airmass": "3.0000000",
              "min_lunar_dist": "30.0000000",
              }
 
-    for readoutmode in ("lco2_500kHz_binned_window", "","lco2_500kHz_DRH",):
+    for readoutmode in ("lco2_500kHz_binned_window",): # "","lco2_500kHz_DRH",):
 
         molecule = {
-            "filter": "rp*Diffuser",
-            "exposure_time": "30.0",
+            "filter": context.filter,
+            "exposure_time": exposuretime,
             "readout_mode": readoutmode,
             "pointing": pointing,
             "defocus": "0.0000000",
@@ -129,11 +133,11 @@ def createRequestsForStar(context):
             "user_id": "daniel_harbeck",
             "prop_id": "LCOEngineering",
             "group": "test_group",
-            "exposure_count": 1,
+            "exposure_count": nexposure,
             "bin_x": 1,
             "bin_y": 1,
             "inst_name": context.instrument,
-            "priority": 40,
+            "priority": 31,
             "type": "EXPOSE",
             "ag_filter": "",
             "ag_exp_time": "10.0000000"
@@ -158,21 +162,26 @@ def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='X-Talk calibration submission tool\nSubmit to POND the request to observe a bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.')
 
-    parser.add_argument('--name', default='auto', type=str, choices=goodXTalkTargets,
+    parser.add_argument('--name', default='auto', type=str,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, program will exit.\n future version will automatically select a star based on time of observation.  ')
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--site',  choices=['lsc', 'cpt', 'coj', 'elp', 'bpl'],
                         help="To which site to submit")
     parser.add_argument('--dome',  choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
+    parser.add_argument('--filter', default='rp')
+    parser.add_argument('--exp-cnt',  type=int, dest="expcnt", default=1)
+    parser.add_argument('--exptime',  type=float, default=20)
     parser.add_argument('--instrument', default='fl12',
                         choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16','fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ],
                         help="To which instrument to submit")
     parser.add_argument('--start', default=None,
                         help="When to start x-talk calibration. If not given, defaults to \"NOW\"")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
-    parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
-    parser.add_argument('--offsetDec', default=0, help="Extra pointing offset to apply Dec")
+
+    # Per default, do not be on chip gap!
+    parser.add_argument('--offsetRA', default=60, help="Extra pointing offset to apply R.A.")
+    parser.add_argument('--offsetDec', default=60, help="Extra pointing offset to apply Dec")
 
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted.')
