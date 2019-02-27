@@ -67,8 +67,8 @@ def getAutoCandidate(context):
 
 def createRequestsForStar(context):
     exposuretime = context.exptime
-    overheadperexposure = 60  # TODO: Update for Floyds
-    telescopeslew = 120  # TODO: verify for 2 meter
+    overheadperexposure = 25.5  # readout plus fixed overhead
+    telescopeslew = 120 + 90 + 60  # teelscope slew, acquire exposure + process, config change time
     start = context.start
     nexposure = int(context.expcnt)
 
@@ -76,7 +76,7 @@ def createRequestsForStar(context):
     end = start + \
           dt.timedelta(seconds=telescopeslew) + \
           dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + \
-          dt.timedelta(seconds=60)  # first flat
+          dt.timedelta(seconds=2 * (40 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
 
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
@@ -86,7 +86,7 @@ def createRequestsForStar(context):
 
     pointing = {
         "type": "SP",
-        "name": "Floyds test {}".format(context.name),
+        "name": "Floyds test {}".format(context.targetname),
         "coord_type": "RD",
         "coord_sys": "ICRS",
         "epoch": "2000.0000000",
@@ -94,7 +94,7 @@ def createRequestsForStar(context):
         "pro_mot_ra": "0",
         "pro_mot_dec": "0",
         "parallax": "0.0000000",
-        "ra":  "%10f" % offsetPointing.ra.degree,
+        "ra": "%10f" % offsetPointing.ra.degree,
         "dec": "%10f" % offsetPointing.dec.degree,
     }
 
@@ -162,8 +162,30 @@ def createRequestsForStar(context):
         "readout_mode": ""
     }
 
+    arc_molecule = {
+        "spectra_slit": "slit_2.0as",
+        "pointing": pointing,
+        "tag_id": "LCOGT",
+        "user_id": context.user,
+        "prop_id": "LCOEngineering-001",
+        "group": "Floyds test exposure",
+        "exposure_count": 1,
+        "bin_x": 1,
+        "bin_y": 1,
+        "inst_name": context.instrument,
+        "priority": 3,
+        "type": "ARC",
+        "events": [],
+        "ag_filter": "",
+        "ag_exp_time": "10.0000000",
+        "exposure_time": "80.0000000",
+        "readout_mode": ""
+    }
+
     block['molecules'].append(flat_molecule)
     block['molecules'].append(spectrum_molecule)
+    block['molecules'].append(arc_molecule)
+    block['molecules'].append(flat_molecule)
 
     _logger.debug(json.dumps(block, indent=4))
     if args.opt_confirmed:
@@ -179,14 +201,17 @@ def createRequestsForStar(context):
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='Floyds test observation')
+        description='Submit an engineering Floyds observation.')
 
-    parser.add_argument('--name', default='auto', type=str,
-                        help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, program will exit.\n future version will automatically select a star based on time of observation.  ')
-    parser.add_argument('--defocus', type=float, default=0.0, help="Amount to defocus star.")
-    parser.add_argument('--site', choices=['ogg', 'coj'],
-                        help="To which site to submit")
-    parser.add_argument('--filter', default='rp')
+    parser.add_argument('--targetname', default='auto', type=str,
+                        help='Name of star for Floyds test observation. if none is given, or auto, Software will try to'
+                             ' find a cataloged flux stadnard star. Name must resolve via Simbad; if resolve failes,'
+                             ' program will exit.')
+
+    requiredNamed = parser.add_argument_group('required named arguments')
+    requiredNamed.add_argument('--site', choices=['ogg', 'coj'], required=True,  help="To which site to submit")
+
+
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
 
@@ -219,19 +244,19 @@ def parseCommandLine():
             _logger.error("Invalidt start time argument: ", args.start)
             exit(1)
 
-    if ('auto' in args.name):
+    if ('auto' in args.targetname):
         # automatically find the best target
-        args.name = getAutoCandidate(args)
+        args.targetname = getAutoCandidate(args)
         pass
 
     try:
         _logger.debug("Resolving target name")
-        args.radec = SkyCoord.from_name(args.name)
+        args.radec = SkyCoord.from_name(args.targetname)
     except:
         print("Resolving target name failed, giving up")
         exit(1)
 
-    print("Resolved target %s at corodinates %s %s" % (args.name, args.radec.ra, args.radec.dec))
+    print("Resolved target %s at corodinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
     return args
 
 
