@@ -18,14 +18,8 @@ quadrantOffsets = {0: [-450, 450],
                    3: [-450, -450]}
 
 _site_lonlat = {}
-_site_lonlat['bpl'] = (-119.863103, 34.433161)
 _site_lonlat['coj'] = (149.0708466, -31.2728196)
-_site_lonlat['cpt'] = (20.8124, -32.3826)
-_site_lonlat['elp'] = (-104.015173, 30.679833)
-_site_lonlat['lsc'] = (-70.8049, -30.1673666667)
 _site_lonlat['ogg'] = (-156.2589, 34.433161)
-_site_lonlat['sqa'] = (-120.04222167, 34.691453333)
-_site_lonlat['tfn'] = (-16.511544, 28.300433)
 
 goodXTalkTargets = ['auto', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
@@ -40,9 +34,9 @@ def getAutoCandidate(context):
     site.lat = lat * math.pi / 180
     site.lon = lon * math.pi / 180
     site.date = ephem.Date(context.start + dt.timedelta(minutes=30))
-
     moon = ephem.Moon()
     moon.compute(site)
+
     print("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase * 100))
 
     for starcandidate in goodXTalkTargets:
@@ -55,7 +49,6 @@ def getAutoCandidate(context):
         s.compute(site)
 
         separation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
-
         alt = s.alt * 180 / math.pi
         separation = separation * 180 / math.pi
 
@@ -73,15 +66,17 @@ def getAutoCandidate(context):
 
 
 def createRequestsForStar(context):
-    exposuretime = context.exptime  # in minutes
-    overheadperexposure = 60
-    telescopeslew = 120
+    exposuretime = context.exptime
+    overheadperexposure = 60  # TODO: Update for Floyds
+    telescopeslew = 120  # TODO: verify for 2 meter
     start = context.start
     nexposure = int(context.expcnt)
 
     # create one block per quadrant
-    end = start + dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + dt.timedelta(
-        seconds=telescopeslew) + dt.timedelta(seconds=60)  # first flat
+    end = start + \
+          dt.timedelta(seconds=telescopeslew) + \
+          dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + \
+          dt.timedelta(seconds=60)  # first flat
 
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
@@ -91,7 +86,7 @@ def createRequestsForStar(context):
 
     pointing = {
         "type": "SP",
-        "name": "Named Mode Test {}".format(context.name),
+        "name": "Floyds test {}".format(context.name),
         "coord_type": "RD",
         "coord_sys": "ICRS",
         "epoch": "2000.0000000",
@@ -99,8 +94,8 @@ def createRequestsForStar(context):
         "pro_mot_ra": "0",
         "pro_mot_dec": "0",
         "parallax": "0.0000000",
-        "ra": "%10f" % offsetPointing.ra.degree,
-        "dec": "%7f" % offsetPointing.dec.degree,
+        "ra":  "%10f" % offsetPointing.ra.degree,
+        "dec": "%10f" % offsetPointing.dec.degree,
     }
 
     print("Block for {} from {} to {}".format(pointing['name'], str(start), str(end)))
@@ -114,8 +109,8 @@ def createRequestsForStar(context):
              'site': context.site,
              'observatory': 'clma',
              'telescope': '2m0a',
-             'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-             'priority': 32,
+             'instrument_class': '2M0-FLOYDS-SCICAM'.upper(),
+             'priority': 31,
              "is_too": False,
              "max_airmass": "3.0000000",
              "min_lunar_dist": "30.0000000",
@@ -196,7 +191,7 @@ def parseCommandLine():
     parser.add_argument('--exptime', type=float, default=150)
 
     parser.add_argument('--start', default=None,
-                        help="When to start x-talk calibration. If not given, defaults to \"NOW\"")
+                        help="When to start Floyds observation. If not given, defaults to \"NOW\"")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
 
     # Per default, do not be on chip gap!
