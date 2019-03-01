@@ -11,7 +11,7 @@ from noisegainrawmef import noisegaindbinterface
 
 import matplotlib.pyplot as plt
 _logger = logging.getLogger(__name__)
-gthumb &import datetime
+import datetime
 
 
 starttimeall = datetime.datetime(2016, 1, 1)
