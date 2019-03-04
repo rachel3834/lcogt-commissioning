@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import logging
 import ephem
@@ -67,7 +68,7 @@ def getAutoCandidate(context):
 
 def createRequestsForStar(context):
     exposuretime = context.exptime
-    overheadperexposure = 25.5  # readout plus fixed overhead
+    overheadperexposure = 60 # readout plus fixed overhead
     telescopeslew = 120 + 90 + 60  # teelscope slew, acquire exposure + process, config change time
     start = context.start
     nexposure = int(context.expcnt)
@@ -76,7 +77,7 @@ def createRequestsForStar(context):
     end = start + \
           dt.timedelta(seconds=telescopeslew) + \
           dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + \
-          dt.timedelta(seconds=2 * (40 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
+          dt.timedelta(seconds=2 * (80 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
 
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
@@ -121,7 +122,7 @@ def createRequestsForStar(context):
         "pointing": pointing,
 
         "tag_id": "LCOGT",
-        "user_id": "supernova_exchange",
+        "user_id": context.user,
         "prop_id": "LCOEngineering",
         "group": "Floyds test exposure",
         "exposure_count": 1,
@@ -185,7 +186,9 @@ def createRequestsForStar(context):
     block['molecules'].append(flat_molecule)
     block['molecules'].append(spectrum_molecule)
     block['molecules'].append(arc_molecule)
-    block['molecules'].append(flat_molecule)
+    lastflat = copy.deepcopy (flat_molecule)
+    lastflat['priority'] = 4
+    block['molecules'].append(lastflat)
 
     _logger.debug(json.dumps(block, indent=4))
     if args.opt_confirmed:
