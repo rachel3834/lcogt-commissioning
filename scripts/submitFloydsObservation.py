@@ -118,7 +118,7 @@ def createRequestsForStar(context):
              }
 
     flat_molecule = {
-        "spectra_slit": "slit_2.0as",
+        "spectra_slit": "slit_1.2as",
         "pointing": pointing,
 
         "tag_id": "LCOGT",
@@ -141,7 +141,7 @@ def createRequestsForStar(context):
     spectrum_molecule = {
         "acquire_mode": "BRIGHTEST",
         "acquire_radius_arcsec": "5.00",
-        "spectra_slit": "slit_2.0as",
+        "spectra_slit": "slit_1.2as",
         "pointing": pointing,
         "defocus": "0.0000000",
         "ag_name": agname,
@@ -164,7 +164,7 @@ def createRequestsForStar(context):
     }
 
     arc_molecule = {
-        "spectra_slit": "slit_2.0as",
+        "spectra_slit": "slit_1.2as",
         "pointing": pointing,
         "tag_id": "LCOGT",
         "user_id": context.user,
