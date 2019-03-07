@@ -15,27 +15,53 @@ noisegainmef.py
 ===
 
 Measure read noise [e-] and gain [e-/ADU]  based on a pair of raw biases images and equally exposed
-flat field images. 
+flat field images. If more than one pair of flat fields are given, they are matched either by exposure time 
+or illumination level (user selectable).  
 
 Syntax is:
 <pre>
-usage: noisegainrawmef.py [-h] [--imagepath OPT_IMAGEPATH]
-                          [--log_level {DEBUG,INFO,WARN}]
-                          fitsfile fitsfile fitsfile fitsfile
+(venv) dharbeck@dharbeck-lco2:~/Software/lcogt-commissioning/scripts$ python noisegainrawmef.py -h
+usage: noisegainrawmef.py [-h] [--minx MINX] [--maxx MAXX] [--miny MINY]
+                          [--maxy MAXY] [--imagepath OPT_IMAGEPATH]
+                          [--database DATABASE]
+                          [--sortby {exptime,filterlevel}] [--noreprocessing]
+                          [--loglevel {DEBUG,INFO,WARN}] [--showimages]
+                          [--makepng]
+                          fitsfile [fitsfile ...]
 
-General purpose noise and gain measurement from a set of two flat fields and
-two biases.
+General purpose CCD noise and gain measurement from pairs of flat fields and
+biases.
 
 positional arguments:
-  fitsfile              four fits files: bias_1 bias_2 flat_1 flat_2
+  fitsfile              Input fits files, must include at least two bias and
+                        two flat field frames.
 
 optional arguments:
   -h, --help            show this help message and exit
   --imagepath OPT_IMAGEPATH
-                        pathname to prepend to fits file names.
-  --log_level {DEBUG,INFO,WARN}
-                        Set the debug level
+                        pathname to prepend to fits file names. (default:
+                        None)
+  --database DATABASE   sqlite database where to store results. (default:
+                        noisegain.sqlite)
+  --sortby {exptime,filterlevel}
+                        Automatically group flat fiel;ds by exposure time
+                        (great if using dome flas, or lab flats)., or by
+                        measured light level (great when using sky flats, but
+                        more computing intensive (default: exptime)
+  --noreprocessing      Do not reprocess if datra are already in database
+                        (default: False)
+  --loglevel {DEBUG,INFO,WARN}
+                        Set the debug level (default: INFO)
+  --showimages          Interactively show difference flat and bias images.
+                        (default: False)
+  --makepng             Create a png output image of noise, gain, and ptc.
+                        (default: False)
 
+Optionally, specify the location of statistics window. All units in pixels with an FITS image extension:
+  --minx MINX           minimum x. (default: None)
+  --maxx MAXX           maximum x. (default: None)
+  --miny MINY           miniumm y. (default: None)
+  --maxy MAXY           maximum y. (default: None)
 </pre>
 
 The fitsfiles are to be in the order: bias1, bias2, flat1, flat2

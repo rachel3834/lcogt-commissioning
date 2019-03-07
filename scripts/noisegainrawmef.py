@@ -61,7 +61,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     avglevel = (flat1lvl - avgbiaslevel + flat2lvl - avgbiaslevel) / 2
     if (leveldifference > avglevel * 0.1):
         _logger.warning("flat level difference % 8f is large compared to level % 8f. Result will be questionable" % (
-        leveldifference, flat1lvl - bias1lvl))
+            leveldifference, flat1lvl - bias1lvl))
 
     # Measure noise of flat and biad differential iamges
     deltaflat = (flat1 - flat2)[miny:maxy, minx:maxx]
@@ -73,7 +73,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
 
     _logger.debug(
         " Levels (flat,flat,bias,bias), and noise (flat, bias): [%d:%d, %d:%d]: % 7.2f, % 7.2f | % 5.2f, % 5.2f | % 7.2f % 5.2f" % (
-        minx, maxx, miny, maxy, flat1lvl, flat2lvl, bias1lvl, bias2lvl, flatnoise, biasnoise))
+            minx, maxx, miny, maxy, flat1lvl, flat2lvl, bias1lvl, bias2lvl, flatnoise, biasnoise))
 
     flatlevel = (flat1lvl + flat2lvl) / 2 - (bias1lvl + bias2lvl) / 2
     gain = 2 * flatlevel / (flatnoise ** 2 - biasnoise ** 2)
@@ -93,26 +93,33 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='General purpose noise and gain measurement from a set of two flat fields and two biases.')
+        description='General purpose CCD noise and gain measurement from pairs of flat fields and biases.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('fitsfile', type=str, nargs='+',
-                        help='four fits files:  bias_1 bias_2 flat_1 flat_2')
+                        help='Input fits files, must include at least two bias and two flat field frames.')
 
-    parser.add_argument('--minx', type=int, default=None)
-    parser.add_argument('--maxx', type=int, default=None)
-    parser.add_argument('--miny', type=int, default=None)
-    parser.add_argument('--maxy', type=int, default=None)
+    group = parser.add_argument_group(
+        'Optionally, specify the location of statistics window. All units in pixels with an FITS image extension')
+    group.add_argument('--minx', type=int, default=None, help="minimum x.")
+    group.add_argument('--maxx', type=int, default=None, help="maximum x.")
+    group.add_argument('--miny', type=int, default=None, help="miniumm y.")
+    group.add_argument('--maxy', type=int, default=None, help="maximum y.")
 
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None,
                         help="pathname to prepend to fits file names.")
+    parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
+    parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime', 'filterlevel'],
+                        help="Automatically group flat fiel;ds by exposure time (great if using dome flas, or lab flats)."
+                             ", or by measured light level (great when using sky flats, but more computing intensive")
+    parser.add_argument('--noreprocessing', action='store_true',
+                        help="Do not reprocess if datra are already in database")
+
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
-
-    parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime', 'filterlevel'])
-    parser.add_argument('--showimages', action='store_true', help="Show difference flat and bias images.")
-    parser.add_argument('--noreprocessing', action='store_true', help="Do not reprocess if datra are already in database")
+    parser.add_argument('--showimages', action='store_true', help="Interactively show difference flat and bias images.")
     parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
-    parser.add_argument('--database', default="noisegain.sqlite")
+
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -214,7 +221,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
 
                             if len(tempsortedListofFiles[knownfilter][knownlevel]) < 2:
                                 _logger.debug("adding to set: %s level of %f is within 5 percent of level %f" % (
-                                filename, level, knownlevel))
+                                    filename, level, knownlevel))
                                 tempsortedListofFiles[knownfilter][knownlevel].append(filename)
                                 matchfound = True
                                 continue
@@ -244,7 +251,7 @@ def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, overscancorrect=True):
     shotnoises = []
     level1s = []
     level2s = []
-    exptimes=[]
+    exptimes = []
 
     for ii in range(len(flat1.data)):
         (gain, noise, level, shotnoise, level1, level2) = noisegainextension(flat1.data[ii], flat2.data[ii],
@@ -317,7 +324,6 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.savefig("ptc.png")
     plt.close()
 
-
     _logger.debug("Plotting levle vs exptime")
     plt.figure()
     # print (alllevels)
@@ -329,8 +335,6 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.ylabel("Exposure label [ADU]")
     plt.savefig("texplevel.png")
     plt.close()
-
-
 
 
 class noisegaindbinterface:
@@ -361,7 +365,7 @@ class noisegaindbinterface:
                        level2, commit=True):
         with self.conn:
             _logger.debug("Inserting: %s\n %s %s %s %s %s %s %s %s %s %s" % (
-            identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1, level2))
+                identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1, level2))
             self.conn.execute("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?,?,?)",
                               (identifier, dateobs, camera, filter, extension, gain, readnoise, level, float(diffnoise),
                                float(level1), float(level2)))
@@ -375,10 +379,10 @@ class noisegaindbinterface:
 
         with self.conn:
             query = 'select name from noisegain where (name like ?)'
-            cursor = self.conn.execute(query, ( "%{}%".format(flat1),))
+            cursor = self.conn.execute(query, ("%{}%".format(flat1),))
             allmatch = cursor.fetchall()
             if len(allmatch) > 0:
-                _logger.debug("match found for %s"  % (flat1))
+                _logger.debug("match found for %s" % (flat1))
                 return True
 
         _logger.debug("no match found for %s" % (flat1))
@@ -414,11 +418,11 @@ class noisegaindbinterface:
         queryargs = [camera if camera is not None else '%', ]
 
         if filters is not None:
-            filtercondition = 'AND (filter in (%s))' % ','.join ('?' * len(filters) )
-            query = query.replace("__FILTER__",  filtercondition)
-            queryargs.extend (filters)
+            filtercondition = 'AND (filter in (%s))' % ','.join('?' * len(filters))
+            query = query.replace("__FILTER__", filtercondition)
+            queryargs.extend(filters)
         else:
-            query = query.replace ("__FILTER__", "")
+            query = query.replace("__FILTER__", "")
 
         _logger.debug("Read from database with query\n  %s\n  %s\n" % (query, queryargs))
 
@@ -452,7 +456,6 @@ class noisegaindbinterface:
         self.conn.close()
 
 
-
 if __name__ == '__main__':
 
     args = parseCommandLine()
@@ -461,7 +464,7 @@ if __name__ == '__main__':
     if (database is not None) and args.noreprocessing:
         for inputname in args.fitsfile:
             if database.checkifalreadyused(os.path.basename(inputname)):
-                _logger.info ("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
+                _logger.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
                 exit(0)
 
     sortedinputlist = sortinputfitsfiles(args.fitsfile, sortby=args.sortby)
@@ -480,10 +483,11 @@ if __name__ == '__main__':
                 print("\nNoise / Gain measuremnt based on metric %s" % pair_ii)
                 print("===========================================")
 
-                gains, levels, noises, shotnoises, level1s, level2s, exptimes = dosingleLevelGain(sortedinputlist['bias'][0],
-                                                                                        sortedinputlist['bias'][1],
-                                                                                        sortedinputlist[pair_ii][0],
-                                                                                        sortedinputlist[pair_ii][1])
+                gains, levels, noises, shotnoises, level1s, level2s, exptimes = dosingleLevelGain(
+                    sortedinputlist['bias'][0],
+                    sortedinputlist['bias'][1],
+                    sortedinputlist[pair_ii][0],
+                    sortedinputlist[pair_ii][1])
 
                 hdu = fits.open(sortedinputlist[pair_ii][0])
                 dateobs = None
@@ -518,8 +522,9 @@ if __name__ == '__main__':
 
                     if database is not None:
                         database.addmeasurement("%s-%s-%s" % (
-                        os.path.basename(sortedinputlist[pair_ii][0]), os.path.basename(sortedinputlist[pair_ii][1]),
-                        extension), dateobs, camera, filter,
+                            os.path.basename(sortedinputlist[pair_ii][0]),
+                            os.path.basename(sortedinputlist[pair_ii][1]),
+                            extension), dateobs, camera, filter,
                                                 extension, gains[extension], noises[extension], levels[extension],
                                                 shotnoises[extension], level1s[extension], level2s[extension])
 
@@ -530,7 +535,6 @@ if __name__ == '__main__':
                     alllevel1s[extension].append(level1s[extension])
                     alllevel2s[extension].append(level2s[extension])
                     allexptimes[extension].append(exptimes[extension])
-
 
     if args.makepng:
         graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
