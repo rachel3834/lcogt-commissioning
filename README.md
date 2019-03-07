@@ -113,26 +113,47 @@ X-Talk calibration submission tool Submit to POND the request to observe a
 bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.
 
 <pre>
+(venv) dharbeck@dharbeck-lco2:~/Software/lcogt-commissioning/scripts$ python ./submitXtalkObservation.py -h
+usage: submitXtalkObservation.py [-h] --site {lsc,cpt,coj,elp,bpl} --dome
+                                 {doma,domb,domc} [--telescope TELESCOPE]
+                                 --instrument
+                                 {fl03,fl04,fl05,fl08,fl11,fl12,fl14,fl15,fl16,fa02,fa03,fa04,fa05,fa06,fa08,fa11,fa12,fa14,fa15,fa16}
+                                 [--name {auto,91 Aqr,HD30562,15 Sex,30Psc,51Hya}]
+                                 [--start START] [--defocus DEFOCUS]
+                                 [--user USER] [--offsetRA OFFSETRA]
+                                 [--offsetDec OFFSETDEC] [--CONFIRM]
+                                 [--loglevel {DEBUG,INFO,WARN}]
+
+X-Talk calibration submission tool Submit to LAKE the request to observe a
+bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.
+Useful when commissioing a camera that is not available via scheduler yet.
+
 optional arguments:
   -h, --help            show this help message and exit
-  --name NAME           Name of star for X talk measurement. Will be resolved
-                        via simbad. If resolve failes, program will exit.
-                        future version will automatically select a star based
-                        on time of observation.
-  --defocus DEFOCUS     Amount to defocus star.
-  --site {lsc,cpt,coj,elp}
+  --site {lsc,cpt,coj,elp,bpl}
                         To which site to submit
   --dome {doma,domb,domc}
                         To which enclosure to submit
   --telescope TELESCOPE
-  --instrument {fl03,fl04,fl05,fl12,fl15,fl16}
-                        To which instrumetn to submit
-  --start START         When to start x-talk calibration. If not given,
-                        defaults to "NOW"
+  --instrument {fl03,fl04,fl05,fl08,fl11,fl12,fl14,fl15,fl16,fa02,fa03,fa04,fa05,fa06,fa08,fa11,fa12,fa14,fa15,fa16}
+                        To which instrument to submit
+  --name {auto,91 Aqr,HD30562,15 Sex,30Psc,51Hya}
+                        Name of star for X talk measurement. Will be resolved
+                        via simbad. If resolve failes, program will exit.
+                        future version will automatically select a star based
+                        on time of observation.
+  --start START         Time to start x-talk calibration. If not given,
+                        defaults to "NOW". Specify as YYYYMMDD HH:MM
+  --defocus DEFOCUS     Amount to defocus star.
   --user USER           Which user name to use for submission
-  --CONFIRM             If set, block will be submitted.
-  --log_level {DEBUG,INFO,WARN}
+  --offsetRA OFFSETRA   Extra pointing offset to apply R.A.
+  --offsetDec OFFSETDEC
+                        Extra pointing offset to apply Dec
+  --CONFIRM             If set, block will be submitted. If omitted, nothing
+                        will be submitted.
+  --loglevel {DEBUG,INFO,WARN}
                         Set the debug level
+
 </pre>
 
 An example of an actual submission is like:
