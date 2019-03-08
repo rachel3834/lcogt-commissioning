@@ -1,4 +1,6 @@
 import abc
+import re
+
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -6,7 +8,7 @@ from astropy.table import Table
 import sep
 import logging
 from gaiaastrometryservicetools import astrometryServiceRefineWCSFromCatalog
-
+import matplotlib.pyplot as plt
 __author__ = 'drharbeck@gmail.com'
 
 log = logging.getLogger(__name__)
@@ -68,6 +70,8 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
 
         fitsimage = fits.open(imagename)
 
+
+
         for hdu in fitsimage:
             # search the first valid WCS. Search since we might have a fz compressed file which complicates stuff.
             try:
@@ -81,19 +85,35 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
 
         # Create a source catalog
         # TODO:    Better job of identifying the correct fits extension
-        image_data = fitsimage[ext].data
+        try:
+            cs = [int(n) for n in re.split(',|:', fitsimage[ext].header['DATASEC'][1:-1])]
+            bs = [int(n) for n in re.split(',|:', fitsimage[ext].header['BIASSEC'][1:-1])]
+            ovpixels = fitsimage[ext].data[ bs[2]+1:bs[3]-1, bs[0]+1: bs[1]-1  ]
+            overscan = np.median(ovpixels)
+            std = np.std(ovpixels)
+            overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 2 * std])
+            image_data = fitsimage[ext].data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan
+        except:
+            image_data = fitsimage[ext].data
+
+
         image_data = image_data.astype(float)
         backGround = sep.Background(image_data)
         image_data = image_data - backGround
-        backGround = sep.Background(image_data)
+
         # find sources
-        objects = sep.extract(image_data, 5, backGround.globalrms, deblend_cont=0.005)
+        objects, segmap = sep.extract(image_data, 10, backGround.globalrms, deblend_cont=0.5, minarea=10,segmentation_map=True)
+
         objects = Table(objects)
         # cleanup
         objects = objects[objects['flag'] < 8]
         objects = prune_nans_from_table(objects)
         fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
-        objects = objects[fwhm > 1.0]
+        fwhmx = np.sqrt (objects['x2']) * 2.3548
+        fwhmy = np.sqrt (objects['y2']) * 2.3548
+        fwhm =  (fwhmx + fwhmy) / 2
+        fwhm = np.sqrt ( (objects['x2'] + objects['y2']) / 2) * 2.3548
+        #objects = objects[fwhm > 1.0]
 
         flux_radii, flag = sep.flux_radius(image_data, objects['x'], objects['y'],
                                            6.0 * objects['a'], [0.25, 0.5, 0.75],
