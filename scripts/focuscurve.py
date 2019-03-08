@@ -31,6 +31,7 @@ def getImageFWHM(imagename):
 
 
 def overplotfit(xdata, ydata, func, pinit, label=""):
+
     (p1, istat) = optimize.curve_fit(func, xdata, ydata)
     base = np.arange(-2.5, 2.5, 0.1)
     if len (p1) == 3:
@@ -45,7 +46,7 @@ polyfit = lambda x, p0, p1, p2: p0 + p1 * x + p2 * x ** 2
 polyinit = [2, 0, 1]
 
 sqrtfit = lambda x, p0, p1, p2: np.sqrt(p0 ** 2 + (p1 * (x - p2)) ** 2)
-sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.25 * (x - p2)) ** 2)
+sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.3 * (x - p2)) ** 2)
 sqrtinit = [2,0]
 if __name__ == '__main__':
 
