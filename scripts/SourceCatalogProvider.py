@@ -86,7 +86,8 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         # Create a source catalog
         # TODO:    Better job of identifying the correct fits extension
         try:
-            cs = [int(n) for n in re.split(',|:', fitsimage[ext].header['DATASEC'][1:-1])]
+            datasec = fitsimage[ext].header['DATASEC']
+            cs = [int(n) for n in re.split(',|:', datasec[1:-1])]
             bs = [int(n) for n in re.split(',|:', fitsimage[ext].header['BIASSEC'][1:-1])]
             ovpixels = fitsimage[ext].data[ bs[2]+1:bs[3]-1, bs[0]+1: bs[1]-1  ]
             overscan = np.median(ovpixels)
@@ -94,25 +95,27 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
             overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 2 * std])
             image_data = fitsimage[ext].data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan
         except:
+            print ("No overscan specified")
             image_data = fitsimage[ext].data
 
 
         image_data = image_data.astype(float)
-        backGround = sep.Background(image_data)
+        error = (np.abs(image_data) + 3 ** 2.0) ** 0.5
+        backGround = sep.Background(image_data,  bw=32, bh=32, fw=3, fh=3)
         image_data = image_data - backGround
 
         # find sources
-        objects, segmap = sep.extract(image_data, 10, backGround.globalrms, deblend_cont=0.5, minarea=10,segmentation_map=True)
+        objects, segmap = sep.extract(image_data, 10, err=error, deblend_cont=0.5, minarea=10,segmentation_map=True)
 
         objects = Table(objects)
         # cleanup
         objects = objects[objects['flag'] < 8]
         objects = prune_nans_from_table(objects)
         fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
-        fwhmx = np.sqrt (objects['x2']) * 2.3548
-        fwhmy = np.sqrt (objects['y2']) * 2.3548
-        fwhm =  (fwhmx + fwhmy) / 2
-        fwhm = np.sqrt ( (objects['x2'] + objects['y2']) / 2) * 2.3548
+        #fwhmx = np.sqrt (objects['x2']) * 2.3548
+        #fwhmy = np.sqrt (objects['y2']) * 2.3548
+        #fwhm =  (fwhmx + fwhmy) / 2
+        #fwhm = np.sqrt ( (objects['x2'] + objects['y2']) / 2) * 2.3548
         #objects = objects[fwhm > 1.0]
 
         flux_radii, flag = sep.flux_radius(image_data, objects['x'], objects['y'],

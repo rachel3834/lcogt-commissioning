@@ -17,12 +17,13 @@ def getImageFWHM(imagename):
     for ii in range(len(hdul)):
         if FOCDMD in hdul[ii].header:
             deltaFocus = hdul[ii].header[FOCDMD]
+            continue
     hdul.close()
 
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     for ii in range(4):
-        cat, wcs = catalog.get_source_catalog(imagename, ext=ii + 1)
+        cat, wcs = catalog.get_source_catalog(imagename, ext=ii+1 )
         fwhmcat = np.append(fwhmcat, cat['fwhm'])
 
     fwhm = np.median(fwhmcat)
@@ -32,12 +33,28 @@ def getImageFWHM(imagename):
 
 def overplotfit(xdata, ydata, func, pinit, label=""):
 
-    (p1, istat) = optimize.curve_fit(func, xdata, ydata)
-    base = np.arange(-2.5, 2.5, 0.1)
-    if len (p1) == 3:
-        y = func(base, p1[0], p1[1], p1[2])
-    if len (p1) == 2:
-        y = func(base, p1[0], p1[1])
+
+    for iter in range(2):
+        (p1, istat) = optimize.curve_fit(func, xdata, ydata)
+        base = np.arange(-2.5, 2.5, 0.1)
+        if len (p1) == 3:
+            y = func(base, p1[0], p1[1], p1[2])
+            fit = func(xdata, p1[0], p1[1], p1[2])
+
+        if len (p1) == 2:
+            y = func(base, p1[0], p1[1])
+            fit = func(xdata, p1[0], p1[1])
+
+        delta = ydata - fit
+        s = np.std (delta)
+        print ("Fit rms: {:5.3f}".format (s))
+        good = delta < 2 * s
+        xdata = xdata[good]
+        ydata = ydata[good]
+
+
+
+
     plt.plot(base, y, "--", label=label)
     return p1
 
@@ -45,8 +62,8 @@ def overplotfit(xdata, ydata, func, pinit, label=""):
 polyfit = lambda x, p0, p1, p2: p0 + p1 * x + p2 * x ** 2
 polyinit = [2, 0, 1]
 
-sqrtfit = lambda x, p0, p1, p2: np.sqrt(p0 ** 2 + (p1 * (x - p2)) ** 2)
-sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.3 * (x - p2)) ** 2)
+sqrtfit = lambda x, p0, p2, p1: np.sqrt(p0 ** 2 + (p1 * (x - p2)) ** 2)
+#sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.3 * (x - p2)) ** 2)
 sqrtinit = [2,0]
 if __name__ == '__main__':
 
