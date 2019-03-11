@@ -86,7 +86,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         # Create a source catalog
         # TODO:    Better job of identifying the correct fits extension
         try:
-            datasec = fitsimage[ext].header['DATASEC']
+            datasec = fitsimage[ext].header['TRIMSEC']
             cs = [int(n) for n in re.split(',|:', datasec[1:-1])]
             bs = [int(n) for n in re.split(',|:', fitsimage[ext].header['BIASSEC'][1:-1])]
             ovpixels = fitsimage[ext].data[ bs[2]+1:bs[3]-1, bs[0]+1: bs[1]-1  ]
@@ -106,7 +106,8 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
 
         # find sources
         objects, segmap = sep.extract(image_data, 10, err=error, deblend_cont=0.5, minarea=10,segmentation_map=True)
-
+        # plt.imshow (segmap)
+        # plt.show()
         objects = Table(objects)
         # cleanup
         objects = objects[objects['flag'] < 8]

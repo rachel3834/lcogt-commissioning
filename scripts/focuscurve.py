@@ -2,6 +2,7 @@ import sys
 import matplotlib.pyplot as plt
 from astropy.io import fits
 import numpy as np
+from astropy.io.fits import ImageHDU
 from scipy import optimize
 
 from SourceCatalogProvider import SEPSourceCatalogProvider
@@ -18,14 +19,16 @@ def getImageFWHM(imagename):
         if FOCDMD in hdul[ii].header:
             deltaFocus = hdul[ii].header[FOCDMD]
             continue
-    hdul.close()
+
 
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
-    for ii in range(4):
-        cat, wcs = catalog.get_source_catalog(imagename, ext=ii+1 )
-        fwhmcat = np.append(fwhmcat, cat['fwhm'])
-
+    for ii in range(len(hdul)):
+        if 'EXTNAME' in hdul[ii].header:
+            if 'SCI' in hdul[ii].header['EXTNAME']:
+                cat, wcs = catalog.get_source_catalog(imagename, ext=ii )
+                fwhmcat = np.append(fwhmcat, cat['fwhm'])
+    hdul.close()
     fwhm = np.median(fwhmcat)
     print(imagename, deltaFocus, fwhm)
     return deltaFocus, fwhm
@@ -63,7 +66,7 @@ polyfit = lambda x, p0, p1, p2: p0 + p1 * x + p2 * x ** 2
 polyinit = [2, 0, 1]
 
 sqrtfit = lambda x, p0, p2, p1: np.sqrt(p0 ** 2 + (p1 * (x - p2)) ** 2)
-#sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.3 * (x - p2)) ** 2)
+#sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.5 * (x - p2)) ** 2)
 sqrtinit = [2,0]
 if __name__ == '__main__':
 
