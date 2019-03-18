@@ -5,33 +5,33 @@ import numpy as np
 from astropy.io.fits import ImageHDU
 from scipy import optimize
 
-from SourceCatalogProvider import SEPSourceCatalogProvider
+from SourceCatalogProvider import SEPSourceCatalogProvider, getImageFWHM
 
 L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"
 
 
-def getImageFWHM(imagename):
-    hdul = fits.open(imagename, 'readonly', ignore_missing_end=True)
-
-    deltaFocus = None
-    for ii in range(len(hdul)):
-        if FOCDMD in hdul[ii].header:
-            deltaFocus = hdul[ii].header[FOCDMD]
-            continue
-
-
-    catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
-    fwhmcat = np.asarray([])
-    for ii in range(len(hdul)):
-        if 'EXTNAME' in hdul[ii].header:
-            if 'SCI' in hdul[ii].header['EXTNAME']:
-                cat, wcs = catalog.get_source_catalog(imagename, ext=ii )
-                fwhmcat = np.append(fwhmcat, cat['fwhm'])
-    hdul.close()
-    fwhm = np.median(fwhmcat)
-    print(imagename, deltaFocus, fwhm)
-    return deltaFocus, fwhm
+# def getImageFWHM(imagename):
+#     hdul = fits.open(imagename, 'readonly', ignore_missing_end=True)
+#
+#     deltaFocus = None
+#     for ii in range(len(hdul)):
+#         if FOCDMD in hdul[ii].header:
+#             deltaFocus = hdul[ii].header[FOCDMD]
+#             continue
+#
+#
+#     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
+#     fwhmcat = np.asarray([])
+#     for ii in range(len(hdul)):
+#         if 'EXTNAME' in hdul[ii].header:
+#             if 'SCI' in hdul[ii].header['EXTNAME']:
+#                 cat, wcs = catalog.get_source_catalog(imagename, ext=ii )
+#                 fwhmcat = np.append(fwhmcat, cat['fwhm'])
+#     hdul.close()
+#     fwhm = np.median(fwhmcat)
+#     print(imagename, deltaFocus, fwhm)
+#     return deltaFocus, fwhm
 
 
 def overplotfit(xdata, ydata, func, pinit, label=""):
@@ -43,6 +43,7 @@ def overplotfit(xdata, ydata, func, pinit, label=""):
         if len (p1) == 3:
             y = func(base, p1[0], p1[1], p1[2])
             fit = func(xdata, p1[0], p1[1], p1[2])
+
 
         if len (p1) == 2:
             y = func(base, p1[0], p1[1])
@@ -57,6 +58,10 @@ def overplotfit(xdata, ydata, func, pinit, label=""):
 
 
 
+    if 'poly' in label:
+        label = "{} curv={:4.2f}".format (label, p1[2])
+    if 'sqrt' in label and len(p1)==3:
+        label = '{} slope: {:4.2f}'.format (label, p1[2])
 
     plt.plot(base, y, "--", label=label)
     return p1
@@ -65,7 +70,7 @@ def overplotfit(xdata, ydata, func, pinit, label=""):
 polyfit = lambda x, p0, p1, p2: p0 + p1 * x + p2 * x ** 2
 polyinit = [2, 0, 1]
 
-sqrtfit = lambda x, p0, p2, p1: np.sqrt(p0 ** 2 + (p1 * (x - p2)) ** 2)
+sqrtfit = lambda x, p0, p2, p1 : (p0 ** 2 + (p1 * (x - p2)) ** 2)** 0.5
 #sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.5 * (x - p2)) ** 2)
 sqrtinit = [2,0]
 if __name__ == '__main__':
