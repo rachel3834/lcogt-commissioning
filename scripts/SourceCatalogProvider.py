@@ -65,7 +65,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
     def __init__(self, refineWCSViaLCO=True):
         self.refineWCSViaLCO = refineWCSViaLCO
 
-    def get_source_catalog(self, imagename, ext=1):
+    def get_source_catalog(self, imagename, ext=1, minarea = 20, deblend=0.5):
 
         image_wcs = None
 
@@ -103,6 +103,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
             print ("No overscan specified")
             image_data = fitsimage[ext].data
 
+        image_data = image_data [40:-40,:] # Sinsitro: cut away the thinning artifacts.
 
         image_data = image_data.astype(float)
         error = ((np.abs(image_data)*gain) + 8 ** 2.0) ** 0.5 / gain
@@ -110,7 +111,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         image_data = image_data - backGround
 
         # find sources
-        objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=0.5, minarea=10,segmentation_map=True)
+        objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=deblend, minarea=minarea,segmentation_map=True)
         #plt.imshow (segmap)
         #plt.show()
         objects = Table(objects)
@@ -157,7 +158,7 @@ L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"
 
 
-def getImageFWHM(imagename):
+def getImageFWHM(imagename, minarea=20, deblend=0.5):
     """ Measure the FWHM of an image, tuned to get a reasonable FWHM also for defocussed images.
     """
 
@@ -173,7 +174,7 @@ def getImageFWHM(imagename):
     for ii in range(len(hdul)):
         if 'EXTNAME' in hdul[ii].header:
             if 'SCI' in hdul[ii].header['EXTNAME']:
-                cat, wcs = catalog.get_source_catalog(imagename, ext=ii )
+                cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend )
                 fwhmcat = np.append(fwhmcat, cat['fwhm'])
     hdul.close()
 
@@ -202,10 +203,38 @@ def getImageFWHM(imagename):
     plt.axvline(x=meanfwhm, label="FWHM median")
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    #plt.show()
     plt.close()
 
     return deltaFocus, medianfwhm
+
+import matplotlib.cm as cm
+import os
+
+def doimagegrid(image):
+
+    minareas = [9, 15, 20, 25, 30]
+    deblends = [0.005,0.05,0.1, 0.5, 1.0]
+    titlename = os.path.basename(image)
+    print (titlename)
+
+    X,Y = np.meshgrid (minareas,deblends)
+    Z = X*0 + Y * 0
+    for i in range(len(minareas)):
+        for j in range(len(deblends)):
+            focus, fwhm = getImageFWHM(image,minarea=X[i,j], deblend=Y[i,j])
+            Z[i,j] = fwhm
+            print ("{} {} {}".format (X[i,j],Y[i,j],Z[i,j]))
+    plt.pcolormesh(X,Y,Z)
+
+
+    plt.xlabel ("MINAREA")
+    plt.ylabel ("DEBLEND")
+    plt.title ("Estimated FWHM [pixels]\n{}".format(titlename))
+    plt.colorbar()
+    #plt.show()
+    plt.savefig ("fwhm_deblendminarea_grid_{}.png".format(titlename))
+    plt.close()
 
 
 
@@ -216,5 +245,6 @@ if __name__ == '__main__':
     sourcecatalogProvider = SEPSourceCatalogProvider(refineWCSViaLCO=False)
 
     for image in sys.argv[1:]:
-        getImageFWHM(image)
+        doimagegrid(image)
+        #getImageFWHM(image)
 
