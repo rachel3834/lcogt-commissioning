@@ -110,17 +110,14 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         image_data = image_data - backGround
 
         # find sources
-        objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=0.5, minarea=8,segmentation_map=True)
+        objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=0.5, minarea=10,segmentation_map=True)
         #plt.imshow (segmap)
         #plt.show()
         objects = Table(objects)
         # cleanup
         objects = objects[objects['flag'] == 0]
         objects = prune_nans_from_table(objects)
-        fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
-        #fwhmx = np.sqrt (objects['x2']) * 2.3548
-        #fwhmy = np.sqrt (objects['y2']) * 2.3548
-        #fwhm =  (fwhmx + fwhmy) / 2
+        #fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
         fwhm = np.sqrt ( (objects['x2'] + objects['y2']) / 2) * 2.3548
         objects = objects[fwhm > 1.0]
 
@@ -161,6 +158,9 @@ FOCDMD = "FOCDMD"
 
 
 def getImageFWHM(imagename):
+    """ Measure the FWHM of an image, tuned to get a reasonable FWHM also for defocussed images.
+    """
+
     hdul = fits.open(imagename, 'readonly', ignore_missing_end=True)
 
     deltaFocus = None
@@ -168,8 +168,6 @@ def getImageFWHM(imagename):
         if FOCDMD in hdul[ii].header:
             deltaFocus = hdul[ii].header[FOCDMD]
             continue
-
-
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     for ii in range(len(hdul)):
@@ -180,37 +178,33 @@ def getImageFWHM(imagename):
     hdul.close()
 
     # comprehension of the object catalog....
-    good = fwhmcat > 1
-    meanfwhm=np.inf
-    medianfwhm=np.inf
-    for iter in range(3):
+    good = fwhmcat > 0
+    meanfwhm = np.mean(fwhmcat[good])
+
+    for iter in range(4):
         medianfwhm = np.median(fwhmcat[good])
+
         fwhmstd = np.std (fwhmcat[good])
         good = abs(fwhmcat - medianfwhm) < 2 * fwhmstd
         if np.sum(good) > 10:
             medianfwhm = np.median(fwhmcat[good])
-            meanfwhm = np.mean(fwhmcat[good])
         else:
             log.warning("Not enough sources left in array. aborting")
             continue
 
-
     print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format (imagename, deltaFocus, meanfwhm,medianfwhm, fwhmstd))
-
 
     # plotting for the human
     plt.figure()
     bins = np.linspace(0, 10, 10)
     plt.hist ([fwhmcat,fwhmcat[good]], bins,     label=["all", "good"])
-
     plt.axvline(x=medianfwhm, label="FWHM median")
     plt.axvline(x=meanfwhm, label="FWHM median")
-
-
     plt.legend()
     plt.tight_layout()
-    #plt.show()
+    plt.show()
     plt.close()
+
     return deltaFocus, medianfwhm
 
 
