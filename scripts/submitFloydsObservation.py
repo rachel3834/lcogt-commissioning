@@ -150,7 +150,7 @@ def createRequestsForStar(context):
         "user_id": context.user,
         "prop_id": "LCOEngineering",
         "group": "Floyds test exposure",
-        "exposure_count": 1,
+        "exposure_count": nexposure,
         "bin_x": 1,
         "bin_y": 1,
         "inst_name": context.instrument,
@@ -217,7 +217,7 @@ def parseCommandLine():
 
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
-    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as','slit_2.0as'])
+    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as','slit_2.0as','slit_6.0as'])
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
