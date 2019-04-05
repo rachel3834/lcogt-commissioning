@@ -118,7 +118,7 @@ def createRequestsForStar(context):
              }
 
     flat_molecule = {
-        "spectra_slit": "slit_1.2as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
 
         "tag_id": "LCOGT",
@@ -141,7 +141,7 @@ def createRequestsForStar(context):
     spectrum_molecule = {
         "acquire_mode": "BRIGHTEST",
         "acquire_radius_arcsec": "5.00",
-        "spectra_slit": "slit_1.2as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
         "defocus": "0.0000000",
         "ag_name": agname,
@@ -164,7 +164,7 @@ def createRequestsForStar(context):
     }
 
     arc_molecule = {
-        "spectra_slit": "slit_1.2as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
         "tag_id": "LCOGT",
         "user_id": context.user,
@@ -217,6 +217,7 @@ def parseCommandLine():
 
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
+    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as','slit_2.0as'])
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
