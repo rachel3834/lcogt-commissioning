@@ -157,7 +157,7 @@ def parseCommandLine():
     parser.add_argument('--dome', default='doma', choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', default='fl12',
-                        choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16','fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ],
+                        choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16','fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ],
                         help="To which instrument to submit")
     parser.add_argument('--start', default=None,
                         help="When to start x-talk calibration. If not given, defaults to \"NOW\"")
