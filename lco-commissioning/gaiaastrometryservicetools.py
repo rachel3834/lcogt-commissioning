@@ -104,7 +104,7 @@ def astrometryServiceRefineWCSFromImage(imagepath, wcs=None):
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='LCO WCS Tools - gaiaastrometryservicetools')
+        description='LCO WCS Tools - gaiaastrometryservicetools\n Send image to LCO astrometry.net service')
 
     parser.add_argument('inputfile', type=str, nargs=1, help="FITS file for which to derive the WCS function.")
 
@@ -118,7 +118,10 @@ def parseCommandLine():
     return args
 
 
-if __name__ == '__main__':
+def main():
     args = parseCommandLine()
     for file in args.inputfile:
         astrometryServiceRefineWCSFromImage(file, None)
+
+if __name__ == '__main__':
+    main()
