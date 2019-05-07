@@ -22,7 +22,7 @@ _site_lonlat = {}
 _site_lonlat['coj'] = (149.0708466, -31.2728196)
 _site_lonlat['ogg'] = (-156.2589, 34.433161)
 
-goodXTalkTargets = ['auto', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
+goodXTalkTargets = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
 
 def getAutoCandidate(context):
@@ -118,7 +118,7 @@ def createRequestsForStar(context):
              }
 
     flat_molecule = {
-        "spectra_slit": "slit_1.2as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
 
         "tag_id": "LCOGT",
@@ -141,7 +141,7 @@ def createRequestsForStar(context):
     spectrum_molecule = {
         "acquire_mode": "BRIGHTEST",
         "acquire_radius_arcsec": "5.00",
-        "spectra_slit": "slit_1.2as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
         "defocus": "0.0000000",
         "ag_name": agname,
@@ -150,7 +150,7 @@ def createRequestsForStar(context):
         "user_id": context.user,
         "prop_id": "LCOEngineering",
         "group": "Floyds test exposure",
-        "exposure_count": 1,
+        "exposure_count": nexposure,
         "bin_x": 1,
         "bin_y": 1,
         "inst_name": context.instrument,
@@ -164,7 +164,7 @@ def createRequestsForStar(context):
     }
 
     arc_molecule = {
-        "spectra_slit": "slit_1.2as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
         "tag_id": "LCOGT",
         "user_id": context.user,
@@ -217,6 +217,7 @@ def parseCommandLine():
 
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
+    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as','slit_2.0as','slit_6.0as'])
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")

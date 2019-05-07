@@ -292,18 +292,18 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     for ext in alllevels:
         gains = np.asarray(allgains[ext])
         levels = np.asarray(alllevels[ext])
-        statdata = gains[levels < 35000]
-
-        mediangain = np.median(statdata)
-        stdgain = np.std(statdata)
-        goodgains = (np.abs(statdata - mediangain) < 3 * stdgain)
-        bestgain = np.mean(statdata[goodgains])
+        statdata = gains[(levels>10000) & (levels < 40000)]
+        for iter in range(2):
+            mediangain = np.median(statdata)
+            stdgain = np.std(statdata)
+            goodgains = (np.abs(statdata - mediangain) < 1 * stdgain)
+            bestgain = np.mean(statdata[goodgains])
 
         plt.plot(alllevels[ext], allgains[ext], 'o', label="extension %s data" % (ext))
         plt.hlines(bestgain, 0, 64000, label="Ext %d gain: %5.2f e-/ADU" % (ext, bestgain))
         print("Best gain for ext %d: %5.2f" % (ext, bestgain))
 
-    plt.ylim([2, 4])
+    plt.ylim([2, 7])
 
     plt.legend()
     plt.xlabel(("Exposure level [ADU]"))
