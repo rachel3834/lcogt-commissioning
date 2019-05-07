@@ -8,6 +8,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
 import requests
+import common.common as common
 
 LAKE_URL = 'http://lake.lco.gtn'
 
@@ -18,26 +19,19 @@ quadrantOffsets = {0: [-450, 450],
                    2: [450, -450],
                    3: [-450, -450]}
 
-_site_lonlat = {}
-_site_lonlat['coj'] = (149.0708466, -31.2728196)
-_site_lonlat['ogg'] = (-156.2589, 34.433161)
+
 
 goodXTalkTargets = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
 
 def getAutoCandidate(context):
-    if (context.site not in _site_lonlat):
+    if not common.is_valid_lco_site (context.site):
         _logger.error("Site %s is not known. Giving up" % context.site)
         exit(1)
 
-    site = ephem.Observer()
-    lon, lat = _site_lonlat[context.site]
-    site.lat = lat * math.pi / 180
-    site.lon = lon * math.pi / 180
-    site.date = ephem.Date(context.start + dt.timedelta(minutes=30))
+    site = common.getEphemObForSiteAndTime(context.site, context.start + dt.timedelta(minutes=30))
     moon = ephem.Moon()
     moon.compute(site)
-
     print("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase * 100))
 
     for starcandidate in goodXTalkTargets:
@@ -191,15 +185,7 @@ def createRequestsForStar(context):
     block['molecules'].append(lastflat)
 
     _logger.debug(json.dumps(block, indent=4))
-    if args.opt_confirmed:
-        response = requests.post(LAKE_URL + '/blocks/', json=block)
-        try:
-            response.raise_for_status()
-            _logger.info(
-                'Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
-        except Exception:
-            _logger.error(
-                'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
+    common.send_to_lake (block, args.opt_confirmed)
 
 
 def parseCommandLine():
@@ -264,7 +250,10 @@ def parseCommandLine():
     return args
 
 
-if __name__ == '__main__':
-    args = parseCommandLine()
 
+def main():
+    args = parseCommandLine()
     createRequestsForStar(args)
+
+if __name__ == '__main__':
+    main()
