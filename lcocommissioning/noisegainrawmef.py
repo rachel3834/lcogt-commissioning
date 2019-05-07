@@ -8,7 +8,7 @@ import os.path
 import numpy as np
 import math
 import argparse
-from Image import Image
+from lcocommissioning.Image import Image
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.table import Table
@@ -456,8 +456,9 @@ class noisegaindbinterface:
         self.conn.close()
 
 
-if __name__ == '__main__':
+def main():
 
+    global args
     args = parseCommandLine()
     database = noisegaindbinterface(args.database) if args.database is not None else None
 
@@ -541,3 +542,8 @@ if __name__ == '__main__':
 
     if database is not None:
         database.close()
+
+
+
+if __name__ == '__main__':
+    main()
