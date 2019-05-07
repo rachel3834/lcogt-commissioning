@@ -22,7 +22,7 @@ _site_lonlat = {}
 _site_lonlat['coj'] = (149.0708466, -31.2728196)
 _site_lonlat['ogg'] = (-156.2589, 34.433161)
 
-goodXTalkTargets = ['auto', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
+goodXTalkTargets = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
 
 def getAutoCandidate(context):

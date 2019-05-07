@@ -172,8 +172,8 @@ def getImageFWHM(imagename, minarea=20, deblend=0.5):
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     for ii in range(len(hdul)):
-        if 'EXTNAME' in hdul[ii].header:
-            if 'SCI' in hdul[ii].header['EXTNAME']:
+        if'EXTNAME' in hdul[ii].header:
+            if  'SCI' in hdul[ii].header['EXTNAME']:
                 cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend )
                 fwhmcat = np.append(fwhmcat, cat['fwhm'])
     hdul.close()
