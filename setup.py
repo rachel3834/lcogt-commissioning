@@ -4,13 +4,12 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="lcogt-commissioning",
-    version="0.9",
+    name="lco-commissioning",
+    version="1.0",
     author="Daniel Harbeck",
     author_email="dharbeck@lco.global",
-    description="Tool to characterize CCD detectors, tailored towards LCO imagers.",
+    description="Tool to characterize CCD detectors and other commissioning tasks for the LCO observatory.",
     long_description=long_description,
-    long_description_content_type="text/markdown",
     url="https://github.com/drhaz/lcogt-commissioning",
     packages=setuptools.find_packages(),
     classifiers=[
@@ -18,4 +17,8 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    entry_points = {
+        'console_scripts': ['submitNRESObservation = lcocommissioning.submitNRESObservation:main'],
+
+    }
 )

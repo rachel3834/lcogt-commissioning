@@ -3,7 +3,7 @@ import json
 import logging
 from astropy.coordinates import SkyCoord
 import datetime as dt
-import common.common as common
+import lcocommissioning.common.common as common
 
 _logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def createRequestsForStar(context):
 
     _logger.debug(json.dumps(userrequest, indent=4))
 
-    common.send_to_scheduler(userrequest, args.opt_confirmed)
+    common.send_to_scheduler(userrequest, context.opt_confirmed)
 
 
 def parseCommandLine():
@@ -120,6 +120,9 @@ def parseCommandLine():
     return args
 
 
-if __name__ == '__main__':
+def main():
     args = parseCommandLine()
     createRequestsForStar(args)
+
+if __name__ == '__main__':
+    main()

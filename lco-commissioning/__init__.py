@@ -1,1 +1,0 @@
-name = "lcogt-commissioning"
