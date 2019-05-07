@@ -2,63 +2,14 @@ import argparse
 import copy
 import json
 import logging
-import ephem
-import math
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
-import requests
-import common.common as common
-
-LAKE_URL = 'http://lake.lco.gtn'
+import lcocommissioning.common.common as common
 
 _logger = logging.getLogger(__name__)
 
-quadrantOffsets = {0: [-450, 450],
-                   1: [450, 450],
-                   2: [450, -450],
-                   3: [-450, -450]}
-
-
-
-goodXTalkTargets = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
-
-
-def getAutoCandidate(context):
-    if not common.is_valid_lco_site (context.site):
-        _logger.error("Site %s is not known. Giving up" % context.site)
-        exit(1)
-
-    site = common.getEphemObForSiteAndTime(context.site, context.start + dt.timedelta(minutes=30))
-    moon = ephem.Moon()
-    moon.compute(site)
-    print("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase * 100))
-
-    for starcandidate in goodXTalkTargets:
-        if 'auto' in starcandidate:
-            continue
-        radec = SkyCoord.from_name(starcandidate)
-        s = ephem.FixedBody()
-        s._ra = radec.ra.degree * math.pi / 180
-        s._dec = radec.dec.degree * math.pi / 180
-        s.compute(site)
-
-        separation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
-        alt = s.alt * 180 / math.pi
-        separation = separation * 180 / math.pi
-
-        altok = alt > 35
-        sepok = separation > 30
-
-        if (altok and sepok):
-            print("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
-            return starcandidate
-        else:
-            print("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
-
-    print("No viable star was found! full moon? giving up!")
-    exit(1)
-
+goodFloydsFluxStandards = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
 def createRequestsForStar(context):
     exposuretime = context.exptime
@@ -236,7 +187,7 @@ def parseCommandLine():
 
     if ('auto' in args.targetname):
         # automatically find the best target
-        args.targetname = getAutoCandidate(args)
+        args.targetname =  common.getAutoCandidate(goodFloydsFluxStandards, args.site, args.start)
         pass
 
     try:

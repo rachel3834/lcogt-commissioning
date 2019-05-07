@@ -18,7 +18,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     entry_points = {
-        'console_scripts': ['submitNRESObservation = lcocommissioning.submitNRESObservation:main'],
+        'console_scripts': ['submitNRESObservation = lcocommissioning.submitNRESObservation:main',
+                            'noisegainmef = lcocommissioning.noisegainrawmef:main',
+                            'submitXtalkObservation = lcocommissioning.submitXtalkObservation:main'],
 
     }
 )
