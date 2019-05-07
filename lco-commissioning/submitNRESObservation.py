@@ -3,7 +3,7 @@ import json
 import logging
 from astropy.coordinates import SkyCoord
 import datetime as dt
-import common.common
+import common.common as common
 
 _logger = logging.getLogger(__name__)
 
