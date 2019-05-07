@@ -120,7 +120,7 @@ def createRequestsForStar(context):
 
             block_params['molecules'].append(moleculeargs)
 
-        common.send_to_lake(block_params, args.opt_confirmed)
+        common.send_to_lake(block_params, context.opt_confirmed)
 
 
 def parseCommandLine():
