@@ -20,7 +20,8 @@ setuptools.setup(
     entry_points = {
         'console_scripts': ['submitNRESObservation = lcocommissioning.submitNRESObservation:main',
                             'noisegainmef = lcocommissioning.noisegainrawmef:main',
-                            'submitXtalkObservation = lcocommissioning.submitXtalkObservation:main'],
+                            'submitXtalkObservation = lcocommissioning.submitXtalkObservation:main',
+                            'sinistrocrosstalk = lcocommissioning.crosstalk:main'],
 
     }
 )

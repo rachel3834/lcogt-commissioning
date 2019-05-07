@@ -18,17 +18,14 @@
 import argparse
 import logging
 import os
-import re
 import sys
-from os import path
 from sys import exit
 # useBackend('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from astropy.io import fits
 from scipy import optimize
 import statistics
-from Image import Image
+from lcocommissioning.Image import Image
 
 log = logging.getLogger(__name__)
 
@@ -179,15 +176,11 @@ def multicrossanalysis(args):
 
     log.debug('Completed data fetching, plotting and fitting next...')
 
-
     plt.figure(1)
     plt.rcParams['font.size'] = 10.0
     plotord = [2, 3, 1, 4]
 
-    if args.linear:
-        pinit = [0.0, 0.0]
-    elif args.poly:
-        pinit = [0.0, 0.0, 0.0]
+    pinit = [0.0, 0.0]
     coeffs = {}
 
     for q, iquad in enumerate(plotord):
@@ -203,18 +196,12 @@ def multicrossanalysis(args):
         if iquad != args.opt_quadrant + 1:
             idx = statistics.select_entries_within_bound(xdata, args.fluxmin, args.fluxmax)
 
-            if args.linear:
-                (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
-                                                                            fit_linear_zero, sigclip=3)
-                label = 'p[1]=' + str(round(afit[1], 7)) + '\nsig=' + str(round(stddev, 2))
+            (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
+                                                                        fit_linear_zero, sigclip=3)
+            label = 'p[1]=' + str(round(afit[1], 7)) + '\nsig=' + str(round(stddev, 2))
 
-                print('archon.header.CRSTLK%d%d = %9f' % (
-                    (args.opt_quadrant + 1), iquad, (round(afit[1], 6))))
-
-            # elif args.poly:
-            #     (afit, fitfunc, errfunc, stddev, kdx) = iterative_model_fit(xdata[idx], ydata[idx], pinit,
-            #                                                                 fit_polynomial_zero)
-            #     label = 'p[1]=' + str(round(afit[1], 10)) + '\np[2]=' + str(round(afit[2], 10))
+            print('archon.header.CRSTLK%d%d = %9f' % (
+                (args.opt_quadrant + 1), iquad, (round(afit[1], 6))))
 
             if afit[1] > 0.0:
                 coeffs[iquad].append(afit[1])
@@ -244,7 +231,7 @@ def multicrossanalysis(args):
             plt.legend(loc='best')
 
     # plt.show()
-    plotfile = "{}_{}.png".format (args.plotfile, args.opt_quadrant + 1)
+    plotfile = "{}_{}.png".format(args.plotfile, args.opt_quadrant + 1)
     plt.savefig(plotfile)
     plt.close(1)
 
@@ -265,9 +252,6 @@ def parseCommandLine():
 
     parser.add_argument('--measure', dest='mode_measure', type=bool, default=True,
                         help='Measure crosstalk')
-
-    parser.add_argument('--linear', action='store_true')
-    parser.add_argument('--poly', action='store_true')
 
     parser.add_argument('--useheader', action="store_true", help="use OBJECT line to determine quadrant. ")
 
@@ -301,18 +285,15 @@ def parseCommandLine():
     return args
 
 
-if __name__ == '__main__':
-
+def main():
     args = parseCommandLine()
-
     if args.mode_measure:
-
         if args.opt_quadrant is not None:
-
             multicrossanalysis(args)
-
         else:
-            for quad in range (4):
+            for quad in range(4):
                 args.opt_quadrant = quad
                 multicrossanalysis(args)
 
+if __name__ == '__main__':
+    main()
