@@ -1,6 +1,11 @@
+import logging
 import os
+import math
+import ephem
 import requests
+import datetime as dt
 
+_log = logging.getLogger(__name__)
 # LCO Request submisison definitions
 LAKE_URL = 'http://lake.lco.gtn'
 VALHALLA_URL = os.getenv('VALHALLA_URL', 'http://valhalla.lco.gtn')
@@ -23,9 +28,21 @@ nres_instruments = {'lsc': 'nres01',
                     'tlv': 'nres04',
                     }
 
+def getEphemObForSiteAndTime (sitecode, dateobs):
+    site = ephem.Observer()
+    lon, lat = lco_site_lonlat[sitecode]
+    site.lat = lat * math.pi / 180
+    site.lon = lon * math.pi / 180
+    site.date = ephem.Date(dateobs)
+    return site
 
-# Tool to submit a user request to LCO Scheduler via Valhalla interface
+def is_valid_lco_site (sitecode):
+    return (sitecode in lco_site_lonlat)
+
 def send_to_scheduler(user_request, dosubmit=False):
+    """Submit a user request to LCO Scheduler via Valhalla interface
+    """
+
     auth = 'Token {token}'.format(token=VALHALLA_API_TOKEN)
     print(auth)
     url = '{api_root}/api/userrequests/'.format(api_root=VALHALLA_URL)
@@ -42,3 +59,17 @@ def send_to_scheduler(user_request, dosubmit=False):
     else:
         print('Output of the validation check: {}'.format(validation_check))
         print('UserRequest that was validated: {}'.format(user_request))
+
+
+def send_to_lake(block, dosubmit=False):
+    """ Submit a user request to LCO POND"""
+    if dosubmit:
+        response = requests.post(LAKE_URL + '/blocks/', json=block)
+        try:
+            response.raise_for_status()
+            _log.info(
+                'Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
+        except Exception:
+            _log.error(
+                'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
+

@@ -5,37 +5,29 @@ import math
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
-import requests
-import common
+import common.common as common
 
-LAKE_URL = 'http://lake.lco.gtn'
+_log = logging.getLogger(__name__)
 
-_logger = logging.getLogger(__name__)
-
-quadrantOffsets = {0: [-450, 450],
-                   1: [450, 450],
-                   2: [450, -450],
-                   3: [-450, -450]}
-
-
+sinistro_1m_quadrant_offsets = {0: [-450, 450],
+                                1: [450, 450],
+                                2: [450, -450],
+                                3: [-450, -450]}
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
 
 
 def getAutoCandidate(context):
-    if (context.site not in common.lco_site_lonlat):
-        _logger.error("Site %s is not known. Giving up" % context.site)
+
+    if  not common.is_valid_lco_site (context.site):
+        _log.error("Site %s is not known. Giving up" % context.site)
         exit(1)
 
-    site = ephem.Observer()
-    lon, lat = common.lco_site_lonlat[context.site]
-    site.lat = lat * math.pi / 180
-    site.lon = lon * math.pi / 180
-    site.date = ephem.Date(context.start + dt.timedelta(minutes=30))
-
+    site = common.getEphemObForSiteAndTime (context.site, context.start + dt.timedelta(minutes=30))
     moon = ephem.Moon()
     moon.compute(site)
-    print("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase * 100))
+
+    _log.info("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase * 100))
 
     for starcandidate in goodXTalkTargets:
         if 'auto' in starcandidate:
@@ -46,16 +38,16 @@ def getAutoCandidate(context):
         s._dec = radec.dec.degree * math.pi / 180
         s.compute(site)
 
-        separation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
+        moonseparation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
 
         alt = s.alt * 180 / math.pi
-        separation = separation * 180 / math.pi
+        moonseparation = moonseparation * 180 / math.pi
 
         altok = alt > 35
-        sepok = separation > 30
+        sepok = moonseparation > 30
 
         if (altok and sepok):
-            print("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
+            print("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, moonseparation))
             return starcandidate
         else:
             print("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
@@ -65,8 +57,8 @@ def getAutoCandidate(context):
 
 
 def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
-    dra = Angle(quadrantOffsets[quadrant][0], unit=u.arcsec)
-    ddec = Angle(quadrantOffsets[quadrant][1], unit=u.arcsec)
+    dra = Angle(sinistro_1m_quadrant_offsets[quadrant][0], unit=u.arcsec)
+    ddec = Angle(sinistro_1m_quadrant_offsets[quadrant][1], unit=u.arcsec)
 
     return SkyCoord(starcoo.ra - dra + Angle(extraoffsetra, unit=u.arcsec),
                     starcoo.dec - ddec + Angle(extraoffsetDec, unit=u.arcsec))
@@ -77,7 +69,7 @@ def createRequestsForStar(context):
     absolutestart = context.start
 
     # create one block per quadrant
-    for quadrant in quadrantOffsets:
+    for quadrant in sinistro_1m_quadrant_offsets:
 
         start = absolutestart + dt.timedelta(minutes=(quadrant) * timePerQuadrant)
         end = start + dt.timedelta(minutes=timePerQuadrant)
@@ -128,15 +120,7 @@ def createRequestsForStar(context):
 
             block_params['molecules'].append(moleculeargs)
 
-        if args.opt_confirmed:
-            response = requests.post(LAKE_URL + '/blocks/', json=block_params)
-            try:
-                response.raise_for_status()
-                _logger.info(
-                    'Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
-            except Exception:
-                _logger.error(
-                    'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
+        common.send_to_lake(block_params, args.opt_confirmed)
 
 
 def parseCommandLine():
@@ -145,16 +129,13 @@ def parseCommandLine():
                     'defocussed, at 1,3,6,12 sec exposure time, on each quadrant. Useful when commissioing a camera '
                     'that is not available via scheduler yet.')
 
-
-
-
     parser.add_argument('--site', required=True, choices=['lsc', 'cpt', 'coj', 'elp', 'bpl'],
                         help="To which site to submit")
     parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', required=True,
-                        choices=['fl03', 'fl04', 'fl05', 'fl08', 'fl11', 'fl12', 'fl14', 'fl15', 'fl16', 'fa02', 'fa03',
-                                 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ],
+                        choices=['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15',
+                                 'fa16', ],
                         help="To which instrument to submit")
     parser.add_argument('--name', default='auto', type=str, choices=goodXTalkTargets,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
@@ -162,6 +143,7 @@ def parseCommandLine():
                              ' observation.')
     parser.add_argument('--start', default=None,
                         help="Time to start x-talk calibration. If not given, defaults to \"NOW\". Specify as YYYYMMDD HH:MM")
+
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
@@ -184,7 +166,7 @@ def parseCommandLine():
         try:
             args.start = dt.datetime.strptime(args.start, "%Y%m%d %H:%M")
         except ValueError:
-            _logger.error("Invalidt start time argument: ", args.start)
+            _log.error("Invalidt start time argument: ", args.start)
             exit(1)
 
     if ('auto' in args.name):
@@ -193,7 +175,7 @@ def parseCommandLine():
         pass
 
     try:
-        _logger.debug("Resolving target name")
+        _log.debug("Resolving target name")
         args.radec = SkyCoord.from_name(args.name)
     except:
         print("Resolving target name failed, giving up")
@@ -202,8 +184,9 @@ def parseCommandLine():
     print("Resolved target %s at corodinates %s %s" % (args.name, args.radec.ra, args.radec.dec))
     return args
 
+def main():
+    args = parseCommandLine()
+    createRequestsForStar(args)
 
 if __name__ == '__main__':
-    args = parseCommandLine()
-
-    createRequestsForStar(args)
+    main()
