@@ -6,6 +6,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
 import requests
+import common
 
 LAKE_URL = 'http://lake.lco.gtn'
 
@@ -16,26 +17,18 @@ quadrantOffsets = {0: [-450, 450],
                    2: [450, -450],
                    3: [-450, -450]}
 
-_site_lonlat = {}
-_site_lonlat['bpl'] = (-119.863103, 34.433161)
-_site_lonlat['coj'] = (149.0708466, -31.2728196)
-_site_lonlat['cpt'] = (20.8124, -32.3826)
-_site_lonlat['elp'] = (-104.015173, 30.679833)
-_site_lonlat['lsc'] = (-70.8049, -30.1673666667)
-_site_lonlat['ogg'] = (-156.2589, 34.433161)
-_site_lonlat['sqa'] = (-120.04222167, 34.691453333)
-_site_lonlat['tfn'] = (-16.511544, 28.300433)
+
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
 
 
 def getAutoCandidate(context):
-    if (context.site not in _site_lonlat):
+    if (context.site not in common.lco_site_lonlat):
         _logger.error("Site %s is not known. Giving up" % context.site)
         exit(1)
 
     site = ephem.Observer()
-    lon, lat = _site_lonlat[context.site]
+    lon, lat = common.lco_site_lonlat[context.site]
     site.lat = lat * math.pi / 180
     site.lon = lon * math.pi / 180
     site.date = ephem.Date(context.start + dt.timedelta(minutes=30))
