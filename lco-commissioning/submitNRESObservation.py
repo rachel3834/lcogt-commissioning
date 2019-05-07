@@ -1,22 +1,19 @@
 import argparse
 import json
 import logging
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord
 import datetime as dt
-import requests
-import common
+import common.common
 
 _logger = logging.getLogger(__name__)
 
-defaultconstraints = {"max_airmass": 1.6,
-                      "min_lunar_distance": 30.0,
-
-                      }
+defaultconstraints = {"max_airmass": 2.0,
+                      "min_lunar_distance": 30.0, }
 
 
 def createRequestsForStar(context):
     start = context.start
-    end = start + dt.timedelta(minutes=60*3)
+    end = start + dt.timedelta(minutes=60 * 3)
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
     targetPointing = SkyCoord(context.radec.ra, context.radec.dec)
@@ -49,9 +46,8 @@ def createRequestsForStar(context):
     }
 
     if context.forcewcs:
-        nres_molecule['ag_strategy'] =  'wcs'
+        nres_molecule['ag_strategy'] = 'wcs'
         nres_molecule['acquire_strategy'] = 'catalogue'
-
 
     userrequest = {"group_id": "NRES test observation",
                    "proposal": context.proposalid,
@@ -70,7 +66,7 @@ def createRequestsForStar(context):
 
     _logger.debug(json.dumps(userrequest, indent=4))
 
-    common.send_to_scheduler(userrequest,args.opt_confirmed)
+    common.send_to_scheduler(userrequest, args.opt_confirmed)
 
 
 def parseCommandLine():
@@ -78,12 +74,14 @@ def parseCommandLine():
         description='Submit an engineering NRES observation to SCHEDULER.')
 
     parser.add_argument("--proposalid", default="ENG2017AB-001")
+
     parser.add_argument('--targetname', type=str,
                         help='Name of star for NRES test observation. if none is given, or auto, Software will try to'
                              ' find a cataloged flux stadnard star. Name must resolve via Simbad; if resolve failes,'
                              ' program will exit.')
 
     requiredNamed = parser.add_argument_group('required named arguments')
+
     requiredNamed.add_argument('--site', choices=['lsc', 'elp', 'cpt', 'tlv'], required=True,
                                help="To which site to submit")
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
