@@ -149,8 +149,7 @@ def parseCommandLine():
                              ' program will exit.')
 
     requiredNamed = parser.add_argument_group('required named arguments')
-    requiredNamed.add_argument('--site', choices=['ogg', 'coj'], required=True,  help="To which site to submit")
-
+    requiredNamed.add_argument('--site', choices=common.lco_2meter_sites, required=True,  help="To which site to submit")
 
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
@@ -186,9 +185,10 @@ def parseCommandLine():
             exit(1)
 
     if ('auto' in args.targetname):
-        # automatically find the best target
-        args.targetname =  common.getAutoCandidate(goodFloydsFluxStandards, args.site, args.start)
-        pass
+        args.targetname =  common.get_auto_target(goodFloydsFluxStandards, args.site, args.start)
+        if args.targetname is None:
+            exit (1)
+
 
     try:
         _logger.debug("Resolving target name")

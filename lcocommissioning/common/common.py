@@ -31,10 +31,12 @@ nres_instruments = {'lsc': 'nres01',
                     }
 
 lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'bpl']
+lco_2meter_sites = ['ogg','coj']
+lco_nres_sites = nres_instruments.keys()
 lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ]
 
 
-def getEphemObForSiteAndTime (sitecode, dateobs):
+def get_ephem_obj_for_site (sitecode, dateobs):
     site = ephem.Observer()
     lon, lat = lco_site_lonlat[sitecode]
     site.lat = lat * math.pi / 180
@@ -42,17 +44,26 @@ def getEphemObForSiteAndTime (sitecode, dateobs):
     site.date = ephem.Date(dateobs)
     return site
 
+
 def is_valid_lco_site (sitecode):
-    return (sitecode in lco_site_lonlat)
+    return sitecode in lco_site_lonlat
 
 
+def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
+    """ Go through a list of Simbad-resolvable objects and return the first visible object at the given site and time.
 
-def getAutoCandidate(targetlist, site, starttime, moonseparation=30, minalt=35):
+    :param targetlist: List of possible target names, as strings. Must resolve via simbad
+    :param site:  LSC three letter site code
+    :param starttime: datetime.datetime object for the time to check
+    :param moonseparation:  minimum moon separation in degrees to consider object viable.
+    :param minalt:  minimum altitude in degrees to consider an object viable.
+    :return: Name of viable target or None
+    """
 
-    site = getEphemObForSiteAndTime(site, starttime + dt.timedelta(minutes=30))
+    site = get_ephem_obj_for_site(site, starttime + dt.timedelta(minutes=30))
     moon = ephem.Moon()
     moon.compute(site)
-    print("Finding suitable star for site %s. Moon phase is  %i %%" % (site, moon.moon_phase * 100))
+    _log.debug("Finding suitable star for site %s. Moon phase is  %i %%" % (site, moon.moon_phase * 100))
 
     for starcandidate in targetlist:
         if 'auto' in starcandidate:
@@ -72,13 +83,13 @@ def getAutoCandidate(targetlist, site, starttime, moonseparation=30, minalt=35):
         sepok = separation > moonseparation
 
         if (altok and sepok):
-            print("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
+            _log.debug("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
             return starcandidate
         else:
-            print("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
+         _log.debug("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
 
-    print("No viable star was found! full moon? giving up!")
-    exit(1)
+    _log.debug("No viable star was found! full moon? returning None!")
+    return None
 
 
 

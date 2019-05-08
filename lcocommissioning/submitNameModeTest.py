@@ -142,8 +142,9 @@ def parseCommandLine():
             exit(1)
 
     if ('auto' in args.name):
-        args.name = common.getAutoCandidate(goodXTalkTargets, args.site, args.start)
-        pass
+        args.name = common.get_auto_target(goodXTalkTargets, args.site, args.start)
+        if args.name is None:
+            exit (1)
 
     try:
         _logger.debug("Resolving target name")

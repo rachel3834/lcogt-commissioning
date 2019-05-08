@@ -90,13 +90,12 @@ def parseCommandLine():
                     'defocussed, at 1,3,6,12 sec exposure time, on each quadrant. Useful when commissioing a camera '
                     'that is not available via scheduler yet.')
 
-    parser.add_argument('--site', required=True, choices=['lsc', 'cpt', 'coj', 'elp', 'bpl'],
+    parser.add_argument('--site', required=True, choices=common.lco_1meter_sites,
                         help="To which site to submit")
     parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', required=True,
-                        choices=['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15',
-                                 'fa16', ],
+                        choices=common.lco_sinistro1m_cameras,
                         help="To which instrument to submit")
     parser.add_argument('--name', default='auto', type=str, choices=goodXTalkTargets,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
@@ -132,8 +131,9 @@ def parseCommandLine():
 
     if ('auto' in args.name):
         # automatically find the best target
-        args.name =  common.getAutoCandidate(goodXTalkTargets, args.site, args.start)
-        pass
+        args.name =  common.get_auto_target(goodXTalkTargets, args.site, args.start)
+        if args.name is None:
+            exit (1)
 
     try:
         _log.debug("Resolving target name")
