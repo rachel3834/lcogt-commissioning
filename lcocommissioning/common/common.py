@@ -100,6 +100,8 @@ def send_to_scheduler(user_request, dosubmit=False):
         if dosubmit:
             submitted = requests.post(url, json=user_request, headers=headers).json()
             print('Submitted request information: {}'.format(submitted))
+        else:
+            print (" ** Not submitting as per user request **")
     else:
         print('Output of the validation check: {}'.format(validation_check))
         print('UserRequest that was validated: {}'.format(user_request))

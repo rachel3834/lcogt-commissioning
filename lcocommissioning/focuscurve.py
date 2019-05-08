@@ -1,37 +1,12 @@
 import sys
 import matplotlib.pyplot as plt
-from astropy.io import fits
 import numpy as np
-from astropy.io.fits import ImageHDU
 from scipy import optimize
 
-from SourceCatalogProvider import SEPSourceCatalogProvider, getImageFWHM
+from lcocommissioning.SourceCatalogProvider import SEPSourceCatalogProvider, getImageFWHM
 
 L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"
-
-
-# def getImageFWHM(imagename):
-#     hdul = fits.open(imagename, 'readonly', ignore_missing_end=True)
-#
-#     deltaFocus = None
-#     for ii in range(len(hdul)):
-#         if FOCDMD in hdul[ii].header:
-#             deltaFocus = hdul[ii].header[FOCDMD]
-#             continue
-#
-#
-#     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
-#     fwhmcat = np.asarray([])
-#     for ii in range(len(hdul)):
-#         if 'EXTNAME' in hdul[ii].header:
-#             if 'SCI' in hdul[ii].header['EXTNAME']:
-#                 cat, wcs = catalog.get_source_catalog(imagename, ext=ii )
-#                 fwhmcat = np.append(fwhmcat, cat['fwhm'])
-#     hdul.close()
-#     fwhm = np.median(fwhmcat)
-#     print(imagename, deltaFocus, fwhm)
-#     return deltaFocus, fwhm
 
 
 def overplotfit(xdata, ydata, func, pinit, label=""):
@@ -73,8 +48,8 @@ polyinit = [2, 0, 1]
 sqrtfit = lambda x, p0, p2, p1 : (p0 ** 2 + (p1 * (x - p2)) ** 2)** 0.5
 #sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.5 * (x - p2)) ** 2)
 sqrtinit = [2,0]
-if __name__ == '__main__':
 
+def main():
     focuslist = []
     fwhmlist = []
     for image in sys.argv[1:]:
@@ -105,3 +80,8 @@ if __name__ == '__main__':
         plt.legend()
         plt.title("Sqrt fixed slope best focus found at {:5.2f}".format(p[1]))
         plt.savefig("focus_{}.png".format(jackstart))
+
+
+
+if __name__ == '__main__':
+    main()
