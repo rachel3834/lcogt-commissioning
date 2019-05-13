@@ -104,10 +104,10 @@ def parseCommandLine():
     parser.add_argument('--name', default='auto', type=str,
                         help='Name of target.. Will be resolved via simbad. If resolve failes, program will exit.')
     parser.add_argument('--defocus', type=float, default=0.0, help="Amount to defocus star.")
-    parser.add_argument('--site',  choices=common.lco_1meter_sites,
+    parser.add_argument('--site',  choices=common.lco_1meter_sites, required=True,
                         help="To which site to submit")
-    parser.add_argument('--dome',  choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
-    parser.add_argument('--telescope', default='1m0a')
+    parser.add_argument('--dome',  choices=['doma', 'domb', 'domc'], required=True, help="To which enclosure to submit")
+    parser.add_argument('--telescope', default='1m0a',)
     parser.add_argument('--filter', default='rp')
     parser.add_argument('--exp-cnt',  type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime',  type=float, default=20)

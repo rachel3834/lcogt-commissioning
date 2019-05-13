@@ -21,6 +21,7 @@ setuptools.setup(
         'console_scripts': ['submitNRESObservation = lcocommissioning.submitNRESObservation:main',
                             'noisegainmef = lcocommissioning.noisegainrawmef:main',
                             'submitXtalkObservation = lcocommissioning.submitXtalkObservation:main',
+                            'submitNamedModeTest = lcocommissioning.submitNameModeTest:main',
                             'sinistrocrosstalk = lcocommissioning.crosstalk:main',
                             'focuscurve = lcocommissioning.focuscurve:main'],
 
