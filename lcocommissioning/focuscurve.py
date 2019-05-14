@@ -1,4 +1,6 @@
 import sys
+
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import optimize
@@ -8,48 +10,64 @@ from lcocommissioning.SourceCatalogProvider import SEPSourceCatalogProvider, get
 L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"
 
+_LIMIT_EXPONENT_U = 0.7
+_MIN_NUMBER_OF_POINTS = 5
 
-def overplotfit(xdata, ydata, func, pinit, label=""):
+# This describes our model for a focus curve: Seeing and defocus add in quadrature.
+sqrtfit = lambda x, seeing, bestfocus, slope, tweak: (seeing ** 2 + (slope * (x - bestfocus)) ** 2) ** tweak
+polyfit = lambda x, seeing, bestfocus, slope: slope * (x - bestfocus) ** 2 + seeing
 
+
+def focus_curve_fit(xdata, ydata, func=sqrtfit):
+    """
+    Generic iterative fit with sigma rejection.
+
+    :param xdata:
+    :param ydata:
+    :param func:
+    :param plot:
+    :return:
+    """
+
+    # TODO: Verification that we have enough points.
+
+    # TODO: Boundaries and intial guess externally driven by context.
+    initial_guess = [2, 0, 1, 0.6] if func == sqrtfit else None
+    bounds = [[0, -3, 0, 0.5], [5, 3, 5, _LIMIT_EXPONENT_U]] if func == sqrtfit else [-math.inf, math.inf]
 
     for iter in range(2):
-        (p1, istat) = optimize.curve_fit(func, xdata, ydata)
-        base = np.arange(-3.6, 3.6, 0.1)
-        if len (p1) == 3:
-            y = func(base, p1[0], p1[1], p1[2])
-            fit = func(xdata, p1[0], p1[1], p1[2])
+        try:
+            (paramset, istat) = optimize.curve_fit(func, xdata, ydata, p0=initial_guess, bounds=bounds)
+        except:
+            paramset = None
+            istat = None
 
-
-        if len (p1) == 2:
-            y = func(base, p1[0], p1[1])
-            fit = func(xdata, p1[0], p1[1])
-
+        if paramset is None:
+            continue
+        # sigma rejection and rms estimate:
+        fit = func(xdata, *paramset)
         delta = ydata - fit
-        s = np.std (delta)
-        print ("Fit rms: {:5.3f}".format (s))
-        good = delta < 2 * s
+        s = np.std(delta)
+        good = (delta < 3 * s)
         xdata = xdata[good]
         ydata = ydata[good]
 
+    paramerrors = np.sqrt(np.diag(istat)) if istat is not None else None
+
+    return paramset, paramerrors
 
 
-    if 'poly' in label:
-        label = "{} curv={:4.2f}".format (label, p1[2])
-    if 'sqrt' in label and len(p1)==3:
-        label = '{} slope: {:4.2f}'.format (label, p1[2])
+def overplot_fit(func, paramset):
+    if paramset is None:
+        return
+    base = np.arange(-3.6, 3.6, 0.1)
+    y = func(base, *paramset)
+    plt.plot(base, y, "--", color='orange' if func == sqrtfit else 'grey',
+             label="sqrt {:5.2f}".format(paramset[3]) if func == sqrtfit else "parabola")
 
-    plt.plot(base, y, "--", label=label)
-    return p1
-
-
-polyfit = lambda x, p0, p1, p2: p0 + p1 * x + p2 * x ** 2
-polyinit = [2, 0, 1]
-
-sqrtfit = lambda x, p0, p2, p1 : (p0 ** 2 + (p1 * (x - p2)) ** 2)** 0.5
-#sqrtfit = lambda x, p0, p2: np.sqrt(p0 ** 2 + (2.5 * (x - p2)) ** 2)
-sqrtinit = [2,0]
 
 def main():
+    error_string = None
     focuslist = []
     fwhmlist = []
     for image in sys.argv[1:]:
@@ -61,26 +79,48 @@ def main():
 
     of = focuslist
     os = fwhmlist
-    for jackstart in range(1):
-        focuslist = np.asarray(of)[jackstart:]
-        fwhmlist = np.asarray(os)[jackstart:]
+    focuslist = np.asarray(of)
+    fwhmlist = np.asarray(os)
 
-        plt.figure()
-        plt.plot(focuslist, fwhmlist, 'o')
-        plt.xlabel("FOCUS Demand [mm foc plane]")
-        plt.ylabel("FWHM (Pixels")
-        plt.xlim([-3.6, 3.6])
-        plt.ylim([0, 14])
-        p = overplotfit(focuslist, fwhmlist, polyfit, polyinit, label="poly(2)")
-        print("Best poly focus at {:5.2f}  is {:5.2f}; curvature is {:5.2f}".format(-p[1] / (2 * p[2]), p[0] - p[1] ** 2 / 4 / p[2], p[2]))
+    parabola_p, parabola_e = focus_curve_fit(focuslist, fwhmlist, polyfit)
+    exponential_p, exponential_rms = focus_curve_fit(focuslist, fwhmlist, sqrtfit)
 
-        p = overplotfit(focuslist, fwhmlist, sqrtfit, sqrtinit, label="sqrt(a+df^2)")
-        print("Best sqrt focus at {:5.2f} is {:5.2f}".format(p[1], p[0]))
-        plt.axvline(x=p[1], label="best focus sqrt")
-        plt.legend()
-        plt.title("Sqrt fixed slope best focus found at {:5.2f}".format(p[1]))
-        plt.savefig("focus_{}.png".format(jackstart))
+    # we will need this a few times - meaningful references here
+    if exponential_p is not None:
+        bestfocus = exponential_p[1]
+        bestfocus_error = exponential_rms[1]
 
+        if not math.isfinite(bestfocus_error):
+            error_string = "fit did not converge"
+        if bestfocus_error > 0.25:
+            error_string = "focus fit is too noisy"
+        if abs(exponential_p[1]) > 2.5:
+            error_string = "Focus offset too large to be credible."
+
+        return_package = {'fitok': True if error_string is None else False,
+                          'fit_seeing': round(exponential_p[0], 2),
+                          'fit_focus': round(bestfocus, 2),
+                          'fit_slope': round(exponential_p[2], 2),
+                          'fit_exponent': round(exponential_p[3], 2),
+                          'fit_rms': round(bestfocus_error, 2),
+                          'errormsg': error_string}
+
+    plt.figure()
+    if math.isfinite(bestfocus_error):
+        plt.axvline(x=bestfocus, color='orange', label="best focus sqrt")
+        plt.axes().axvspan(bestfocus - bestfocus_error, bestfocus + bestfocus_error, alpha=0.1, color='grey')
+
+    plt.xlabel("FOCUS Demand [mm foc plane]")
+    plt.ylabel("FWHM (Pixels")
+    plt.xlim([-3.6, 3.6])
+    plt.ylim([0, 30])
+    overplot_fit(polyfit, parabola_p)
+    overplot_fit(sqrtfit, exponential_p)
+    plt.plot(focuslist, fwhmlist, 'o')
+    plt.legend()
+    plt.title("Sqrt best focus found at {:5.2f} +/- {:5.2f}".format(bestfocus, bestfocus_error) if math.isfinite(
+        bestfocus_error) else "Fit failed")
+    plt.savefig("{}".format("focus_0.png"))
 
 
 if __name__ == '__main__':
