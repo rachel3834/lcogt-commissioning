@@ -1,3 +1,4 @@
+import json
 import sys
 
 import math
@@ -82,6 +83,8 @@ def main():
     focuslist = np.asarray(of)
     fwhmlist = np.asarray(os)
 
+    print ("{}\n{}".format (np.round(focuslist,2), np.round (fwhmlist,2)))
+
     parabola_p, parabola_e = focus_curve_fit(focuslist, fwhmlist, polyfit)
     exponential_p, exponential_rms = focus_curve_fit(focuslist, fwhmlist, sqrtfit)
 
@@ -104,6 +107,7 @@ def main():
                           'fit_exponent': round(exponential_p[3], 2),
                           'fit_rms': round(bestfocus_error, 2),
                           'errormsg': error_string}
+    print (json.dumps(return_package))
 
     plt.figure()
     if math.isfinite(bestfocus_error):
