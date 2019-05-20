@@ -15,27 +15,53 @@ noisegainmef.py
 ===
 
 Measure read noise [e-] and gain [e-/ADU]  based on a pair of raw biases images and equally exposed
-flat field images. 
+flat field images. If more than one pair of flat fields are given, they are matched either by exposure time 
+or illumination level (user selectable).  
 
 Syntax is:
 <pre>
-usage: noisegainrawmef.py [-h] [--imagepath OPT_IMAGEPATH]
-                          [--log_level {DEBUG,INFO,WARN}]
-                          fitsfile fitsfile fitsfile fitsfile
+(venv) dharbeck@dharbeck-lco2:~/Software/lcogt-commissioning/scripts$ python noisegainrawmef.py -h
+usage: noisegainrawmef.py [-h] [--minx MINX] [--maxx MAXX] [--miny MINY]
+                          [--maxy MAXY] [--imagepath OPT_IMAGEPATH]
+                          [--database DATABASE]
+                          [--sortby {exptime,filterlevel}] [--noreprocessing]
+                          [--loglevel {DEBUG,INFO,WARN}] [--showimages]
+                          [--makepng]
+                          fitsfile [fitsfile ...]
 
-General purpose noise and gain measurement from a set of two flat fields and
-two biases.
+General purpose CCD noise and gain measurement from pairs of flat fields and
+biases.
 
 positional arguments:
-  fitsfile              four fits files: bias_1 bias_2 flat_1 flat_2
+  fitsfile              Input fits files, must include at least two bias and
+                        two flat field frames.
 
 optional arguments:
   -h, --help            show this help message and exit
   --imagepath OPT_IMAGEPATH
-                        pathname to prepend to fits file names.
-  --log_level {DEBUG,INFO,WARN}
-                        Set the debug level
+                        pathname to prepend to fits file names. (default:
+                        None)
+  --database DATABASE   sqlite database where to store results. (default:
+                        noisegain.sqlite)
+  --sortby {exptime,filterlevel}
+                        Automatically group flat fiel;ds by exposure time
+                        (great if using dome flas, or lab flats)., or by
+                        measured light level (great when using sky flats, but
+                        more computing intensive (default: exptime)
+  --noreprocessing      Do not reprocess if datra are already in database
+                        (default: False)
+  --loglevel {DEBUG,INFO,WARN}
+                        Set the debug level (default: INFO)
+  --showimages          Interactively show difference flat and bias images.
+                        (default: False)
+  --makepng             Create a png output image of noise, gain, and ptc.
+                        (default: False)
 
+Optionally, specify the location of statistics window. All units in pixels with an FITS image extension:
+  --minx MINX           minimum x. (default: None)
+  --maxx MAXX           maximum x. (default: None)
+  --miny MINY           miniumm y. (default: None)
+  --maxy MAXY           maximum y. (default: None)
 </pre>
 
 The fitsfiles are to be in the order: bias1, bias2, flat1, flat2
@@ -87,26 +113,47 @@ X-Talk calibration submission tool Submit to POND the request to observe a
 bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.
 
 <pre>
+(venv) dharbeck@dharbeck-lco2:~/Software/lcogt-commissioning/scripts$ python ./submitXtalkObservation.py -h
+usage: submitXtalkObservation.py [-h] --site {lsc,cpt,coj,elp,bpl} --dome
+                                 {doma,domb,domc} [--telescope TELESCOPE]
+                                 --instrument
+                                 {fl03,fl04,fl05,fl08,fl11,fl12,fl14,fl15,fl16,fa02,fa03,fa04,fa05,fa06,fa08,fa11,fa12,fa14,fa15,fa16}
+                                 [--name {auto,91 Aqr,HD30562,15 Sex,30Psc,51Hya}]
+                                 [--start START] [--defocus DEFOCUS]
+                                 [--user USER] [--offsetRA OFFSETRA]
+                                 [--offsetDec OFFSETDEC] [--CONFIRM]
+                                 [--loglevel {DEBUG,INFO,WARN}]
+
+X-Talk calibration submission tool Submit to LAKE the request to observe a
+bright star, defocussed, at 1,3,6,12 sec exposure time, on each quadrant.
+Useful when commissioing a camera that is not available via scheduler yet.
+
 optional arguments:
   -h, --help            show this help message and exit
-  --name NAME           Name of star for X talk measurement. Will be resolved
-                        via simbad. If resolve failes, program will exit.
-                        future version will automatically select a star based
-                        on time of observation.
-  --defocus DEFOCUS     Amount to defocus star.
-  --site {lsc,cpt,coj,elp}
+  --site {lsc,cpt,coj,elp,bpl}
                         To which site to submit
   --dome {doma,domb,domc}
                         To which enclosure to submit
   --telescope TELESCOPE
-  --instrument {fl03,fl04,fl05,fl12,fl15,fl16}
-                        To which instrumetn to submit
-  --start START         When to start x-talk calibration. If not given,
-                        defaults to "NOW"
+  --instrument {fl03,fl04,fl05,fl08,fl11,fl12,fl14,fl15,fl16,fa02,fa03,fa04,fa05,fa06,fa08,fa11,fa12,fa14,fa15,fa16}
+                        To which instrument to submit
+  --name {auto,91 Aqr,HD30562,15 Sex,30Psc,51Hya}
+                        Name of star for X talk measurement. Will be resolved
+                        via simbad. If resolve failes, program will exit.
+                        future version will automatically select a star based
+                        on time of observation.
+  --start START         Time to start x-talk calibration. If not given,
+                        defaults to "NOW". Specify as YYYYMMDD HH:MM
+  --defocus DEFOCUS     Amount to defocus star.
   --user USER           Which user name to use for submission
-  --CONFIRM             If set, block will be submitted.
-  --log_level {DEBUG,INFO,WARN}
+  --offsetRA OFFSETRA   Extra pointing offset to apply R.A.
+  --offsetDec OFFSETDEC
+                        Extra pointing offset to apply Dec
+  --CONFIRM             If set, block will be submitted. If omitted, nothing
+                        will be submitted.
+  --loglevel {DEBUG,INFO,WARN}
                         Set the debug level
+
 </pre>
 
 An example of an actual submission is like:

@@ -1,73 +1,19 @@
 import argparse
+import copy
 import json
 import logging
-import ephem
-import math
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
-import requests
-
-LAKE_URL = 'http://lake.lco.gtn'
+import lcocommissioning.common.common as common
 
 _logger = logging.getLogger(__name__)
 
-quadrantOffsets = {0: [-450, 450],
-                   1: [450, 450],
-                   2: [450, -450],
-                   3: [-450, -450]}
-
-_site_lonlat = {}
-_site_lonlat['coj'] = (149.0708466, -31.2728196)
-_site_lonlat['ogg'] = (-156.2589, 34.433161)
-
-goodXTalkTargets = ['auto', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
-
-
-def getAutoCandidate(context):
-    if (context.site not in _site_lonlat):
-        _logger.error("Site %s is not known. Giving up" % context.site)
-        exit(1)
-
-    site = ephem.Observer()
-    lon, lat = _site_lonlat[context.site]
-    site.lat = lat * math.pi / 180
-    site.lon = lon * math.pi / 180
-    site.date = ephem.Date(context.start + dt.timedelta(minutes=30))
-    moon = ephem.Moon()
-    moon.compute(site)
-
-    print("Finding suitable star for site %s. Moon phase is  %i %%" % (context.site, moon.moon_phase * 100))
-
-    for starcandidate in goodXTalkTargets:
-        if 'auto' in starcandidate:
-            continue
-        radec = SkyCoord.from_name(starcandidate)
-        s = ephem.FixedBody()
-        s._ra = radec.ra.degree * math.pi / 180
-        s._dec = radec.dec.degree * math.pi / 180
-        s.compute(site)
-
-        separation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
-        alt = s.alt * 180 / math.pi
-        separation = separation * 180 / math.pi
-
-        altok = alt > 35
-        sepok = separation > 30
-
-        if (altok and sepok):
-            print("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
-            return starcandidate
-        else:
-            print("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
-
-    print("No viable star was found! full moon? giving up!")
-    exit(1)
-
+goodFloydsFluxStandards = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
 def createRequestsForStar(context):
     exposuretime = context.exptime
-    overheadperexposure = 25.5  # readout plus fixed overhead
+    overheadperexposure = 60 # readout plus fixed overhead
     telescopeslew = 120 + 90 + 60  # teelscope slew, acquire exposure + process, config change time
     start = context.start
     nexposure = int(context.expcnt)
@@ -76,7 +22,7 @@ def createRequestsForStar(context):
     end = start + \
           dt.timedelta(seconds=telescopeslew) + \
           dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + \
-          dt.timedelta(seconds=2 * (40 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
+          dt.timedelta(seconds=2 * (80 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
 
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
@@ -117,11 +63,11 @@ def createRequestsForStar(context):
              }
 
     flat_molecule = {
-        "spectra_slit": "slit_2.0as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
 
         "tag_id": "LCOGT",
-        "user_id": "supernova_exchange",
+        "user_id": context.user,
         "prop_id": "LCOEngineering",
         "group": "Floyds test exposure",
         "exposure_count": 1,
@@ -140,7 +86,7 @@ def createRequestsForStar(context):
     spectrum_molecule = {
         "acquire_mode": "BRIGHTEST",
         "acquire_radius_arcsec": "5.00",
-        "spectra_slit": "slit_2.0as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
         "defocus": "0.0000000",
         "ag_name": agname,
@@ -149,7 +95,7 @@ def createRequestsForStar(context):
         "user_id": context.user,
         "prop_id": "LCOEngineering",
         "group": "Floyds test exposure",
-        "exposure_count": 1,
+        "exposure_count": nexposure,
         "bin_x": 1,
         "bin_y": 1,
         "inst_name": context.instrument,
@@ -163,7 +109,7 @@ def createRequestsForStar(context):
     }
 
     arc_molecule = {
-        "spectra_slit": "slit_2.0as",
+        "spectra_slit": context.slit,
         "pointing": pointing,
         "tag_id": "LCOGT",
         "user_id": context.user,
@@ -185,18 +131,12 @@ def createRequestsForStar(context):
     block['molecules'].append(flat_molecule)
     block['molecules'].append(spectrum_molecule)
     block['molecules'].append(arc_molecule)
-    block['molecules'].append(flat_molecule)
+    lastflat = copy.deepcopy (flat_molecule)
+    lastflat['priority'] = 4
+    block['molecules'].append(lastflat)
 
     _logger.debug(json.dumps(block, indent=4))
-    if args.opt_confirmed:
-        response = requests.post(LAKE_URL + '/blocks/', json=block)
-        try:
-            response.raise_for_status()
-            _logger.info(
-                'Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
-        except Exception:
-            _logger.error(
-                'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
+    common.send_to_lake (block, context.opt_confirmed)
 
 
 def parseCommandLine():
@@ -209,11 +149,11 @@ def parseCommandLine():
                              ' program will exit.')
 
     requiredNamed = parser.add_argument_group('required named arguments')
-    requiredNamed.add_argument('--site', choices=['ogg', 'coj'], required=True,  help="To which site to submit")
-
+    requiredNamed.add_argument('--site', choices=common.lco_2meter_sites, required=True,  help="To which site to submit")
 
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
+    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as','slit_2.0as','slit_6.0as'])
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
@@ -245,9 +185,10 @@ def parseCommandLine():
             exit(1)
 
     if ('auto' in args.targetname):
-        # automatically find the best target
-        args.targetname = getAutoCandidate(args)
-        pass
+        args.targetname =  common.get_auto_target(goodFloydsFluxStandards, args.site, args.start)
+        if args.targetname is None:
+            exit (1)
+
 
     try:
         _logger.debug("Resolving target name")
@@ -260,7 +201,10 @@ def parseCommandLine():
     return args
 
 
-if __name__ == '__main__':
-    args = parseCommandLine()
 
+def main():
+    args = parseCommandLine()
     createRequestsForStar(args)
+
+if __name__ == '__main__':
+    main()

@@ -4,7 +4,7 @@ import re
 import numpy as np
 from astropy.io import fits
 
-_logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class Image(object):
@@ -63,15 +63,15 @@ class Image(object):
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
 
         if len (sci_extensions) == 0:
-            _logger.warning ("No SCI extemnstion found in image %s. Aborting." % filename)
+            _log.warning ("No SCI extemnstion found in image %s. Aborting." % filename)
             self.data = None
             return None
 
         # Find out where the on-sky data are located.
-        _logger.debug("CCDSEC: %s " % sci_extensions[0].header['DATASEC'])
+        _log.debug("CCDSEC: %s " % sci_extensions[0].header['DATASEC'])
 
         if (( sci_extensions[0].header['DATASEC'] is None) or not trim):
-            _logger.info ("Not trimming")
+            _log.info ("Not trimming")
             cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
         else:
             cs = [int(n) for n in re.split(',|:', sci_extensions[0].header['DATASEC'][1:-1])]
@@ -92,7 +92,7 @@ class Image(object):
                 try:
                     extver = hdu.header['EXTVER']
                     if extver != i+1:
-                        _logger.info ("extver %d does not equal extension numner %d." % (extver,i+1))
+                        _log.info ("extver %d does not equal extension numner %d." % (extver, i + 1))
                 except:
                     extver = i + 1
 
@@ -125,7 +125,7 @@ class Image(object):
                     hdu.header['SKYLEVEL'] = skylevel
                     self.data[i, :, :] = self.data[i, :,:] - skylevel
 
-                _logger.debug(
+                _log.debug(
                     "Correcting image extension #%d with gain / overscan / sky: % 5.3f % 8.1f  % 8.2f" % (
                         i, gain, overscan, skylevel))
 
