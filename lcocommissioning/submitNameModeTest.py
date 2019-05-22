@@ -63,7 +63,7 @@ def createRequestsForStar(context):
              "min_lunar_dist": "30.0000000",
              }
 
-    for readoutmode in ("lco2_500kHz_binned_window",): # "","lco2_500kHz_DRH",):
+    for readoutmode in ("central_2k_2x2",): # "","lco2_500kHz_DRH",):
 
         molecule = {
             "filter": context.filter,

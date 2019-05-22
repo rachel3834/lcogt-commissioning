@@ -73,10 +73,8 @@ def main():
     fwhmlist = []
     for image in sys.argv[1:]:
         focus, fwhm = getImageFWHM(image)
-
-        if fwhm < 15:
-            focuslist.append(focus)
-            fwhmlist.append(fwhm)
+        focuslist.append(focus)
+        fwhmlist.append(fwhm)
 
     of = focuslist
     os = fwhmlist
