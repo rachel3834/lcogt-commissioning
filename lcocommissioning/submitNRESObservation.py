@@ -47,7 +47,7 @@ def createRequestsForStar(context):
 
     if context.forcewcs:
         nres_molecule['ag_strategy'] = 'wcs'
-        nres_molecule['acquire_strategy'] = 'catalogue'
+        nres_molecule['acquire_strategy'] = 'astrometry'
 
     userrequest = {"group_id": "NRES test observation",
                    "proposal": context.proposalid,
