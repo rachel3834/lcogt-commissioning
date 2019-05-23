@@ -13,7 +13,7 @@ defaultconstraints = {"max_airmass": 2.0,
 
 def createRequestsForStar(context):
     start = context.start
-    end = start + dt.timedelta(minutes=60 * 3)
+    end = start + dt.timedelta(minutes=60 * context.window)
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
     targetPointing = SkyCoord(context.radec.ra, context.radec.dec)
@@ -88,6 +88,8 @@ def parseCommandLine():
     parser.add_argument('--exptime', type=float, default=120)
     parser.add_argument('--forcewcs', action='store_true',
                         help='Force WCSW based acquistion')
+    parser.add_argument('--window', default=3, type=int, help="scheduling window length")
+
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
@@ -95,6 +97,7 @@ def parseCommandLine():
                         help='If set, block will be submitted.')
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
+
     args = parser.parse_args()
 
     args.instrument = common.nres_instruments[args.site]
