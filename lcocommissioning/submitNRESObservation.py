@@ -59,11 +59,13 @@ def createRequestsForStar(context):
                         "target": pointing,
                         "molecules": [nres_molecule, ],
                         "windows": [{"start": str(start), "end": str(end)}, ],
-                        "location": {'telescope_class': '1m0', 'site': context.site},
+                        "location": {'telescope_class': '1m0'},
                         "constraints": defaultconstraints,
                         },
                    ]}
 
+    if context.site is not None:
+        userrequest['requests'][0]['location']['site'] = context.site
     _logger.debug(json.dumps(userrequest, indent=4))
 
     common.send_to_scheduler(userrequest, context.opt_confirmed)
@@ -82,13 +84,14 @@ def parseCommandLine():
 
     requiredNamed = parser.add_argument_group('required named arguments')
 
-    requiredNamed.add_argument('--site', choices=['lsc', 'elp', 'cpt', 'tlv'], required=True,
+    requiredNamed.add_argument('--site', choices=['lsc', 'elp', 'cpt', 'tlv'], default=None,
                                help="To which site to submit")
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=120)
     parser.add_argument('--forcewcs', action='store_true',
                         help='Force WCSW based acquistion')
     parser.add_argument('--window', default=3, type=int, help="scheduling window length")
+    parser.add_argument('--ipp', default=1.0, help="IPP priority for block")
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
@@ -99,8 +102,6 @@ def parseCommandLine():
                         help='Set the debug level')
 
     args = parser.parse_args()
-
-    args.instrument = common.nres_instruments[args.site]
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
 

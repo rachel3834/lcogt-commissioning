@@ -28,6 +28,7 @@ nres_instruments = {'lsc': 'nres01',
                     'elp': 'nres02',
                     'cpt': 'nres03',
                     'tlv': 'nres04',
+
                     }
 
 lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'bpl']
