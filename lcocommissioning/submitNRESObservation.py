@@ -1,6 +1,8 @@
 import argparse
 import json
 import logging
+
+import astropy
 from astropy.coordinates import SkyCoord
 import datetime as dt
 import lcocommissioning.common.common as common
@@ -47,6 +49,7 @@ def createRequestsForStar(context):
 
     if context.forcewcs:
         nres_molecule['ag_strategy'] = 'wcs'
+      #  nres_molecule['ag_strategy'] = None # test out None acquistion strategy as per Steve's recommendation.
         nres_molecule['acquire_strategy'] = 'astrometry'
 
     userrequest = {"group_id": "NRES test observation",
@@ -113,11 +116,13 @@ def parseCommandLine():
         except ValueError:
             _logger.error("Invalid start time argument: ", args.start)
             exit(1)
+    astropy.coordinates.name_resolve.sesame_database.set("simbad")
     try:
         _logger.debug("Resolving target name")
+
         args.radec = SkyCoord.from_name(args.targetname)
-    except:
-        print("Resolving target name failed, giving up")
+    except Exception as e:
+        print("Resolving target name failed, giving up {}".format (e))
         exit(1)
 
     print("Resolved target %s at corodinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
