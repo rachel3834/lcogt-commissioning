@@ -170,7 +170,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
         hdu.close()
 
     # find the biases
-    for filename in listoffiles:
+    for filename in listoffiles[::-1]:
         if 'b00' in filename:
             # identified a bias exposure
             if 'bias' not in sortedlistofFiles:
