@@ -5,8 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import argparse
 import logging
-import numpy as np
-from noisegainrawmef import noisegaindbinterface
+from lcocommissioning.noisegainrawmef import noisegaindbinterface
 import matplotlib.dates as mdates
 
 import matplotlib.pyplot as plt
@@ -103,7 +102,7 @@ def renderHTMLPage (args, cameras):
 goodfilters = ['up','gp','rp','ip','zp','U','B','V','R','I']
 
 
-if __name__ == '__main__':
+def main():
 
     args = parseCommandLine()
     plt.style.use('ggplot')
@@ -232,6 +231,7 @@ if __name__ == '__main__':
     database.close()
 
 
-
+if __name__ == '__main__':
+    main()
 
 
