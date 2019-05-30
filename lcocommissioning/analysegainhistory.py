@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import argparse
 import logging
-from lcocommissioning.noisegainrawmef import noisegaindbinterface
+from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 import matplotlib.dates as mdates
 
 import matplotlib.pyplot as plt
