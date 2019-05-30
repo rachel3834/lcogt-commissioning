@@ -14,11 +14,11 @@ webpageoutputdir="gainhistory"         # existing local subdiretory into which a
 base=/archive/engineering              # Location of archive mount
 cameras="fa?? fs?? kb??"               # Camera types to crawl.
 sites="elp cpt lsc ogg coj tfn"        # Which sites to crawl
-dates="2018121?"                       # date range selector.
+dates="201905??"                       # date range selector.
 
 inputselection="*-[bf]00.fits.fz"      # type of images to serach for. need flats and biases here.
 
-NCPU=2                                 # How many CPUs to employ
+NCPU=30                                # How many CPUs to employ
 
 for site in $sites; do
  for camera in $cameras; do
@@ -33,7 +33,7 @@ for site in $sites; do
 
      searchpath=${day}/raw/${inputselection}
      echo "Searchpath is $searchpath"
-     sem  -j $NCPU python noisegainrawmef.py --noreprocessing --loglevel INFO --sortby filterlevel --database ${noisegaindatabase} $searchpath
+     sem  -j $NCPU python lcocommissioning/noisegainrawmef.py --noreprocessing --loglevel INFO --sortby filterlevel --database ${noisegaindatabase} $searchpath
 
    done
 
@@ -44,4 +44,4 @@ done
 
 sem --wait
 
-python analysegainhistory.py --outputdir ${webpageoutputdir} --database ${noisegaindatabase}
+analysgainhistory --outputdir ${webpageoutputdir} --database ${noisegaindatabase}
