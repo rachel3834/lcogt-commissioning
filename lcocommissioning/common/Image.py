@@ -68,7 +68,7 @@ class Image(object):
             return None
 
         # Find out whow big dat are. Warning: assumption is that all extensions have same dimensions.
-        datasec = sci_extensions[0].getheader('DATASEC')
+        datasec = sci_extensions[0].header.get('DATASEC')
         _log.debug("DATASEC: {}".format(datasec ))
 
         if ( (datasec is None) or not trim):

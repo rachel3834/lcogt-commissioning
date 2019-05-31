@@ -24,8 +24,8 @@ from sys import exit
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import optimize
-import statistics
-from lcocommissioning.Image import Image
+from common import statistics
+from common.Image import Image
 
 log = logging.getLogger(__name__)
 
