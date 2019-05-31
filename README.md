@@ -205,10 +205,3 @@ Usage:
 
 </pre>
 
-
-Deploying at LCO
-===
-
-Building the container:
-docker build -t docker.lco.global/commissioningutils .
-docker push  docker.lco.global/commissioningutils
