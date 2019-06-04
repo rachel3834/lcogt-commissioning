@@ -131,6 +131,14 @@ def parseCommandLine():
     return args
 
 
+def findkeywordinhdul(hdulist, keyword):
+    # f&*& fpack!
+    for ext in hdulist:
+        val = ext.header.get (keyword)
+        if val is not None:
+            return val
+    return None
+
 def sortinputfitsfiles(listoffiles, sortby='exptime'):
     """ go through the list of input and sort files by bias and flat type. Find pairs of flats that are of the same exposure time / closest in illumination level."""
 
@@ -142,41 +150,50 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
 
         hdu = fits.open(filecandidate)
 
-        if sortby == 'exptime':
-            exptime = -1
-            # f&*& fpack!
-            if 'EXPTIME' in hdu[0].header:
-                exptime = hdu[0].header['EXPTIME']
-            if 'EXPTIME' in hdu[1].header:
-                exptime = hdu[1].header['EXPTIME']
-            if exptime > -1:
-                filemetrics[filecandidate] = str(exptime)
+        ccdstemp = findkeywordinhdul(hdu, 'CCDSTEMP')
+        ccdatemp = findkeywordinhdul(hdu, 'CCDATEMP')
 
-        if sortby == 'filterlevel':
-            filter = None
-            if ('FILTER') in hdu[0].header:
-                filter = hdu[0].header['FILTER']
-            if ('FILTER') in hdu[1].header:
-                filter = hdu[1].header['FILTER']
-            if (filter is not None) and ('b00' not in filecandidate):
-                image = Image(filecandidate, overscancorrect=True)
-                if image.data is None:
-                    level = -1
-                else:
-                    level = np.mean(image.data[0])
-                _logger.debug("Input file metrics %s %s %s" % (filecandidate, filter, level))
-                filemetrics[filecandidate] = (filter, level)
+        tempdiff = 0
+        if (ccdstemp is not None) & (ccdatemp is not None):
+            tempdiff = float (ccdatemp) - float (ccdstemp)
 
-        hdu.close()
+        if (abs(tempdiff) > 0.5):
+            hdu.close()
+            _logger.warning ("rejecting file {}: CCD temp is not near set point, delta = {:5.2f}".format(filecandidate, tempdiff))
+            continue
 
-    # find the biases
-    for filename in listoffiles[::-1]:
-        if 'b00' in filename:
-            # identified a bias exposure
+        if ('b00' in filecandidate): # it is a bias
+
             if 'bias' not in sortedlistofFiles:
                 sortedlistofFiles['bias'] = []
             if len(sortedlistofFiles['bias']) < 2:
-                sortedlistofFiles['bias'].append(filename)
+                sortedlistofFiles['bias'].append(filecandidate)
+
+        else: # it is a flat
+
+            if (sortby == 'exptime') & (abs(tempdiff) < 0.5):
+                exptime = findkeywordinhdul(hdu, 'EXPTIME')
+                if exptime  is not None:
+                    filemetrics[filecandidate] = str(exptime)
+
+            if (sortby == 'filterlevel') & (abs(tempdiff) < 0.5):
+                filter = findkeywordinhdul(hdu, "FILTER")
+                if (filter is not None) and ('b00' not in filecandidate):
+                    image = Image(filecandidate, overscancorrect=True)
+                    if image.data is None:
+                        level = -1
+                    else:
+                        level = np.mean(image.data[0])
+                    _logger.debug("Input file metrics %s %s %s" % (filecandidate, filter, level))
+                    filemetrics[filecandidate] = (filter, level)
+
+        hdu.close()
+
+    if  'bias' not in sortedlistofFiles:
+        _logger.fatal("No suitable bias frames found in list!")
+        exit(1)
+
+
 
     # pair the flat fields
     if sortby == 'exptime':
