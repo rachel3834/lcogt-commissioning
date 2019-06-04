@@ -1,9 +1,6 @@
-import sys
-import os
 import numpy as np
-import math
 import argparse
-from Image import Image
+from common.Image import Image
 import matplotlib.pyplot as plt
 
 import logging

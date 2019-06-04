@@ -224,15 +224,9 @@ def excludepoints(DataArray,npts):
 def select_pixels_in_flux_range(imagedata,flux_min,flux_max):
     '''Function to select those pixels from a 2D image with values between the fluxes given.
     Returns an np.where-like array.'''
-    
-    # Identify all pixels with values that are too low to include.  Set these 
-    # pixels to values where they will be excluded by the next selection cut:
+
 
     idx = where( (imagedata > flux_min) & (imagedata < flux_max))
-
-
-    #print 'Number of selected pixels=',len(idx[0])
-
     return idx
     
 ############################################

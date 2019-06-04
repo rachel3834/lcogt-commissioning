@@ -1,12 +1,11 @@
 import json
 import sys
-
 import math
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import optimize
 
-from lcocommissioning.SourceCatalogProvider import SEPSourceCatalogProvider, getImageFWHM
+from common.SourceCatalogProvider import getImageFWHM
 
 L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"

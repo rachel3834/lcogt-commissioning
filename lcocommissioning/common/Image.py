@@ -3,7 +3,7 @@ import re
 
 import numpy as np
 from astropy.io import fits
-
+import matplotlib.pyplot as plt
 _log = logging.getLogger(__name__)
 
 
@@ -49,70 +49,56 @@ class Image(object):
         """
         hdulist = fits.open(filename, 'readonly')
         # Get the main header
-        self.header = hdulist[0].header
+        self.primaryheader = hdulist[0].header
         if filename.endswith(".fz"):
             for card in hdulist[1].header:
-                self.header.append (card)
+                self.primaryheader.append (card)
 
         # Check for multi-extension fits
         self.extension_headers = []
-        self.biassec = []
         self.ccdsec = []
+        self.ccdsum = []
         self.extver = []
 
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
 
         if len (sci_extensions) == 0:
-            _log.warning ("No SCI extemnstion found in image %s. Aborting." % filename)
+            _log.warning ("No SCI extenstion found in image %s. Aborting." % filename)
             self.data = None
             return None
 
-        # Find out where the on-sky data are located.
-        _log.debug("CCDSEC: %s " % sci_extensions[0].header['DATASEC'])
+        # Find out whow big dat are. Warning: assumption is that all extensions have same dimensions.
+        datasec = sci_extensions[0].header.get('DATASEC')
+        _log.debug("DATASEC: {}".format(datasec ))
 
-        if (( sci_extensions[0].header['DATASEC'] is None) or not trim):
+        if ( (datasec is None) or not trim):
             _log.info ("Not trimming")
             cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
         else:
-            cs = [int(n) for n in re.split(',|:', sci_extensions[0].header['DATASEC'][1:-1])]
+            cs = self.fitssection_to_slice(datasec)
 
-        if len(sci_extensions) >= 1:
-            # Generate intenral stoarge array for pre-processed data
+        if len(sci_extensions) >0:
+            # Generate internal storage array for pre-processed data
             self.data = np.zeros( ( len(sci_extensions), cs[3]-cs[2] + 1 ,cs[1] - cs[0] + 1), dtype=np.float32)
 
             for i, hdu in enumerate(sci_extensions):
 
                 gain = 1.
                 overscan = 0.
-                if (hdu.header['BIASSEC'] == 'UNKNOWN'):
-                    bs = None
-                else:
-                    bs = [int(n) for n in re.split(',|:', hdu.header['BIASSEC'][1:-1])]
-
-                try:
-                    extver = hdu.header['EXTVER']
-                    if extver != i+1:
-                        _log.info ("extver %d does not equal extension numner %d." % (extver, i + 1))
-                except:
-                    extver = i + 1
-
+                extver = hdu.header.get('EXTVER', str(i+1))
                 self.extver.append (extver)
-                self.biassec.append(bs)
+
                 self.ccdsec.append(cs)
 
-                if overscancorrect & (bs is not None):
-                    # cut first and last colums  of overscan regions
-                    ovpixels = hdu.data[
-                               bs[2]+1:bs[3]-1, bs[0]+1: bs[1]-1  ]
-                    overscan = np.median(ovpixels)
-                    std = np.std(ovpixels)
-                    overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 2 * std])
+                if overscancorrect:
+                    overscan = self.get_overscan_from_hdu(hdu)
 
                 if gaincorrect:
-                    gain = float(hdu.header['GAIN'])
+                    gain = float(hdu.header.get('GAIN', "1.0"))
                     hdu.header['GAIN'] = "1.0"
 
                 hdu.header['OVLEVEL'] = overscan
+
                 self.data[i, :, :] = (hdu.data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan) * gain
 
                 skylevel = 0
@@ -148,13 +134,30 @@ class Image(object):
         :param extension:
         :return:
         """
-        # TODO: Add safety inspection: is extension in range, is image sub area in image?
-        datasec = self.ccdsec[extension]
-        sect = self.ccdsec[extension]
-
-        retdata = self.data[extension, sect[2]-1:sect[3]-1, sect[0]-1:sect[1]-1]
+        retdata = self.data[extension]#, sect[2]-1:sect[3]-1, sect[0]-1:sect[1]-1]
         return retdata
 
+
+    def get_overscan_from_hdu (self, hdu, sig_rej=2, biassecheader='BIASSEC'):
+        """ Calculate the overscan level of an image extension.
+            Calculation is based on slice defined by header keyword.
+        """
+
+        overkeyword = hdu.header.get(biassecheader)
+        if overkeyword is None:
+            return 0
+
+        biassecslice = self.fitssection_to_slice(overkeyword)
+        ovpixels = hdu.data[
+                   biassecslice[2]+1:biassecslice[3]-1, biassecslice[0]+1: biassecslice[1]-1]
+        overscanlevel = np.median(ovpixels)
+        std = np.std(ovpixels)
+        overscanlevel = np.mean(ovpixels[np.abs(ovpixels - overscanlevel) < sig_rej * std])
+        return overscanlevel
+
+    def fitssection_to_slice (self, keyword):
+        integers =  [int(n) for n in re.split(',|:', keyword[1:-1])]
+        return integers
 
     def get_extensions_by_name(self, fits_hdulist, name):
         """

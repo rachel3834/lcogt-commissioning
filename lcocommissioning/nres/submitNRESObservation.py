@@ -49,7 +49,6 @@ def createRequestsForStar(context):
 
     if context.forcewcs:
         nres_molecule['ag_strategy'] = 'wcs'
-      #  nres_molecule['ag_strategy'] = None # test out None acquistion strategy as per Steve's recommendation.
         nres_molecule['acquire_strategy'] = 'astrometry'
 
     userrequest = {"group_id": "NRES test observation",

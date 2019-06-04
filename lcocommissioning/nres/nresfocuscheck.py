@@ -1,12 +1,9 @@
 import numpy as np
-import sep
-from astropy.io import fits
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 import scipy.linalg
 
-from SourceCatalogProvider import SEPSourceCatalogProvider
+from common.SourceCatalogProvider import SEPSourceCatalogProvider
 
 
 def readFile(file):

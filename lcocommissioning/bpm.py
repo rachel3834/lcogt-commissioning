@@ -5,7 +5,7 @@ import scipy.ndimage as ndimage
 import sys
 import numpy as np
 from astropy.io import fits
-from Image import Image
+from common.Image import Image
 import matplotlib.pyplot as plt
 
 _logger = logging.getLogger(__name__)
