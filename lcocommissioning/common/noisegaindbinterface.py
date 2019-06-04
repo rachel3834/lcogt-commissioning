@@ -21,7 +21,8 @@ class noisegaindbinterface:
                       " level real," \
                       " differencenoise real," \
                       " level1 real," \
-                      " level2 real)"
+                      " level2 real);" \
+                      "CREATE INDEX idx_camera ON noisegain (camera)"
 
     def __init__(self, fname):
         _logger.debug("Open data base file %s" % (fname))
