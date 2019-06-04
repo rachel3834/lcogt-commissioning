@@ -3,7 +3,7 @@ import re
 
 import numpy as np
 from astropy.io import fits
-
+import matplotlib.pyplot as plt
 _log = logging.getLogger(__name__)
 
 
@@ -147,9 +147,9 @@ class Image(object):
         if overkeyword is None:
             return 0
 
-        biassecslice = self.fitssection_to_slice(overkeyword[1:-1])
+        biassecslice = self.fitssection_to_slice(overkeyword)
         ovpixels = hdu.data[
-                   biassecslice[2]+1:biassecslice[3]-1, biassecslice[0]+1: biassecslice[1]-1  ]
+                   biassecslice[2]+1:biassecslice[3]-1, biassecslice[0]+1: biassecslice[1]-1]
         overscanlevel = np.median(ovpixels)
         std = np.std(ovpixels)
         overscanlevel = np.mean(ovpixels[np.abs(ovpixels - overscanlevel) < sig_rej * std])
