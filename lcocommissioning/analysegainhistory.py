@@ -1,5 +1,8 @@
 import errno
+import multiprocessing
 import os
+from concurrent.futures import wait
+from concurrent.futures.thread import ThreadPoolExecutor
 
 import matplotlib
 matplotlib.use('Agg')
@@ -7,6 +10,7 @@ import argparse
 import logging
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 import matplotlib.dates as mdates
+from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 _logger = logging.getLogger(__name__)
@@ -30,6 +34,7 @@ def parseCommandLine():
     parser.add_argument ('--outputdir', default='gainhistory', help="directory for output graphs")
 
     parser.add_argument ('--database', default="noisegain.sqlite")
+    parser.add_argument ('--ncpu', default=1, type=int)
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -99,6 +104,120 @@ def renderHTMLPage (args, cameras):
         f.close()
 
 
+def make_plots_for_camera(camera,  args):
+    database = noisegaindbinterface(args.database)
+    starttime = starttimeall
+    if 'fa' in camera:
+        starttime = starttimefa
+
+    dataset = database.readmeasurements(camera, levelratio = 0.02, filters=goodfilters)
+    if dataset is None:
+        return
+    extensions = sorted(set(dataset['extension']))
+
+    plt.figure()
+
+    for ext in extensions:
+
+        l = dataset['level'][dataset['extension'] == ext]
+        n = (dataset['diffnoise'][dataset['extension'] == ext])
+        plt.loglog (l,n, '.', label="ext %s" % ext, markersize=1)
+
+    plt.title ("Photon transfer curve %s" % camera)
+    plt.xlabel('Level [ADU]')
+    plt.ylabel('delta flat Noise [ADU]')
+    plt.ylim([5,1000])
+    plt.xlim([1,70000])
+    plt.legend()
+    plt.savefig ("%s/ptchist-%s.png" % (args.outputdir,camera))
+    plt.cla()
+    plt.close()
+
+
+    ######################################
+    plt.figure()
+    for ext in extensions:
+        d = dataset['dateobs'][dataset['extension'] == ext]
+        g = dataset['gain'][dataset['extension'] == ext]
+        plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
+
+    if 'fa' in camera:
+        plt.ylim([2.5,4])
+    if 'fl' in camera:
+        plt.ylim([1,3])
+    if 'fs' in camera:
+        plt.ylim([6,8])
+    if 'kb' in camera:
+        plt.ylim([1,3])
+
+
+    plt.xlabel('Date Obs')
+    plt.ylabel('Gain [e-/ADU]')
+    plt.title ('Gain history for %s' % camera)
+    dateformat(starttime, endtime)
+    plt.legend()
+    plt.savefig ("%s/gainhist-%s.png" % (args.outputdir,camera))
+    plt.cla()
+    plt.close()
+
+    ##################################3
+
+    plt.figure()
+    for ext in extensions:
+        d = dataset['level'][dataset['extension'] == ext]
+        g = dataset['gain'][dataset['extension'] == ext]
+        plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
+
+    if 'fa' in camera:
+        plt.ylim([2.5,4])
+    if 'fl' in camera:
+        plt.ylim([1,3])
+    if 'fs' in camera:
+        plt.ylim([6,8])
+    if 'kb' in camera:
+        plt.ylim([1,3])
+
+    plt.xlim([0,70000])
+    plt.xlabel('Avg. Level [ADU]')
+    plt.ylabel('Gain [e-/ADU]')
+    plt.title ('Level vs Gain for %s' % camera)
+
+    plt.legend()
+    plt.savefig ("%s/levelgain-%s.png" % (args.outputdir,camera))
+    plt.cla()
+    plt.close()
+
+
+    ######################################
+    plt.figure()
+    for ext in extensions:
+        d = dataset['dateobs'][dataset['extension'] == ext]
+        g = dataset['readnoise'][dataset['extension'] == ext]
+        plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
+
+    if 'fa' in camera:
+        plt.ylim([5,10])
+    if 'fl' in camera:
+        plt.ylim([5,15])
+    if 'fs' in camera:
+        plt.ylim([5,15])
+    if 'kb' in camera:
+        plt.ylim([7,20])
+
+
+    dateformat(starttime, endtime)
+    plt.xlabel('Date')
+    plt.ylabel('Readnoise [e-]')
+    plt.title ('Readnoise vs time for %s' % camera)
+
+    plt.legend()
+    plt.savefig ("%s/noise-%s.png" % (args.outputdir,camera))
+    plt.cla()
+    plt.close()
+
+    database.close()
+
+
 goodfilters = ['up','gp','rp','ip','zp','U','B','V','R','I']
 
 
@@ -106,129 +225,19 @@ def main():
 
     args = parseCommandLine()
     plt.style.use('ggplot')
-    matplotlib.rcParams['savefig.dpi'] = 300
+    matplotlib.rcParams['savefig.dpi'] = 200
 
-    database = None
     database = noisegaindbinterface(args.database)
+    cameras = database.getcameras()
+    database.close()
 
-    for camera in database.getcameras():
-
-        starttime = starttimeall
-        if 'fa' in camera:
-           starttime = starttimefa
-
-        dataset = database.readmeasurements(camera, levelratio = 0.02, filters=goodfilters)
-        if dataset is None:
-            continue
-        extensions = sorted(set(dataset['extension']))
-
-        plt.figure()
-
-        for ext in extensions:
-
-            l = dataset['level'][dataset['extension'] == ext]
-            n = (dataset['diffnoise'][dataset['extension'] == ext])
-            plt.loglog (l,n, '.', label="ext %s" % ext, markersize=1)
-
-        plt.title ("Photon transfer curve %s" % camera)
-        plt.xlabel('Level [ADU]')
-        plt.ylabel('delta flat Noise [ADU]')
-        plt.ylim([5,1000])
-        plt.xlim([1,70000])
-        plt.legend()
-        plt.savefig ("%s/ptchist-%s.png" % (args.outputdir,camera))
-        plt.cla()
-        plt.close()
-
-
-        ######################################
-        plt.figure()
-        for ext in extensions:
-            d = dataset['dateobs'][dataset['extension'] == ext]
-            g = dataset['gain'][dataset['extension'] == ext]
-            plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
-
-        if 'fa' in camera:
-            plt.ylim([2.5,4])
-        if 'fl' in camera:
-            plt.ylim([1,3])
-        if 'fs' in camera:
-            plt.ylim([6,8])
-        if 'kb' in camera:
-            plt.ylim([1,3])
-
-
-        plt.xlabel('Date Obs')
-        plt.ylabel('Gain [e-/ADU]')
-        plt.title ('Gain history for %s' % camera)
-        dateformat(starttime, endtime)
-        plt.legend()
-        plt.savefig ("%s/gainhist-%s.png" % (args.outputdir,camera))
-        plt.cla()
-        plt.close()
-
-        ##################################3
-
-
-        ######################################
-        plt.figure()
-        for ext in extensions:
-            d = dataset['level'][dataset['extension'] == ext]
-            g = dataset['gain'][dataset['extension'] == ext]
-            plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
-
-        if 'fa' in camera:
-            plt.ylim([2.5,4])
-        if 'fl' in camera:
-            plt.ylim([1,3])
-        if 'fs' in camera:
-            plt.ylim([6,8])
-        if 'kb' in camera:
-            plt.ylim([1,3])
-
-        plt.xlim([0,70000])
-        plt.xlabel('Avg. Level [ADU]')
-        plt.ylabel('Gain [e-/ADU]')
-        plt.title ('Level vs Gain for %s' % camera)
-
-        plt.legend()
-        plt.savefig ("%s/levelgain-%s.png" % (args.outputdir,camera))
-        plt.cla()
-        plt.close()
-
-
-        ######################################
-        plt.figure()
-        for ext in extensions:
-            d = dataset['dateobs'][dataset['extension'] == ext]
-            g = dataset['readnoise'][dataset['extension'] == ext]
-            plt.plot (d,g, '.', label="ext %s" % ext, markersize=1)
-
-
-        if 'fa' in camera:
-            plt.ylim([5,10])
-        if 'fl' in camera:
-            plt.ylim([5,15])
-        if 'fs' in camera:
-            plt.ylim([5,15])
-        if 'kb' in camera:
-            plt.ylim([7,20])
-        
-
-        dateformat(starttime, endtime)
-        plt.xlabel('Date')
-        plt.ylabel('Readnoise [e-]')
-        plt.title ('Readnoise vs time for %s' % camera)
-
-        plt.legend()
-        plt.savefig ("%s/noise-%s.png" % (args.outputdir,camera))
-        plt.cla()
-        plt.close()
-
-
+    with ThreadPoolExecutor(max_workers=args.ncpu) as executor:
+        futures = []
+        for camera in cameras:
+            futures.append (executor.submit(make_plots_for_camera, camera,  args))
+        wait (futures)
 
     renderHTMLPage(args, sorted(database.getcameras()))
-    database.close()
 
 
 if __name__ == '__main__':
