@@ -231,11 +231,9 @@ def main():
     cameras = database.getcameras()
     database.close()
 
-    with ThreadPoolExecutor(max_workers=args.ncpu) as executor:
-        futures = []
-        for camera in cameras:
-            futures.append (executor.submit(make_plots_for_camera, camera,  args))
-        wait (futures)
+    for camera in cameras:
+        make_plots_for_camera( camera,  args)
+
 
     renderHTMLPage(args, sorted(database.getcameras()))
 

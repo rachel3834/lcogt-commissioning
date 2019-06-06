@@ -9,7 +9,7 @@ import numpy as np
 import math
 import argparse
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
-from common.Image import Image
+from lcocommissioning.common.Image import Image
 import matplotlib.pyplot as plt
 from astropy.io import fits
 

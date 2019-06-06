@@ -4,46 +4,71 @@ Created on Fri Jul 15 11:12:18 2016
 
 @author: rstreet
 """
-
+import argparse
+import logging
 import numpy as np
 from os import path
-from sys import argv, exit
-from astropy.io import fits
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
+from scipy.signal import medfilt
 
-def image_fft(image,sumaxis=0):
+from common.Image import Image
+log = logging.getLogger(__name__)
+
+
+def image_fft(image):
     """Function to compute an FFT of an image data array."""
     
-    axis = 1
-    if sumaxis==1: axis=0
-    
-    fft_image = abs(np.fft.rfft(image,axis=axis)).mean(axis=sumaxis)
-    
-    gaussian_noise = np.random.normal(0, image.std(), size=image.shape)
-    
-    fft_noise = abs(np.fft.rfft(gaussian_noise,axis=axis)).mean(axis=axis)
-    
-    return fft_image, fft_noise
+
+    fft_image_0 = abs(np.fft.rfft(image,axis=0)).mean(axis=1)
+    fft_image_1 = abs(np.fft.rfft(image,axis=1)).mean(axis=0)
+    gaussian_noise = np.random.normal(0, image[5:-5,5:-5].std(), size=image.shape)
+    fft_noise = abs(np.fft.rfft(gaussian_noise,axis=0)).mean(axis=1)
+    return fft_image_0, fft_image_1, fft_noise
+
+def findpeaks (data):
+    basedata = data - medfilt (data, 11)
+    basedata[0] = 0
+    peakidx= np.where (basedata > np.std (basedata[2:]) * 4)[0]
+
+    goodpeaks = []
+    log.debug("{} promising peaks {}".format (len(peakidx), str(peakidx)))
+
+    for ii in range (len(peakidx)):
+        if peakidx[ii]>5:
+            goodpeaks.append (peakidx[ii])
+    return goodpeaks
 
 
-def plot_image_fft(fig,image,axis=0):
+def plot_image_fft(fig,image):
     """Function to create the plot of an FFT, given a data array of an 
     image region"""
     
-    (fft_image, fft_noise) = image_fft(image,sumaxis=axis)
-    
-    log_fft_image = np.log10(fft_image)
+    (fft_image_0, fft_image_1, fft_noise) = image_fft(image)
+    log_fft_image_0 = np.log10(fft_image_0)
+    log_fft_image_1 = np.log10(fft_image_1)
     log_fft_noise = np.log10(fft_noise)
     
-    pyplot.plot(log_fft_image,'m-')
-    pyplot.plot(log_fft_noise,'k-')
-    pyplot.xlabel('Cycles per line')
-    pyplot.ylabel('log10(FFT)')
-    (xmin,xmax,ymin,ymax) = pyplot.axis()
+
+    plt.plot(log_fft_noise,color='grey', label="gauss equivalent")
+    plt.plot(log_fft_image_1, label="FFT X")
+
+    indexes = findpeaks(log_fft_image_1)
+    values = log_fft_image_1[indexes]
+    print (indexes, values)
+    if len (values) > 0:
+        plt.plot (indexes, values, '.')
+
+
+    plt.plot(log_fft_image_0, label="FFT Y")
+
+    plt.xlabel('Cycles per line')
+    plt.ylabel('log10(FFT)')
+    plt.legend()
+    (xmin,xmax,ymin,ymax) = plt.axis()
     ymax = ymax * 1.05
-    if xmax > len(fft_image):
-        xmax = len(fft_image)
-    pyplot.axis([xmin,xmax,ymin,ymax])
+    if xmax > len(fft_image_0):
+        xmax = len(fft_image_0)
+    plt.axis([xmin,xmax,ymin,ymax])
 
     return fig
     
@@ -63,30 +88,24 @@ def plot_whole_frame_fft(params):
 
 def plot_quadrant_ffts(params):
     """Function to plot separate FFTs of each quadrant of a Sinistro frame"""
-    
-    (image, params) = get_image_data(params)
-    axes = { 0: 'x', 1: 'y' }
-    for axis in axes.keys():
-        plotfmt = [ 'r', 'b', 'm', 'g' ]
-        plotord = [ 2, 3, 1, 4 ]
-        fig = pyplot.figure(2)
-        pyplot.rcParams['font.size'] = 10.0
-        
-        for q,qid in enumerate(plotord):
-            region = params['regions'][qid-1]
+
+    image = Image(args.fitsfile[0], gaincorrect=False, overscancorrect=False, skycorrect=False)
+    log.info ("Working on image {}".format (args.fitsfile))
+
+    plotord = [ 1, 3, 4, 2 ]
+    fig = plt.figure(2)
+    for q,qid in enumerate(plotord):
+
+        quad_image = (image.data[q] - np.mean (image.data[q]))
+        ax = plt.subplot(2,2,q+1)
+        plt.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
+            wspace=0.4,hspace=0.4)
             
-            quad_image = image[region[0]:region[1],region[2]:region[3]]
-            
-            ax = pyplot.subplot(2,2,q+1)
-            pyplot.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
-                wspace=0.4,hspace=0.4)
-            
-            fig = plot_image_fft(fig,quad_image,axis=axis)
-            pyplot.title('Quadrant '+str(q+1))
-        plotname = path.join( params['out_dir'], \
-             path.splitext(path.basename(params['image_path']))[0]+'_fft_log_'+axes[axis]+'.png' )
-        pyplot.savefig(plotname)
-        pyplot.close(2)
+        fig = plot_image_fft(fig,quad_image)
+        plt.title('Quadrant '+str(q+1))
+    plotname = path.join( "fft.png")
+    plt.savefig(plotname, dpi=200)
+    plt.close(2)
 
 def get_image_data(params):
     
@@ -112,22 +131,18 @@ def parse_args():
     """Function to harvest and parse the commandline arguments for noise 
     analysis"""
 
-    params = {}
-    if len(argv) == 1:
-        params['image_path'] = raw_input('Please enter the path to an image FITS file: ')
-        params['out_dir'] = raw_input('Please enter the output directory path: ')
-    else:
-        params['image_path'] = argv[1]
-        params['out_dir'] = argv[2]
+    parser = argparse.ArgumentParser(description='Noise analysis of image.')
 
-    if path.isfile(params['image_path']) == False:
-        print('ERROR: Cannot find input image '+params['image_path'])
-        exit()
-    if path.isdir(params['out_dir']) == False:
-        print('ERROR: No such output directory '+params['out_dir'])
-        exit()
-        
-    return params
+    parser.add_argument('fitsfile', type=str, nargs=1,
+                    help='Fits files for cross talk measurement')
+
+    parser.add_argument('--loglevel', dest='loglevel', default='INFO', choices=['DEBUG', 'INFO'],
+                        help='Set the debug level')
+    args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.loglevel.upper()),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+    return args
 
 
 def plot_quadrant_hist(params,logy=True,xrange=None):
@@ -217,8 +232,11 @@ def quadrant_stats(params):
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         image_stats[q] = basic_stats(quad_image)
     return image_stats
-    
+
+
+
+
+
 if __name__ == '__main__':
-    params = parse_args()
-    plot_quadrant_ffts(params)
-    plot_quadrant_hist(params)
+    args = parse_args()
+    plot_quadrant_ffts(args)
