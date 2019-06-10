@@ -4,11 +4,12 @@ import sys
 
 import numpy as np
 from astropy.io import fits
+from astropy.io.fits import ImageHDU, CompImageHDU
 from astropy.wcs import WCS
 from astropy.table import Table
 import sep
 import logging
-from lcocommissioning.gaiaastrometryservicetools import astrometryServiceRefineWCSFromCatalog
+from gaiaastrometryservicetools import astrometryServiceRefineWCSFromCatalog
 import matplotlib.pyplot as plt
 __author__ = 'drharbeck@gmail.com'
 
@@ -172,10 +173,10 @@ def getImageFWHM(imagename, minarea=20, deblend=0.5):
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     for ii in range(len(hdul)):
-        if'EXTNAME' in hdul[ii].header:
-            if  'SCI' in hdul[ii].header['EXTNAME']:
-                cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend )
-                fwhmcat = np.append(fwhmcat, cat['fwhm'])
+        if isinstance (hdul[ii], ImageHDU) or isinstance (hdul[ii], CompImageHDU):
+            cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend )
+            fwhmcat = np.append(fwhmcat, cat['fwhm'])
+
     hdul.close()
 
     # comprehension of the object catalog....
