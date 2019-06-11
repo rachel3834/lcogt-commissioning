@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import optimize
 
-from common.SourceCatalogProvider import getImageFWHM
+from lcocommissioning.common.SourceCatalogProvider import getImageFWHM
 
 L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"
