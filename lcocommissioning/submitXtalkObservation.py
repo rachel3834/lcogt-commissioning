@@ -25,7 +25,79 @@ def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
                     starcoo.dec - ddec + Angle(extraoffsetDec, unit=u.arcsec))
 
 
-def createRequestsForStar(context):
+def create_request_for_star_scheduler (context):
+    absolutestart = context.start
+    windowend = context.start + dt.timedelta(hours=6)
+
+    submissionblock = {"group_id": "Sinsitro commissioning: X talk",
+                   "proposal": "LCOEngineering",
+                   "ipp_value": 1.0,
+                   "operator": "MANY",
+                   "observation_type": "NORMAL",
+                   "requests": [],
+                   }
+
+    for quadrant in sinistro_1m_quadrant_offsets:
+        offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
+        pointing = {
+            "type": "SIDEREAL",
+            "name": "Sinsitro X talk target {}".format(context.name),
+            "epoch": "2000.0000000",
+            "equinox": "2000.0000000",
+            "pro_mot_ra": "0",
+            "pro_mot_dec": "0",
+            "parallax": "0.0000000",
+            "ra": "%10f" % offsetPointing.ra.degree,
+            "dec": "%10f" % offsetPointing.dec.degree,
+        }
+
+        request =  {"acceptability_threshold": 90,
+                     "target": pointing,
+                        "molecules": [],
+                        "windows": [{"start": str(absolutestart), "end": str(windowend)}, ],
+                        "location": {'telescope_class': '1m0',
+                                     'site' : context.site,
+                                     'instrument' : context.instrument,
+                                     },
+                        "constraints": common.default_constraints,
+                        }
+        p=0
+        for exptime in [2, 4, 6, 12]:
+            p=p+1
+            molecule =   {
+                "type": "EXPOSE",
+                "args": "",
+                "priority": p,
+                "ag_name": "",
+                "ag_mode": "OPTIONAL",
+                "ag_filter": "",
+                "ag_exp_time": 10.0,
+                "ag_strategy": "",
+                "instrument_name": "1M0-SCICAM-SINISTRO",
+                "filter": "rp",
+                "readout_mode": "",
+                "spectra_lamp": "",
+                "spectra_slit": "",
+                "acquire_mode": "OFF",
+                "acquire_radius_arcsec": 0.0,
+                "acquire_strategy": "",
+                "acquire_exp_time": None,
+                "expmeter_mode": "OFF",
+
+                "exposure_time": exptime,
+                "exposure_count": 1,
+                "bin_x": 1,
+                "bin_y": 1,
+                "defocus": min(3, context.defocus)
+            }
+            request['molecules'].append (molecule)
+        submissionblock['requests'].append (request)
+    common.send_to_scheduler(submissionblock, context.opt_confirmed)
+
+
+
+
+def createRequestsForStar_pond(context):
     timePerQuadrant = 8  # in minutes
     absolutestart = context.start
 
@@ -84,7 +156,6 @@ def createRequestsForStar(context):
 
         common.send_to_lake(block_params, context.opt_confirmed)
 
-
 def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='X-Talk calibration submission tool\nSubmit to LAKE the request to observe a bright star, '
@@ -113,6 +184,8 @@ def parseCommandLine():
 
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted. If omitted, nothing will be submitted.')
+    parser.add_argument('--scheduler', action='store_true',
+                        help='If set, submit to scheduler instead of Lake.')
 
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
@@ -133,7 +206,7 @@ def parseCommandLine():
 
     if ('auto' in args.name):
         # automatically find the best target
-        args.name =  common.get_auto_target(common.goodXTalkTargets, args.site, args.start)
+        args.name =  common.get_auto_target(common.goodXTalkTargets, args.site, args.start, moonseparation=10)
         if args.name is None:
             exit (1)
 
@@ -149,7 +222,10 @@ def parseCommandLine():
 
 def main():
     args = parseCommandLine()
-    createRequestsForStar(args)
+    if args.scheduler:
+        create_request_for_star_scheduler(args)
+    else:
+        createRequestsForStar_pond(args)
 
 if __name__ == '__main__':
     main()
