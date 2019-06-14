@@ -36,9 +36,9 @@ class noisegaindbinterface:
     def addmeasurement(self, identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1,
                        level2, readmode='default', commit=True):
         with self.conn:
-            _logger.debug("Inserting: %s\n %s %s %s %s %s %s %s %s %s %s" % (
+            _logger.debug("Inserting: %s\n %s %s %s %s %s %s %s %s %s %s %s" % (
                 identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1, level2, readmode))
-            self.conn.execute("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?,?,?)",
+            self.conn.execute("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?,?,?,?)",
                               (identifier, dateobs, camera, filter, extension, gain, readnoise, level, float(diffnoise),
                                float(level1), float(level2), readmode))
 

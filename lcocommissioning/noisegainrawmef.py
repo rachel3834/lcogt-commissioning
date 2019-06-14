@@ -9,7 +9,7 @@ import numpy as np
 import math
 import argparse
 
-from common import common
+from lcocommissioning.common import common
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 from lcocommissioning.common.Image import Image
 import matplotlib.pyplot as plt
@@ -136,10 +136,11 @@ def parseCommandLine():
 def findkeywordinhdul(hdulist, keyword):
     # f&*& fpack!
     for ext in hdulist:
-        val = ext.header.get (keyword)
+        val = ext.header.get(keyword)
         if val is not None:
             return val
     return None
+
 
 def sortinputfitsfiles(listoffiles, sortby='exptime'):
     """ go through the list of input and sort files by bias and flat type. Find pairs of flats that are of the same exposure time / closest in illumination level."""
@@ -157,25 +158,26 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
 
         tempdiff = 0
         if (ccdstemp is not None) & (ccdatemp is not None):
-            tempdiff = float (ccdatemp) - float (ccdstemp)
+            tempdiff = float(ccdatemp) - float(ccdstemp)
 
         if (abs(tempdiff) > 0.5):
             hdu.close()
-            _logger.warning ("rejecting file {}: CCD temp is not near set point, delta = {:5.2f}".format(filecandidate, tempdiff))
+            _logger.warning(
+                "rejecting file {}: CCD temp is not near set point, delta = {:5.2f}".format(filecandidate, tempdiff))
             continue
 
-        if ('b00' in filecandidate): # it is a bias
+        if ('b00' in filecandidate):  # it is a bias
 
             if 'bias' not in sortedlistofFiles:
                 sortedlistofFiles['bias'] = []
             if len(sortedlistofFiles['bias']) < 2:
                 sortedlistofFiles['bias'].append(filecandidate)
 
-        else: # it is a flat
+        else:  # it is a flat
 
             if (sortby == 'exptime') & (abs(tempdiff) < 0.5):
                 exptime = findkeywordinhdul(hdu, 'EXPTIME')
-                if exptime  is not None:
+                if exptime is not None:
                     filemetrics[filecandidate] = str(exptime)
 
             if (sortby == 'filterlevel') & (abs(tempdiff) < 0.5):
@@ -191,11 +193,9 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
 
         hdu.close()
 
-    if  'bias' not in sortedlistofFiles:
+    if 'bias' not in sortedlistofFiles:
         _logger.fatal("No suitable bias frames found in list!")
         exit(1)
-
-
 
     # pair the flat fields
     if sortby == 'exptime':
@@ -404,6 +404,12 @@ def main():
                 if 'FILTER' in hdu[1].header:
                     filter = hdu[1].header['FILTER']
 
+                readmode = None
+                if 'CONFMODE' in hdu[0].header:
+                    filter = hdu[0].header['CONFMODE']
+                if 'CONFMODE' in hdu[1].header:
+                    filter = hdu[1].header['CONFMODE']
+
                 hdu.close()
 
                 for extension in range(len(levels)):
@@ -422,7 +428,8 @@ def main():
                             os.path.basename(sortedinputlist[pair_ii][1]),
                             extension), dateobs, camera, filter,
                                                 extension, gains[extension], noises[extension], levels[extension],
-                                                shotnoises[extension], level1s[extension], level2s[extension])
+                                                shotnoises[extension], level1s[extension], level2s[extension],
+                                                readmode=readmode)
 
                     alllevels[extension].append(levels[extension])
                     allgains[extension].append(gains[extension])
