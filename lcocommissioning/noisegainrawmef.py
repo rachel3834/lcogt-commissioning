@@ -8,6 +8,8 @@ import os.path
 import numpy as np
 import math
 import argparse
+
+from common import common
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 from lcocommissioning.common.Image import Image
 import matplotlib.pyplot as plt
@@ -305,7 +307,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     for ext in alllevels:
         gains = np.asarray(allgains[ext])
         levels = np.asarray(alllevels[ext])
-        statdata = gains[(levels > 10000) & (levels < 40000)]
+        statdata = gains[(levels > 5000) & (levels < 55000) & (gains < 20)]
         for iter in range(2):
             mediangain = np.median(statdata)
             stdgain = np.std(statdata)
@@ -316,7 +318,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
         plt.hlines(bestgain, 0, 64000, label="Ext %d gain: %5.2f e-/ADU" % (ext, bestgain))
         print("Best gain for ext %d: %5.2f" % (ext, bestgain))
 
-    plt.ylim([2, 7])
+    plt.ylim([2, 20])
 
     plt.legend()
     plt.xlabel(("Exposure level [ADU]"))
@@ -330,7 +332,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     for ext in alllevels:
         plt.loglog(alllevels[ext], allshotnoises[ext], '.', label="extension %s" % ext)
     plt.legend()
-    plt.xlim([1, 64000])
+    plt.xlim([1, 65000])
     plt.ylim([5, 300])
     plt.xlabel("Exposure Level [ADU]")
     plt.ylabel("Measured Noise [ADU]")

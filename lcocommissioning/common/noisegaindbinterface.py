@@ -15,6 +15,7 @@ class noisegaindbinterface:
                       "dateobs text," \
                       " camera text," \
                       " filter text," \
+                      " readmode text,"\
                       " extension integer," \
                       " gain real," \
                       " readnoise real," \
@@ -33,13 +34,13 @@ class noisegaindbinterface:
         self.conn.commit()
 
     def addmeasurement(self, identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1,
-                       level2, commit=True):
+                       level2, readmode='default', commit=True):
         with self.conn:
             _logger.debug("Inserting: %s\n %s %s %s %s %s %s %s %s %s %s" % (
-                identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1, level2))
+                identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1, level2, readmode))
             self.conn.execute("insert or replace into noisegain values (?,?,?,?,?,?,?,?,?,?,?)",
                               (identifier, dateobs, camera, filter, extension, gain, readnoise, level, float(diffnoise),
-                               float(level1), float(level2)))
+                               float(level1), float(level2), readmode))
 
         if (commit):
             self.conn.commit()
@@ -71,10 +72,23 @@ class noisegaindbinterface:
 
         for c in allcameras:
             retarray.append(c[0])
-        _logger.info("Distinct cameras: %s" % retarray)
+        _logger.debug("Distinct cameras: %s" % retarray)
         return retarray
 
-    def readmeasurements(self, camera=None, filters=None, levelratio=None):
+
+    def get_readmodes_for_cameras(self, camera):
+        query = "select distinct readmode from noisegain where camera like (?)"
+        cursor = self.conn.execute(query,[camera,])
+        retarray = []
+        allreadmodes = (cursor.fetchall())
+        if len(allreadmodes) == 0:
+            _logger.warning("Zero results returned from query")
+        for c in allreadmodes:
+            retarray.append(c[0])
+        _logger.debug("Distinct readmodes for camera %s: %s" % (camera, retarray))
+        return retarray
+
+    def readmeasurements(self, camera=None, filters=None, readmode=None, levelratio=None):
         """
 
         :param camera: name of the camera to read
@@ -83,8 +97,8 @@ class noisegaindbinterface:
         :return: astropy.table with query results. May be None if no results are returned.
         """
 
-        query = "select name,dateobs,camera,filter,extension,gain,readnoise,level,differencenoise,level1,level2 from noisegain " \
-                "where (camera like ?) __FILTER__ ORDER BY dateobs"
+        query = "select name,dateobs,camera,filter,extension,gain,readnoise,level,differencenoise,level1,level2,readmode from noisegain " \
+                "where (camera like ?) __FILTER__ __READMODE__ ORDER BY dateobs"
 
         queryargs = [camera if camera is not None else '%', ]
 
@@ -94,6 +108,13 @@ class noisegaindbinterface:
             queryargs.extend(filters)
         else:
             query = query.replace("__FILTER__", "")
+
+        if readmode is not None:
+            readmodecondition = 'AND (readmode like (?))'
+            query = query.replace("__READMODE__", readmodecondition)
+            queryargs.extend(readmode)
+        else:
+            query = query.replace("__READMODE__", "")
 
         _logger.debug("Read from database with query\n  %s\n  %s\n" % (query, queryargs))
 
@@ -106,7 +127,7 @@ class noisegaindbinterface:
 
         t = Table(allrows,
                   names=['identifier', 'dateobs', 'camera', 'filter', 'extension', 'gain', 'readnoise', 'level',
-                         'diffnoise', 'level1', 'level2'])
+                         'diffnoise', 'level1', 'level2','readmode'])
         t['dateobs'] = t['dateobs'].astype(str)
         t['dateobs'] = astt.Time(t['dateobs'], scale='utc', format=None).to_datetime()
         t['gain'] = t['gain'].astype(float)
