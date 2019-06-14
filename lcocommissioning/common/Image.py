@@ -104,7 +104,7 @@ class Image(object):
                 skylevel = 0
                 if skycorrect:
                     imagepixels = self.data[
-                                  i, :,:]
+                                  i, 20:-20,20:-20]
                     skylevel = np.median(imagepixels)
                     std = np.std(imagepixels - skylevel)
                     skylevel = np.median(imagepixels[np.abs(imagepixels - skylevel) < 3 * std])

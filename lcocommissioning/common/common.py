@@ -42,7 +42,7 @@ archon_readout_modes = ["full_frame", "central_2k_2x2"]
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
 
 default_constraints = {"max_airmass": 3,
-                      "min_lunar_distance": 5.0, }
+                      "min_lunar_distance": 30.0, }
 
 
 def get_ephem_obj_for_site (sitecode, dateobs):
