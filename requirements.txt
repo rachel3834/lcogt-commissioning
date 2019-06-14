@@ -5,3 +5,4 @@ ephem
 requests
 scipy
 sep
+peakutils

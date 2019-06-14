@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 _logger = logging.getLogger(__name__)
 import datetime
 
+mpl_logger = logging.getLogger('matplotlib')
+mpl_logger.setLevel(logging.FATAL)
 
 starttimeall = datetime.datetime(2016, 1, 1)
 starttimefa = datetime.datetime(2018, 7, 1)
@@ -106,6 +108,10 @@ def renderHTMLPage (args, cameras):
 
 def make_plots_for_camera(camera,  args):
     database = noisegaindbinterface(args.database)
+
+    readmodes = database.get_readmodes_for_cameras(camera)
+
+
     starttime = starttimeall
     if 'fa' in camera:
         starttime = starttimefa
@@ -229,13 +235,13 @@ def main():
 
     database = noisegaindbinterface(args.database)
     cameras = database.getcameras()
-    database.close()
 
     for camera in cameras:
         make_plots_for_camera( camera,  args)
 
 
     renderHTMLPage(args, sorted(database.getcameras()))
+    database.close()
 
 
 if __name__ == '__main__':

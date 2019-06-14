@@ -34,7 +34,12 @@ nres_instruments = {'lsc': 'nres01',
 lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'bpl']
 lco_2meter_sites = ['ogg','coj']
 lco_nres_sites = nres_instruments.keys()
-lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', ]
+lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', 'fa19',]
+
+archon_readout_modes = ["full_frame", "central_2k_2x2"]
+
+
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
 
 
 def get_ephem_obj_for_site (sitecode, dateobs):
