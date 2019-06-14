@@ -186,7 +186,7 @@ def parseCommandLine():
 
     if ('auto' in args.name):
         # automatically find the best target
-        args.name = common.get_auto_target(common.goodXTalkTargets, args.site, args.start, moonseparation=10)
+        args.name = common.get_auto_target(common.goodXTalkTargets, args.site, args.start, moonseparation=40)
         if args.name is None:
             exit(1)
 
