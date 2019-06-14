@@ -12,7 +12,7 @@ import  lcocommissioning.common.common as common
 
 _logger = logging.getLogger(__name__)
 
-goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', '68 Oph']
 
 
 
@@ -20,7 +20,7 @@ goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
 
 def createRequestsForStar(context):
     exposuretime = context.exptime   # in minutes
-    overheadperexposure = 7
+    overheadperexposure = 9
     telescopeslew = 60
     start = context.start
     nexposure = int(context.expcnt)
@@ -63,7 +63,7 @@ def createRequestsForStar(context):
              "min_lunar_dist": "30.0000000",
              }
 
-    for readoutmode in ("central_2k_2x2",): # "","lco2_500kHz_DRH",):
+    for readoutmode in ("central_2k_2x2",): # ,"full_frame",):
 
         molecule = {
             "filter": context.filter,
