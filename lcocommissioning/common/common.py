@@ -39,6 +39,9 @@ lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa08', 'fa11'
 archon_readout_modes = ["full_frame", "central_2k_2x2"]
 
 
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
+
+
 def get_ephem_obj_for_site (sitecode, dateobs):
     site = ephem.Observer()
     lon, lat = lco_site_lonlat[sitecode]

@@ -14,7 +14,7 @@ sinistro_1m_quadrant_offsets = {0: [-220, 220],
                                 2: [220, -220],
                                 3: [-220, -220]}
 
-goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya']
+
 
 
 def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
@@ -99,7 +99,7 @@ def parseCommandLine():
                         choices=common.lco_sinistro1m_cameras,
                         help="To which instrument to submit")
     parser.add_argument ('--readmode', choices=common.archon_readout_modes, default=common.archon_readout_modes[0])
-    parser.add_argument('--name', default='auto', type=str, choices=goodXTalkTargets,
+    parser.add_argument('--name', default='auto', type=str, choices=common.goodXTalkTargets,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
                              'program will exit.\n future version will automatically select a star based on time of'
                              ' observation.')
@@ -133,7 +133,7 @@ def parseCommandLine():
 
     if ('auto' in args.name):
         # automatically find the best target
-        args.name =  common.get_auto_target(goodXTalkTargets, args.site, args.start)
+        args.name =  common.get_auto_target(common.goodXTalkTargets, args.site, args.start)
         if args.name is None:
             exit (1)
 
