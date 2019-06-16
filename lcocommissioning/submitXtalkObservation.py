@@ -14,6 +14,8 @@ sinistro_1m_quadrant_offsets = {0: [-220, 220],
                                 2: [220, -220],
                                 3: [-220, -220]}
 
+no_dither = {0: [0,0],}
+
 def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
     dra = Angle(sinistro_1m_quadrant_offsets[quadrant][0], unit=u.arcsec)
     ddec = Angle(sinistro_1m_quadrant_offsets[quadrant][1], unit=u.arcsec)
@@ -82,7 +84,8 @@ def createRequestsForStar_pond(context):
     absolutestart = context.start
 
     # create one block per quadrant
-    for quadrant in sinistro_1m_quadrant_offsets:
+    offsets = sinistro_1m_quadrant_offsets if not context.nodither else no_dither
+    for quadrant in offsets:
 
         start = absolutestart + dt.timedelta(minutes=(quadrant) * timePerQuadrant)
         end = start + dt.timedelta(minutes=timePerQuadrant)
@@ -104,7 +107,7 @@ def createRequestsForStar_pond(context):
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
 
-        for exptime in [2, 4, 6, 12]:
+        for exptime in context.exp_times:
             moleculeargs = {
                 'inst_name': context.instrument,
                 'bin': 1,
@@ -150,15 +153,17 @@ def parseCommandLine():
                         choices=common.lco_sinistro1m_cameras,
                         help="To which instrument to submit")
     parser.add_argument('--readmode', choices=common.archon_readout_modes, default=common.archon_readout_modes[0])
-    parser.add_argument('--name', default='auto', type=str, choices=common.goodXTalkTargets,
+    parser.add_argument('--name', default='auto', type=str,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
-                             'program will exit.\n future version will automatically select a star based on time of'
-                             ' observation.')
+                             'program will exit.\n If name is auto, which is te default, a viable target will be choosen for you.')
     parser.add_argument('--start', default=None,
                         help="Time to start x-talk calibration. If not given, defaults to \"NOW\". Specify as YYYYMMDD HH:MM")
 
+    parser.add_argument('--nodither', action='store_true',
+                        help='Do not dither the exposure')
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
+    parser.add_argument('--exp-times', nargs="*", type=float, default=[2, 4, 6, 12], help="List of exposure times")
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
     parser.add_argument('--offsetDec', default=0, help="Extra pointing offset to apply Dec")
 
@@ -181,7 +186,7 @@ def parseCommandLine():
         try:
             args.start = dt.datetime.strptime(args.start, "%Y%m%d %H:%M")
         except ValueError:
-            _log.error("Invalidt start time argument: ", args.start)
+            _log.error("Invalid start time argument: ", args.start)
             exit(1)
 
     if ('auto' in args.name):
@@ -192,7 +197,7 @@ def parseCommandLine():
 
     try:
         _log.debug("Resolving target name")
-        args.radec = SkyCoord.from_name(args.name)
+        args.radec = SkyCoord.from_name(args.name, parse=True)
     except:
         print("Resolving target name failed, giving up")
         exit(1)
