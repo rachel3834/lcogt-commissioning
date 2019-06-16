@@ -31,12 +31,15 @@ def create_request_for_star_scheduler(context):
     submissionblock = {"group_id": "Sinsitro commissioning: X talk",
                        "proposal": "LCOEngineering",
                        "ipp_value": 1.0,
-                       "operator": "MANY",
+                       "operator": "SINGLE" if context.nodither else "MANY",
                        "observation_type": "NORMAL",
                        "requests": [],
                        }
 
-    for quadrant in sinistro_1m_quadrant_offsets:
+    offsets = sinistro_1m_quadrant_offsets
+    if context.nodither:
+        offsets =  no_dither
+    for quadrant in offsets:
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
         pointing = {
@@ -53,12 +56,13 @@ def create_request_for_star_scheduler(context):
                    "windows": [{"start": str(absolutestart), "end": str(windowend)}, ],
                    "location": {'telescope_class': '1m0',
                                 'site': context.site,
+                                'enclosure' : context.dome,
                                 'instrument': context.instrument,
                                 },
                    "constraints": common.default_constraints,
                    }
         p = 0
-        for exptime in [2, 4, 6, 12]:
+        for exptime in context.exp_times:
             p = p + 1
             molecule = {
                 "type": "EXPOSE",
@@ -84,7 +88,10 @@ def createRequestsForStar_pond(context):
     absolutestart = context.start
 
     # create one block per quadrant
-    offsets = sinistro_1m_quadrant_offsets if not context.nodither else no_dither
+    offsets = sinistro_1m_quadrant_offsets
+    if context.nodither:
+
+        offsets =  no_dither
     for quadrant in offsets:
 
         start = absolutestart + dt.timedelta(minutes=(quadrant) * timePerQuadrant)
