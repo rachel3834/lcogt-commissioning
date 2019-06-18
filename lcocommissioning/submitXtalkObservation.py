@@ -26,9 +26,9 @@ def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
 
 def create_request_for_star_scheduler(context):
     absolutestart = context.start
-    windowend = context.start + dt.timedelta(hours=6)
+    windowend = context.start + dt.timedelta(context.schedule_window)
 
-    submissionblock = {"group_id": "Sinsitro commissioning: X talk",
+    submissionblock = {"group_id": context.title,
                        "proposal": "LCOEngineering",
                        "ipp_value": 1.0,
                        "operator": "SINGLE" if context.nodither else "MANY",
@@ -44,7 +44,7 @@ def create_request_for_star_scheduler(context):
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
         pointing = {
             "type": "SIDEREAL",
-            "name": "Sinsitro X talk target {}".format(context.name),
+            "name": "{} {}".format(context.title, context.targetname),
             "epoch": "2000.0000000",
             "equinox": "2000.0000000",
             "ra": "%10f" % offsetPointing.ra.degree,
@@ -99,7 +99,7 @@ def createRequestsForStar_pond(context):
         start = str(start).replace(' ', 'T')
         end = str(end).replace(' ', 'T')
 
-        print("Block for %s Q %d from %s to %s" % (context.name, quadrant, str(start), str(end)))
+        print("Block for %s Q %d from %s to %s" % (context.targetname, quadrant, str(start), str(end)))
 
         block_params = {
             "molecules": [],
@@ -126,7 +126,7 @@ def createRequestsForStar_pond(context):
 
                 'filter': 'rp',
                 'pointing': {"type": "SP",
-                             "name": "%s x talk q %d" % (context.name, quadrant),
+                             "name": "%s x talk q %d" % (context.targetname, quadrant),
                              "coord_type": "RD",
                              "coord_sys": "ICRS",
                              "epoch": "2000",
@@ -160,9 +160,10 @@ def parseCommandLine():
                         choices=common.lco_sinistro1m_cameras,
                         help="To which instrument to submit")
     parser.add_argument('--readmode', choices=common.archon_readout_modes, default=common.archon_readout_modes[0])
-    parser.add_argument('--name', default='auto', type=str,
+    parser.add_argument('--targetname',  default='auto', type=str,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
                              'program will exit.\n If name is auto, which is te default, a viable target will be choosen for you.')
+    parser.add_argument('--title', default= "Sinsitro commissioning: X talk")
     parser.add_argument('--start', default=None,
                         help="Time to start x-talk calibration. If not given, defaults to \"NOW\". Specify as YYYYMMDD HH:MM")
 
@@ -173,7 +174,7 @@ def parseCommandLine():
     parser.add_argument('--exp-times', nargs="*", type=float, default=[2, 4, 6, 12], help="List of exposure times")
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
     parser.add_argument('--offsetDec', default=0, help="Extra pointing offset to apply Dec")
-
+    parser.add_argument('--schedule-window', default=6, type=int)
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted. If omitted, nothing will be submitted.')
     parser.add_argument('--scheduler', action='store_true',
@@ -196,20 +197,20 @@ def parseCommandLine():
             _log.error("Invalid start time argument: ", args.start)
             exit(1)
 
-    if ('auto' in args.name):
+    if ('auto' in args.targetname):
         # automatically find the best target
-        args.name = common.get_auto_target(common.goodXTalkTargets, args.site, args.start, moonseparation=40)
-        if args.name is None:
+        args.targetname = common.get_auto_target(common.goodXTalkTargets, args.site, args.start, moonseparation=40)
+        if args.targetname is None:
             exit(1)
 
     try:
         _log.debug("Resolving target name")
-        args.radec = SkyCoord.from_name(args.name, parse=True)
+        args.radec = SkyCoord.from_name(args.targetname, parse=True)
     except:
         print("Resolving target name failed, giving up")
         exit(1)
 
-    print("Resolved target %s at corodinates %s %s" % (args.name, args.radec.ra, args.radec.dec))
+    print("Resolved target %s at corodinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
     return args
 
 def main():
