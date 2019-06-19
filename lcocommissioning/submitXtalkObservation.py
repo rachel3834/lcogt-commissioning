@@ -26,7 +26,7 @@ def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
 
 def create_request_for_star_scheduler(context):
     absolutestart = context.start
-    windowend = context.start + dt.timedelta(context.schedule_window)
+    windowend = context.start + dt.timedelta(hours=context.schedule_window)
 
     submissionblock = {"group_id": context.title,
                        "proposal": "LCOEngineering",
