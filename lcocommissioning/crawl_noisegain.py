@@ -34,6 +34,9 @@ def parseCommandLine():
     parser.add_argument('--noreprocessing', action='store_true',
                         help="Do not reprocess if datra are already in database")
 
+    parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
+    parser.add_argument('--showimages', action='store_true', help="Interactively show difference flat and bias images.")
+
     parser.add_argument('--loglevel', dest='log_level', default='DEBUG', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
