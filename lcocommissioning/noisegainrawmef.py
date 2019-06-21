@@ -168,7 +168,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         if (ccdstemp is not None) & (ccdatemp is not None):
             tempdiff = float(ccdatemp) - float(ccdstemp)
 
-        if (abs(tempdiff) > 1):
+        if (abs(tempdiff) > 2):
             hdu.close()
             _logger.warning(
                 "rejecting file {}: CCD temp is not near set point, delta = {:5.2f}".format(filecandidate, tempdiff))
