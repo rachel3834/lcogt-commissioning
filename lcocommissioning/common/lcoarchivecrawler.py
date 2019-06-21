@@ -25,7 +25,6 @@ class ArchiveCrawler:
         for site in sites:
             for camera in cameras:
                 dir = "{}/{}/{}".format (self.archive_root, site, camera)
-                print (dir)
                 candiates=glob.glob (dir)
                 sitecameras.extend (candiates)
         return sitecameras
@@ -46,15 +45,15 @@ class ArchiveCrawler:
         return (files)
 
 
+if __name__ == '__main__':
+    c = ArchiveCrawler()
 
-c = ArchiveCrawler()
-
-dates = c.get_last_N_days(3)
-cameras = c.find_cameras(['coj',])
-for camera in cameras:
-    for date in dates:
-        files = c.findfiles_for_camera_dates(camera, date, 'raw', "*[x00|f00|b00].fits*")
-        print (files)
+    dates = c.get_last_N_days(3)
+    cameras = c.find_cameras(['coj',])
+    for camera in cameras:
+        for date in dates:
+            files = c.findfiles_for_camera_dates(camera, date, 'raw', "*[x00|f00|b00].fits*")
+            print (files)
 
 
 
