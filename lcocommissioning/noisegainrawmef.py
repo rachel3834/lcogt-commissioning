@@ -111,8 +111,9 @@ def parseCommandLine():
     parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime', 'filterlevel'],
                         help="Automatically group flat fiel;ds by exposure time (great if using dome flas, or lab flats)."
                              ", or by measured light level (great when using sky flats, but more computing intensive")
+    parser.add_argument('--readmode', default="full_frame")
     parser.add_argument('--noreprocessing', action='store_true',
-                        help="Do not reprocess if datra are already in database")
+                        help="Do not reprocess if data are already in database")
 
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
@@ -143,7 +144,7 @@ def findkeywordinhdul(hdulist, keyword):
     return None
 
 
-def sortinputfitsfiles(listoffiles, sortby='exptime'):
+def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame"):
     """ go through the list of input and sort files by bias and flat type. Find pairs of flats that are of the same exposure time / closest in illumination level."""
 
     sortedlistofFiles = {}
@@ -156,6 +157,12 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
 
         ccdstemp = findkeywordinhdul(hdu, 'CCDSTEMP')
         ccdatemp = findkeywordinhdul(hdu, 'CCDATEMP')
+        readoutmode = findkeywordinhdul(hdu, 'CONFMODE')
+
+        if readoutmode not in selectedreadmode:
+            _logger.debug ("Rejecting file as it is not in the correct readout mode ({} != {}".format(readoutmode, selectedreadmode))
+            hdu.close()
+            continue
 
         tempdiff = 0
         if (ccdstemp is not None) & (ccdatemp is not None):
@@ -363,13 +370,13 @@ def main():
                 _logger.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
                 exit(0)
 
-
     do_noisegain_for_fileset(args.fitsfile, database, args)
 
+    database.close()
 
 
 
-def do_noisegain_for_fileset(inputlist, args):
+def do_noisegain_for_fileset(inputlist, database, args):
     alllevels = {}
     allgains = {}
     allnoises = {}
@@ -378,8 +385,7 @@ def do_noisegain_for_fileset(inputlist, args):
     alllevel2s = {}
     allexptimes = {}
 
-    database = noisegaindbinterface(args.database) if args.database is not None else None
-    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby)
+    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode)
 
 
     for pair_ii in sortedinputlist:
@@ -450,7 +456,6 @@ def do_noisegain_for_fileset(inputlist, args):
                     allexptimes[extension].append(exptimes[extension])
     if args.makepng:
         graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
-    database.close()
 
 
 if __name__ == '__main__':
