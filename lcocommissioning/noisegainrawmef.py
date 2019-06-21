@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 
 _logger = logging.getLogger(__name__)
-
+mpl_logger = logging.getLogger('matplotlib')
+mpl_logger.setLevel(logging.WARNING)
 
 def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=None, maxy=None, showImages=False):
     """
@@ -160,7 +161,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
         if (ccdstemp is not None) & (ccdatemp is not None):
             tempdiff = float(ccdatemp) - float(ccdstemp)
 
-        if (abs(tempdiff) > 0.5):
+        if (abs(tempdiff) > 1):
             hdu.close()
             _logger.warning(
                 "rejecting file {}: CCD temp is not near set point, delta = {:5.2f}".format(filecandidate, tempdiff))
@@ -219,7 +220,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
         for filename in filemetrics.keys():
             (filter, level) = filemetrics[filename]
             if level < 10:
-                continue
+                _logger.debug ("rejecting image {}, level is to low".format (filename))
 
             if (filter not in tempsortedListofFiles.keys()):
                 tempsortedListofFiles[filter] = {}
@@ -252,7 +253,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime'):
     return sortedlistofFiles
 
 
-def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, overscancorrect=True):
+def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True):
     bias1 = Image(fbias1, overscancorrect=overscancorrect)
     bias2 = Image(fbias2, overscancorrect=overscancorrect)
     flat1 = Image(fflat1, overscancorrect=overscancorrect)
@@ -353,7 +354,6 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
 
 
 def main():
-    global args
     args = parseCommandLine()
     database = noisegaindbinterface(args.database) if args.database is not None else None
 
@@ -363,7 +363,13 @@ def main():
                 _logger.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
                 exit(0)
 
-    sortedinputlist = sortinputfitsfiles(args.fitsfile, sortby=args.sortby)
+
+    do_noisegain_for_fileset(args.fitsfile, database, args)
+
+
+
+
+def do_noisegain_for_fileset(inputlist, args):
     alllevels = {}
     allgains = {}
     allnoises = {}
@@ -371,6 +377,10 @@ def main():
     alllevel1s = {}
     alllevel2s = {}
     allexptimes = {}
+
+    database = noisegaindbinterface(args.database) if args.database is not None else None
+    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby)
+
 
     for pair_ii in sortedinputlist:
 
@@ -383,7 +393,7 @@ def main():
                     sortedinputlist['bias'][0],
                     sortedinputlist['bias'][1],
                     sortedinputlist[pair_ii][0],
-                    sortedinputlist[pair_ii][1])
+                    sortedinputlist[pair_ii][1], args)
 
                 hdu = fits.open(sortedinputlist[pair_ii][0])
                 dateobs = None
@@ -438,12 +448,9 @@ def main():
                     alllevel1s[extension].append(level1s[extension])
                     alllevel2s[extension].append(level2s[extension])
                     allexptimes[extension].append(exptimes[extension])
-
     if args.makepng:
         graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
-
-    if database is not None:
-        database.close()
+    database.close()
 
 
 if __name__ == '__main__':
