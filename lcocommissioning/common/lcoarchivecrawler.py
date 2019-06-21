@@ -38,8 +38,8 @@ class ArchiveCrawler:
             date.append (day.strftime("%Y%m%d"))
         return date[::-1]
 
-
-    def findfiles_for_camera_dates (self, sitecamera, date, raworprocessed, filetempalte):
+    @staticmethod
+    def findfiles_for_camera_dates (sitecamera, date, raworprocessed, filetempalte):
         dir="{}/{}/{}/{}".format ( sitecamera, date, raworprocessed, filetempalte)
         files = glob.glob (dir)
         return (files)
