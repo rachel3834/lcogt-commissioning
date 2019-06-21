@@ -2,6 +2,8 @@ import argparse
 import logging
 import multiprocessing as mp
 import os
+from concurrent.futures.process import ProcessPoolExecutor
+
 from lcocommissioning.noisegainrawmef import do_noisegain_for_fileset
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 from lcocommissioning.common.lcoarchivecrawler import ArchiveCrawler
@@ -26,6 +28,8 @@ def parseCommandLine():
 
     parser.add_argument('--ndays', default=3, type=int, help="How many days to look into the past")
     parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
+    parser.add_argument('--readmode', default="full_frame")
+
     parser.add_argument('--ncpu', default=2, type=int)
     parser.add_argument('--noreprocessing', action='store_true',
                         help="Do not reprocess if datra are already in database")
@@ -44,37 +48,36 @@ def findfilesanddonoisegain(camera, date, args):
     files = ArchiveCrawler.findfiles_for_camera_dates(camera, date, 'raw', "*[x00|f00].fits*")
 
     if len(files) > 3:
-
         database = noisegaindbinterface(args.database) if args.database is not None else None
-
         if (database is not None) and args.noreprocessing:
             for inputname in files:
                 if database.checkifalreadyused(os.path.basename(inputname)):
                     log.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
-                    database.close()
+                    if database is not None:
+                        database.close()
                     return
 
         log.debug("{} {} # files: {}".format(camera, date, len(files)))
-        do_noisegain_for_fileset(files, database, args)
-
-        database.close()
+        try:
+            do_noisegain_for_fileset(files, database, args)
+        except Exception as e:
+            log.error ('While launching task:',e)
+        if database is not None:
+            database.close()
 
 
 if __name__ == '__main__':
     args = parseCommandLine()
-    database = noisegaindbinterface(args.database) if args.database is not None else None
 
-    pool = mp.Pool(args.ncpu)
+    exec = ProcessPoolExecutor (max_workers = args.ncpu)
     c = ArchiveCrawler()
     dates = c.get_last_N_days(args.ndays)
     cameras = c.find_cameras(cameras=args.cameratype)
 
     for camera in cameras:
         for date in dates:
-            pool.apply_async(findfilesanddonoisegain, args=(camera, date, args))
+            exec.submit (findfilesanddonoisegain, camera, date, args)
 
-    pool.close()
     log.info("Waiting for all threads to complete.")
-    pool.join()
-    if database is not None:
-        database.close()
+    exec.shutdown()
+    log.info ("All Done")

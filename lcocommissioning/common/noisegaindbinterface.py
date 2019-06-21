@@ -54,10 +54,7 @@ class noisegaindbinterface:
             cursor = self.conn.execute(query, ("%{}%".format(flat1),))
             allmatch = cursor.fetchall()
             if len(allmatch) > 0:
-                _logger.debug("match found for %s" % (flat1))
                 return True
-
-        _logger.debug("no match found for %s" % (flat1))
         return False
 
     def getcameras(self):

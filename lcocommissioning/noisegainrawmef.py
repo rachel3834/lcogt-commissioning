@@ -160,7 +160,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         readoutmode = findkeywordinhdul(hdu, 'CONFMODE')
 
         if readoutmode not in selectedreadmode:
-            _logger.debug ("Rejecting file as it is not in the correct readout mode ({} != {}".format(readoutmode, selectedreadmode))
+            _logger.info ("Rejecting file as it is not in the correct readout mode ({} != {})".format(readoutmode, selectedreadmode))
             hdu.close()
             continue
 
@@ -203,8 +203,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
 
     if 'bias' not in sortedlistofFiles:
         _logger.fatal("No suitable bias frames found in list!")
-        exit(1)
-
+        return sortedlistofFiles
     # pair the flat fields
     if sortby == 'exptime':
         # task is simple: just find flats with the same exposure time
@@ -385,8 +384,9 @@ def do_noisegain_for_fileset(inputlist, database, args):
     alllevel2s = {}
     allexptimes = {}
 
-    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode)
 
+    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode)
+    _logger.debug ("Sorted input files {}".format (sortedinputlist))
 
     for pair_ii in sortedinputlist:
 
