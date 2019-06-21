@@ -48,7 +48,7 @@ def parseCommandLine():
 
 
 def findfilesanddonoisegain(camera, date, args):
-    files = ArchiveCrawler.findfiles_for_camera_dates(camera, date, 'raw', "*[x00|f00].fits*")
+    files = ArchiveCrawler.findfiles_for_camera_dates(camera, date, 'raw', "*[xf]00.fits*")
 
     if len(files) > 3:
         database = noisegaindbinterface(args.database) if args.database is not None else None

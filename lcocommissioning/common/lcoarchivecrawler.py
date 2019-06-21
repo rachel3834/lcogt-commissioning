@@ -52,7 +52,7 @@ if __name__ == '__main__':
     cameras = c.find_cameras(['coj',])
     for camera in cameras:
         for date in dates:
-            files = c.findfiles_for_camera_dates(camera, date, 'raw', "*[x00|f00|b00].fits*")
+            files = c.findfiles_for_camera_dates(camera, date, 'raw', "*[xbf]00.fits*")
             print (files)
 
 
