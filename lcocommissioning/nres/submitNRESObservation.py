@@ -9,9 +9,8 @@ import lcocommissioning.common.common as common
 
 _logger = logging.getLogger(__name__)
 
-defaultconstraints = {"max_airmass": 2.0,
-                      "min_lunar_distance": 30.0, }
-
+defaultconstraints = {"max_airmass": 2.5,
+                      "min_lunar_distance": 45.0, }
 
 def createRequestsForStar(context):
     start = context.start
@@ -53,7 +52,7 @@ def createRequestsForStar(context):
 
     userrequest = {"group_id": "NRES test observation",
                    "proposal": context.proposalid,
-                   "ipp_value": 1.1,
+                   "ipp_value": 1.0,
                    "operator": "SINGLE",
                    "observation_type": "NORMAL",
                    "requests": [
@@ -119,7 +118,7 @@ def parseCommandLine():
     try:
         _logger.debug("Resolving target name")
 
-        args.radec = SkyCoord.from_name(args.targetname)
+        args.radec = SkyCoord.from_name(args.targetname, parse=True)
     except Exception as e:
         print("Resolving target name failed, giving up {}".format (e))
         exit(1)

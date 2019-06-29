@@ -14,7 +14,8 @@ sinistro_1m_quadrant_offsets = {0: [-220, 220],
                                 2: [220, -220],
                                 3: [-220, -220]}
 
-no_dither = {0: [0,0],}
+no_dither = {0: [0, 0], }
+
 
 def getRADecForQuadrant(starcoo, quadrant, extraoffsetra=0, extraoffsetDec=0):
     dra = Angle(sinistro_1m_quadrant_offsets[quadrant][0], unit=u.arcsec)
@@ -30,7 +31,7 @@ def create_request_for_star_scheduler(context):
 
     submissionblock = {"group_id": context.title,
                        "proposal": "LCOEngineering",
-                       "ipp_value": 1.0,
+                       "ipp_value": context.ipp,
                        "operator": "SINGLE" if context.nodither else "MANY",
                        "observation_type": "NORMAL",
                        "requests": [],
@@ -38,7 +39,7 @@ def create_request_for_star_scheduler(context):
 
     offsets = sinistro_1m_quadrant_offsets
     if context.nodither:
-        offsets =  no_dither
+        offsets = no_dither
     for quadrant in offsets:
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
@@ -56,11 +57,15 @@ def create_request_for_star_scheduler(context):
                    "windows": [{"start": str(absolutestart), "end": str(windowend)}, ],
                    "location": {'telescope_class': '1m0',
                                 'site': context.site,
-                                'enclosure' : context.dome,
-                                'instrument': context.instrument,
+
                                 },
                    "constraints": common.default_constraints,
                    }
+
+        if context.dome != "None":
+            request['location']['enclosure'] = context.dome
+        if context.instrument != "None":
+            request['location']['instrument'] = context.instrument
         p = 0
         for exptime in context.exp_times:
             p = p + 1
@@ -70,18 +75,19 @@ def create_request_for_star_scheduler(context):
                 "priority": p,
                 "ag_mode": "OPTIONAL",
                 "instrument_name": "1M0-SCICAM-SINISTRO",
-                "filter": "rp",
+                "filter": context.filter,
                 "readout_mode": context.readmode,
                 "exposure_time": exptime,
-                "exposure_count": 1,
-                "bin_x": 1,
-                "bin_y": 1,
+                "exposure_count": context.exp_cnt,
+                "bin_x": 2,
+                "bin_y": 2,
                 "defocus": min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
             }
             request['molecules'].append(molecule)
         submissionblock['requests'].append(request)
 
     common.send_to_scheduler(submissionblock, context.opt_confirmed)
+
 
 def createRequestsForStar_pond(context):
     timePerQuadrant = 8  # in minutes
@@ -90,8 +96,7 @@ def createRequestsForStar_pond(context):
     # create one block per quadrant
     offsets = sinistro_1m_quadrant_offsets
     if context.nodither:
-
-        offsets =  no_dither
+        offsets = no_dither
     for quadrant in offsets:
 
         start = absolutestart + dt.timedelta(minutes=(quadrant) * timePerQuadrant)
@@ -116,35 +121,36 @@ def createRequestsForStar_pond(context):
 
         for exptime in context.exp_times:
             moleculeargs = {
-                'inst_name': context.instrument,
-                'bin': 1,
-                'exposure_time': exptime,
-                "readout_mode": context.readmode,
-                'exposure_count': 1,
-                'bin_x': 1,
-                'bin_y': 2,
+                    'inst_name': context.instrument,
+                    'bin': 1,
+                    'exposure_time': exptime,
+                    "readout_mode": context.readmode,
+                    'exposure_count': context.exp_cnt,
+                    'bin_x': 1,
+                    'bin_y': 1,
 
-                'filter': 'rp',
-                'pointing': {"type": "SP",
-                             "name": "%s x talk q %d" % (context.targetname, quadrant),
-                             "coord_type": "RD",
-                             "coord_sys": "ICRS",
-                             "epoch": "2000",
-                             "equinox": "2000",
-                             "ra": "%10f" % offsetPointing.ra.degree,
-                             "dec": "%7f" % offsetPointing.dec.degree,
-                             },
+                    'filter': context.filter,
+                    'pointing': {"type": "SP",
+                                 "name": "%s x talk q %d" % (context.targetname, quadrant),
+                                 "coord_type": "RD",
+                                 "coord_sys": "ICRS",
+                                 "epoch": "2000",
+                                 "equinox": "2000",
+                                 "ra": "%10f" % offsetPointing.ra.degree,
+                                 "dec": "%7f" % offsetPointing.dec.degree,
+                                 },
 
-                'group': 'Sinistro x talk commissioning',
-                'user_id': context.user,
-                'prop_id': 'calibration',
-                'defocus': context.defocus,
-                'type': 'EXPOSE'
-            }
+                    'group': 'Sinistro x talk commissioning',
+                    'user_id': context.user,
+                    'prop_id': 'LCOEngineering',
+                    'defocus': context.defocus,
+                    'type': 'EXPOSE'
+                }
 
             block_params['molecules'].append(moleculeargs)
 
         common.send_to_lake(block_params, context.opt_confirmed)
+
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
@@ -154,16 +160,16 @@ def parseCommandLine():
 
     parser.add_argument('--site', required=True, choices=common.lco_1meter_sites,
                         help="To which site to submit")
-    parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc'], help="To which enclosure to submit")
+    parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc', 'None'], help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', required=True,
-                        choices=common.lco_sinistro1m_cameras,
+                        choices=common.lco_sinistro1m_cameras.extend ('None'),
                         help="To which instrument to submit")
     parser.add_argument('--readmode', choices=common.archon_readout_modes, default=common.archon_readout_modes[0])
-    parser.add_argument('--targetname',  default='auto', type=str,
+    parser.add_argument('--targetname', default='auto', type=str,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
                              'program will exit.\n If name is auto, which is te default, a viable target will be choosen for you.')
-    parser.add_argument('--title', default= "Sinsitro commissioning: X talk")
+    parser.add_argument('--title', default="Sinsitro commissioning: X talk")
     parser.add_argument('--start', default=None,
                         help="Time to start x-talk calibration. If not given, defaults to \"NOW\". Specify as YYYYMMDD HH:MM")
 
@@ -172,9 +178,12 @@ def parseCommandLine():
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
     parser.add_argument('--exp-times', nargs="*", type=float, default=[2, 4, 6, 12], help="List of exposure times")
+    parser.add_argument('--exp-cnt', type=int, default=1, help="How often to reapeat each exposure")
+    parser.add_argument('--ipp', type=float, default=1.0, help="ipp value")
+    parser.add_argument('--filter', type=str, default='rp', help="Filter")
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
     parser.add_argument('--offsetDec', default=0, help="Extra pointing offset to apply Dec")
-    parser.add_argument('--schedule-window', default=6, type=int)
+    parser.add_argument('--schedule-window', default=6, type=float)
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted. If omitted, nothing will be submitted.')
     parser.add_argument('--scheduler', action='store_true',
@@ -213,12 +222,14 @@ def parseCommandLine():
     print("Resolved target %s at corodinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
     return args
 
+
 def main():
     args = parseCommandLine()
     if args.scheduler:
         create_request_for_star_scheduler(args)
     else:
         createRequestsForStar_pond(args)
+
 
 if __name__ == '__main__':
     main()

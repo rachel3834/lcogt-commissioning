@@ -232,7 +232,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
                 tempsortedListofFiles[filter] = {}
                 ## a new level detected
                 tempsortedListofFiles[filter][level] = [filename, ]
-                _logger.debug("Starting first entry in a hopeful pair: %s %s %s" % (filename, filter, level))
+                _logger.debug("Starting first entry for new filter: %s %s %s" % (filename, filter, level))
                 continue
 
             matchfound = False
@@ -387,6 +387,8 @@ def do_noisegain_for_fileset(inputlist, database, args):
 
     sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode)
     _logger.debug ("Sorted input files {}".format (sortedinputlist))
+
+
 
     for pair_ii in sortedinputlist:
 

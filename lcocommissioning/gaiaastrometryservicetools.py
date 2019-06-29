@@ -57,6 +57,7 @@ def astrometryServicereadWCSFromResponse(response, originalPointing=None):
         image_wcs.wcs.ctype = [response['CTYPE1'], response['CTYPE2']]
 
         # We now have a good first order wcs, let's find all the sources in the image.
+        log.debug ("Old pointing: {} ".format (originalPointing))
         log.debug("Updated Gaia-service wcs:\n {}".format(image_wcs))
         newPointing = np.asarray([image_wcs.wcs.crval[0], image_wcs.wcs.crval[1]])
         if originalPointing is not None:
