@@ -73,7 +73,7 @@ def create_request_for_star_scheduler(context):
                 "type": "EXPOSE",
                 "args": "",
                 "priority": p,
-                "ag_mode": "OPTIONAL",
+                "ag_mode": "ON",
                 "instrument_name": "1M0-SCICAM-SINISTRO",
                 "filter": context.filter,
                 "readout_mode": context.readmode,
