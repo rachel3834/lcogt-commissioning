@@ -424,9 +424,9 @@ def do_noisegain_for_fileset(inputlist, database, args):
 
                 readmode = None
                 if 'CONFMODE' in hdu[0].header:
-                    filter = hdu[0].header['CONFMODE']
+                    readmode = hdu[0].header['CONFMODE']
                 if 'CONFMODE' in hdu[1].header:
-                    filter = hdu[1].header['CONFMODE']
+                    readmode = hdu[1].header['CONFMODE']
 
                 hdu.close()
 

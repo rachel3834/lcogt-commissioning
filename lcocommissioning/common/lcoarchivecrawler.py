@@ -48,8 +48,8 @@ class ArchiveCrawler:
 if __name__ == '__main__':
     c = ArchiveCrawler()
 
-    dates = c.get_last_N_days(3)
-    cameras = c.find_cameras(['coj',])
+    dates = c.get_last_N_days(2)
+    cameras = c.find_cameras(['elp',])
     for camera in cameras:
         for date in dates:
             files = c.findfiles_for_camera_dates(camera, date, 'raw', "*[xbf]00.fits*")
