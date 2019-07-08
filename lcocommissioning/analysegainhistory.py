@@ -90,6 +90,8 @@ def renderHTMLPage (args, cameras):
 """
 
     for camera in cameras:
+        if 'fl' in camera:
+            continue
         message = message + " <h2> %s </h2>\n" % (camera)
 
         historyname = "gainhist-%s.png" % camera
