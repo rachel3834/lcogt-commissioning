@@ -2,6 +2,7 @@
 Program to calculate the noise and gain for each extension of a given mef file
 """
 import logging
+import random
 import sys
 import os
 import os.path
@@ -150,7 +151,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
     sortedlistofFiles = {}
 
     filemetrics = {}
-
+    random.shuffle (listoffiles)
     for filecandidate in listoffiles:
 
         hdu = fits.open(filecandidate)
@@ -183,19 +184,19 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
 
         else:  # it is a flat
 
-            if (sortby == 'exptime') & (abs(tempdiff) < 0.5):
+            if (sortby == 'exptime'):
                 exptime = findkeywordinhdul(hdu, 'EXPTIME')
                 if exptime is not None:
                     filemetrics[filecandidate] = str(exptime)
 
-            if (sortby == 'filterlevel') & (abs(tempdiff) < 0.5):
+            if (sortby == 'filterlevel'):
                 filter = findkeywordinhdul(hdu, "FILTER")
                 if (filter is not None) and ('b00' not in filecandidate):
                     image = Image(filecandidate, overscancorrect=True)
                     if image.data is None:
                         level = -1
                     else:
-                        level = np.mean(image.data[0])
+                        level = np.median(image.data[0][50:-50,50:-50])
                     _logger.debug("Input file metrics %s %s %s" % (filecandidate, filter, level))
                     filemetrics[filecandidate] = (filter, level)
 
@@ -226,7 +227,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         for filename in filemetrics.keys():
             (filter, level) = filemetrics[filename]
             if level < 10:
-                _logger.debug ("rejecting image {}, level is to low".format (filename))
+                _logger.info ("rejecting image {}, level is to low".format (filename))
 
             if (filter not in tempsortedListofFiles.keys()):
                 tempsortedListofFiles[filter] = {}

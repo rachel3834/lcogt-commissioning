@@ -58,7 +58,6 @@ def plot_image_fft(fig,image):
     if len (values) > 0:
         plt.plot (indexes, values, '.')
 
-
     plt.plot(log_fft_image_0, label="FFT Y")
 
     plt.xlabel('Cycles per line')
