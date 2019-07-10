@@ -98,7 +98,8 @@ def renderHTMLPage (args, cameras):
         ptcname = "ptchist-%s.png" % camera
         lvlname = "levelgain-%s.png" % camera
         noisename = "noise-%s.png" % camera
-        line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a> <a href="{lvlname}"><img src="{lvlname}" height="450"/> </a>  <a href="{noisename}"><img src="{noisename}" height="450"/> </a>'
+        flatlevelname = "flatlevel-%s.png" % camera
+        line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a> <a href="{lvlname}"><img src="{lvlname}" height="450"/> </a>  <a href="{noisename}"><img src="{noisename}" height="450"/> </a> <a href="{flatlevelname}"><img src="{flatlevelname}" height="450"/> </a>'
         message = message + line
 
     message = message + "</body></html>"
@@ -220,6 +221,28 @@ def make_plots_for_camera(camera,  args):
 
     plt.legend()
     plt.savefig ("%s/noise-%s.png" % (args.outputdir,camera))
+    plt.cla()
+    plt.close()
+
+
+    ### history of levels
+
+    plt.figure()
+    for ext in extensions:
+        d = dataset['dateobs'][dataset['extension'] == ext]
+        l = dataset['level'][dataset['extension'] == ext]
+        plt.plot (d,l, '.', label="ext %s" % ext, markersize=1)
+
+    plt.yscale('log')
+    plt.ylim([1,70000])
+
+    dateformat(starttime, endtime)
+    plt.xlabel('Date')
+    plt.ylabel('Flat Level [ADU]')
+    plt.title ('Flat level vs time for %s' % camera)
+
+    plt.legend()
+    plt.savefig ("%s/flatlevel-%s.png" % (args.outputdir,camera))
     plt.cla()
     plt.close()
 
