@@ -113,7 +113,7 @@ def make_plots_for_camera(camera,  args):
     database = noisegaindbinterface(args.database)
 
     readmodes = database.get_readmodes_for_cameras(camera)
-
+    _logger.info ("readout mdoes for camera {}: {}".format (camera, readmodes))
 
     starttime = starttimeall
     if 'fa' in camera:
