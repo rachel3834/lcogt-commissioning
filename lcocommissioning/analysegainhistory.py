@@ -233,7 +233,7 @@ def make_plots_for_camera(camera,  args):
         l = dataset['level'][dataset['extension'] == ext]
         plt.plot (d,l, '.', label="ext %s" % ext, markersize=1)
 
-    plt.ylim([1,70000])
+    plt.ylim([1,100000])
 
     dateformat(starttime, endtime)
     plt.xlabel('Date')
