@@ -122,12 +122,13 @@ def createRequestsForStar_pond(context):
         for exptime in context.exp_times:
             moleculeargs = {
                     'inst_name': context.instrument,
-                    'bin': 1,
+                    'bin': 2,
                     'exposure_time': exptime,
                     "readout_mode": context.readmode,
                     'exposure_count': context.exp_cnt,
-                    'bin_x': 1,
-                    'bin_y': 1,
+                    'bin_x': 2,
+                    'bin_y': 2,
+                    'ag_mode': 'ON',
 
                     'filter': context.filter,
                     'pointing': {"type": "SP",
