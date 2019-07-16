@@ -9,10 +9,10 @@ import lcocommissioning.common.common as common
 
 _log = logging.getLogger(__name__)
 
-sinistro_1m_quadrant_offsets = {0: [-220, 220],
-                                1: [220, 220],
-                                2: [220, -220],
-                                3: [-220, -220]}
+sinistro_1m_quadrant_offsets = {0: [-60, 60],
+                                1: [60, 60],
+                                2: [60, -60],
+                                3: [-60, -60]}
 
 no_dither = {0: [0, 0], }
 
@@ -62,6 +62,7 @@ def create_request_for_star_scheduler(context):
                    "constraints": common.default_constraints,
                    }
 
+
         if context.dome != "None":
             request['location']['enclosure'] = context.dome
         if context.instrument != "None":
@@ -79,8 +80,8 @@ def create_request_for_star_scheduler(context):
                 "readout_mode": context.readmode,
                 "exposure_time": exptime,
                 "exposure_count": context.exp_cnt,
-                "bin_x": 2,
-                "bin_y": 2,
+                "bin_x": 1,
+                "bin_y": 1,
                 "defocus": min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
             }
             request['molecules'].append(molecule)
@@ -128,7 +129,7 @@ def createRequestsForStar_pond(context):
                     'exposure_count': context.exp_cnt,
                     'bin_x': 2,
                     'bin_y': 2,
-                    'ag_mode': 'ON',
+           #         'ag_mode': 'ON',
 
                     'filter': context.filter,
                     'pointing': {"type": "SP",
