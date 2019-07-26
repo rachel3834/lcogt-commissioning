@@ -41,7 +41,7 @@ archon_readout_modes = ["full_frame", "central_2k_2x2"]
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
-default_constraints = {"max_airmass": 2.5,
+default_constraints = {"max_airmass": 3,
                       "min_lunar_distance": 30.0, }
 
 
@@ -139,3 +139,24 @@ def send_to_lake(block, dosubmit=False):
             _log.error(
                 'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
 
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+def dateformat (starttime=None,endtime=None):
+    """ Utility to prettify a plot with dates.
+    """
+
+    plt.xlim([starttime, endtime])
+    plt.gcf().autofmt_xdate()
+    years = mdates.YearLocator()   # every year
+    months = mdates.MonthLocator(bymonth=[4, 7, 10])  # every month
+    yearsFmt = mdates.DateFormatter('%Y %b')
+    monthformat = mdates.DateFormatter('%b')
+    plt.gca().xaxis.set_major_locator(years)
+    plt.gca().xaxis.set_major_formatter(yearsFmt)
+    plt.gca().xaxis.set_minor_locator(months)
+    plt.gca().xaxis.set_minor_formatter(monthformat)
+    plt.setp(plt.gca().xaxis.get_minorticklabels(), rotation=45)
+    plt.setp(plt.gca().xaxis.get_majorticklabels(), rotation=45)
+    plt.gca().grid(which='minor')
