@@ -9,6 +9,7 @@ _logger = logging.getLogger(__name__)
 
 class lcoimagerpropertydatabase:
     createstatement = None
+    indexstatements = None
     tablename = None
 
     def __init__(self, fname):
@@ -19,6 +20,12 @@ class lcoimagerpropertydatabase:
         if self.createstatement is not None:
             self.conn.execute(self.createstatement)
             self.conn.execute("PRAGMA journal_mode=WAL;")
+            self.conn.commit()
+
+        if self.indexstatements is not None:
+            for statement in self.indexstatements:
+                self.conn.execute(statement)
+
             self.conn.commit()
 
     def close(self):
@@ -65,6 +72,7 @@ class darkcurrentdbinterface(lcoimagerpropertydatabase):
                       " readmode text," \
                       " darkcurrent real" \
                       " );"
+    indexstatements = ["CREATE INDEX IF NOT EXISTS camera_idx on darkcurrent(camera);",]
 
     def checkifalreadyused(self, fitsimage):
         return super().checkifalreadyused(fitsimage, 'darkcurrent')
@@ -128,6 +136,10 @@ class noisegaindbinterface(lcoimagerpropertydatabase):
                       " differencenoise real," \
                       " level1 real," \
                       " level2 real);"
+
+    indexstatements = ["CREATE INDEX IF NOT EXISTS camera_idx on noisegain(camera);",
+                       "CREATE INDEX IF NOT EXISTS readmode_idx on noisegain(readmode);",
+                       "CREATE INDEX IF NOT EXISTS filter_idx on noisegain(filter);"]
 
     def addmeasurement(self, identifier, dateobs, camera, filter, extension, gain, readnoise, level, diffnoise, level1,
                        level2, readmode='default', commit=True):

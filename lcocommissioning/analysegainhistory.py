@@ -1,19 +1,15 @@
 import errno
 import os
 import matplotlib
-
-from common.common import dateformat
-
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import argparse
 import logging
+import datetime
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
-import matplotlib.dates as mdates
-
-import matplotlib.pyplot as plt
+from lcocommissioning.common.common import dateformat
 
 _logger = logging.getLogger(__name__)
-import datetime
 
 mpl_logger = logging.getLogger('matplotlib')
 mpl_logger.setLevel(logging.FATAL)
@@ -90,7 +86,7 @@ def make_plots_for_camera(camera, args):
     database = noisegaindbinterface(args.database)
 
     readmodes = database.get_readmodes_for_cameras(camera)
-    _logger.info("readout mdoes for camera {}: {}".format(camera, readmodes))
+    _logger.info("readout modes for camera {}: {}".format(camera, readmodes))
 
     starttime = starttimeall
     if 'fa' in camera:

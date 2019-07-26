@@ -18,16 +18,19 @@ def findkeywordinhdul(hdulist, keyword):
     return None
 
 def get_dark_current_from_master(file):
-    hdul = fits.open (file)
-    data = hdul[1].data[50:-50,:]
-    readmode = findkeywordinhdul(hdul, 'CONFMODE')
-    dateobs = findkeywordinhdul(hdul, 'DATE-OBS')
-    instrument = findkeywordinhdul(hdul, 'INSTRUME')
-    hdul.close()
-    sigma = np.std (data)
-    dark_current = np.average ( data [ np.abs ( data - np.nanmedian(data)) < 5 * sigma ] )
-    log.info ("dark current for image {} is {} ".format (file, dark_current))
-    return dark_current, dateobs, readmode, instrument
+    try:
+        hdul = fits.open (file)
+        data = hdul[1].data[50:-50,:]
+        readmode = findkeywordinhdul(hdul, 'CONFMODE')
+        dateobs = findkeywordinhdul(hdul, 'DATE-OBS')
+        instrument = findkeywordinhdul(hdul, 'INSTRUME')
+        hdul.close()
+        sigma = np.std (data)
+        dark_current = np.average ( data [ np.abs ( data - np.nanmedian(data)) < 5 * sigma ] )
+        log.info ("dark current for image {} is {} ".format (file, dark_current))
+        return dark_current, dateobs, readmode, instrument
+    except:
+        return None, None, None, None
 
 
 
@@ -71,7 +74,8 @@ def find_darks_and_process (camera, dates, args):
             for file in files:
                 if not database.checkifalreadyused(file):
                     darkcurrent, dateobs, readmode, instrument = get_dark_current_from_master(file)
-                    database.addmeasurement (file, dateobs, instrument, darkcurrent, readmode)
+                    if darkcurrent is not None:
+                        database.addmeasurement (file, dateobs, instrument, darkcurrent, readmode)
                 else:
                     log.debug ("file already measured, skipping")
 

@@ -41,6 +41,10 @@ def parseCommandLine():
 
     return args
 
+starttimeall = datetime.datetime(2016, 1, 1)
+starttimefa = datetime.datetime(2018, 7, 1)
+endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=31 + 4)
+endtime.replace(day=1)
 
 def make_plots_for_camera(camera, args):
     database = darkcurrentdbinterface(args.database)
@@ -53,7 +57,8 @@ def make_plots_for_camera(camera, args):
     plt.ylabel ("dark current [e-/s]")
     plt.ylim ([0,0.01])
     plt.plot (dataset['dateobs'], dataset['darkcurrent'], '.')
-    dateformat()
+    dateformat(starttimeall, endtime)
+    plt.gcf().set_size_inches(12,6)
     plt.savefig ("{}/darkcurrenthist-{}.png".format (args.outputdir, camera))
     plt.close()
 
