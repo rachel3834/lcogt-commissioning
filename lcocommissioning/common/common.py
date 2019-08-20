@@ -101,6 +101,29 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
     return None
 
 
+def send_request_to_portal (requestgroup, dosubmit=False):
+
+    if not dosubmit:
+        print ("Not submitting as per user request")
+        return
+
+    response = requests.post(
+        'https://observe.lco.global/api/requestgroups/',
+        headers={'Authorization': 'Token {}'.format(VALHALLA_API_TOKEN)},
+        json=requestgroup  # Make sure you use json!
+    )
+    # Make sure the API call was successful
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        print('API call failed: {}'.format(response.content))
+        return
+
+    requestgroup_dict = response.json()  # The API will return the newly submitted requestgroup as json
+
+    # Print out the url on the portal where we can view the submitted request
+    print('View the observing request: https://observe.lco.global/requestgroups/{}/'.format(requestgroup_dict['id']))
+
 
 
 def send_to_scheduler(user_request, dosubmit=False):

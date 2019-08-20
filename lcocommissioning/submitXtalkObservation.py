@@ -1,7 +1,9 @@
 import argparse
+import json
 import logging
 import ephem
 import math
+import requests
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 import datetime as dt
@@ -29,65 +31,71 @@ def create_request_for_star_scheduler(context):
     absolutestart = context.start
     windowend = context.start + dt.timedelta(hours=context.schedule_window)
 
-    submissionblock = {"group_id": context.title,
-                       "proposal": "LCOEngineering",
-                       "ipp_value": context.ipp,
-                       "operator": "SINGLE" if context.nodither else "MANY",
-                       "observation_type": "NORMAL",
-                       "requests": [],
-                       }
+    location = {'telescope': '1m0a',
+                'telescope_class': '1m0',
+                'site': context.site, }
+
+    if context.dome != "None":
+        location['enclosure'] = context.dome
+
+    if context.instrument != "None":
+        location['instrument'] = context.instrument
+
+    requestgroup = {"name": context.title,
+                    "proposal": "LCOEngineering",
+                    "ipp_value": context.ipp,
+                    "operator": "SINGLE" if context.nodither else "MANY",
+                    "observation_type": "NORMAL",
+                    "requests": []
+                    }
 
     offsets = sinistro_1m_quadrant_offsets
     if context.nodither:
         offsets = no_dither
+
     for quadrant in offsets:
+        request = {'configurations': None,
+                    'windows': [{"start": str(absolutestart), "end": str(windowend)}, ],
+                    'location': location}
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
-        pointing = {
-            "type": "SIDEREAL",
+        target = {
+            "type": "ICRS",
             "name": "{} {}".format(context.title, context.targetname),
             "epoch": "2000.0000000",
             "equinox": "2000.0000000",
             "ra": "%10f" % offsetPointing.ra.degree,
             "dec": "%10f" % offsetPointing.dec.degree,
         }
-        request = {"acceptability_threshold": 90,
-                   "target": pointing,
-                   "molecules": [],
-                   "windows": [{"start": str(absolutestart), "end": str(windowend)}, ],
-                   "location": {'telescope_class': '1m0',
-                                'site': context.site,
 
-                                },
-                   "constraints": common.default_constraints,
-                   }
-
-
-        if context.dome != "None":
-            request['location']['enclosure'] = context.dome
-        if context.instrument != "None":
-            request['location']['instrument'] = context.instrument
-        p = 0
+        configurations = []
         for exptime in context.exp_times:
-            p = p + 1
-            molecule = {
-                "type": "EXPOSE",
-                "args": "",
-                "priority": p,
-                "ag_mode": "ON",
-                "instrument_name": "1M0-SCICAM-SINISTRO",
-                "filter": context.filter,
-                "readout_mode": context.readmode,
-                "exposure_time": exptime,
-                "exposure_count": context.exp_cnt,
-                "bin_x": 1,
-                "bin_y": 1,
-                "defocus": min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
+            configuration = {
+            'type': 'EXPOSE',
+            'instrument_type': '1M0-SCICAM-SINISTRO',
+            'target': target,
+            'constraints': common.default_constraints,
+            'acquisition_config': {},
+            'guiding_config': {},
+            'instrument_configs': [],
             }
-            request['molecules'].append(molecule)
-        submissionblock['requests'].append(request)
 
-    common.send_to_scheduler(submissionblock, context.opt_confirmed)
+            configuration['instrument_configs'].append(
+                {
+                    'exposure_time': exptime,
+                    'exposure_count': context.exp_cnt,
+                    'readout_mode': context.readmode,
+                    'optical_elements': {
+                        'filter': context.filter
+                    },
+                    'defocus': min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
+                })
+
+            configurations.append (configuration)
+        request['configurations']=configurations
+        requestgroup['requests'].append (request)
+
+    common.send_request_to_portal(requestgroup, context.opt_confirmed)
 
 
 def createRequestsForStar_pond(context):
@@ -122,32 +130,34 @@ def createRequestsForStar_pond(context):
 
         for exptime in context.exp_times:
             moleculeargs = {
-                    'inst_name': context.instrument,
-                    'bin': 2,
-                    'exposure_time': exptime,
-                    "readout_mode": context.readmode,
-                    'exposure_count': context.exp_cnt,
-                    'bin_x': 2,
-                    'bin_y': 2,
-           #         'ag_mode': 'ON',
+                'inst_name': context.instrument,
+                'bin': 2,
+                'exposure_time': exptime,
+                "readout_mode": context.readmode,
+                'exposure_count': context.exp_cnt,
+                'bin_x': 2,
+                'bin_y': 2,
+                #         'ag_mode': 'ON',
 
-                    'filter': context.filter,
-                    'pointing': {"type": "SP",
-                                 "name": "%s x talk q %d" % (context.targetname, quadrant),
-                                 "coord_type": "RD",
-                                 "coord_sys": "ICRS",
-                                 "epoch": "2000",
-                                 "equinox": "2000",
-                                 "ra": "%10f" % offsetPointing.ra.degree,
-                                 "dec": "%7f" % offsetPointing.dec.degree,
-                                 },
+                'filter': context.filter,
+                'pointing': {"type": "SP",
+                             "name": "%s x talk q %d" % (context.targetname, quadrant),
+                             "coord_type": "RD",
+                             "coord_sys": "ICRS",
+                             "epoch": "2000",
+                             "equinox": "2000",
+                             "ra": "%10f" % offsetPointing.ra.degree,
+                             "dec": "%7f" % offsetPointing.dec.degree,
+                             "proper_motion_ra": "%7.3f" % context.pp[0],
+                             "proper_motion_dec": "%7.3f" % context.pp[1],
+                             },
 
-                    'group': 'Sinistro x talk commissioning',
-                    'user_id': context.user,
-                    'prop_id': 'LCOEngineering',
-                    'defocus': context.defocus,
-                    'type': 'EXPOSE'
-                }
+                'group': 'Sinistro x talk commissioning',
+                'user_id': context.user,
+                'prop_id': 'LCOEngineering',
+                'defocus': context.defocus,
+                'type': 'EXPOSE'
+            }
 
             block_params['molecules'].append(moleculeargs)
 
@@ -162,10 +172,11 @@ def parseCommandLine():
 
     parser.add_argument('--site', required=True, choices=common.lco_1meter_sites,
                         help="To which site to submit")
-    parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc', 'None'], help="To which enclosure to submit")
+    parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc', 'None'],
+                        help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', required=True,
-                        choices=common.lco_sinistro1m_cameras.extend ('None'),
+                        choices=common.lco_sinistro1m_cameras.extend('None'),
                         help="To which instrument to submit")
     parser.add_argument('--readmode', choices=common.archon_readout_modes, default=common.archon_readout_modes[0])
     parser.add_argument('--targetname', default='auto', type=str,
@@ -185,6 +196,7 @@ def parseCommandLine():
     parser.add_argument('--filter', type=str, default='rp', help="Filter")
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
     parser.add_argument('--offsetDec', default=0, help="Extra pointing offset to apply Dec")
+    parser.add_argument('--pp', default=[0., 0.], nargs=2, type=float, help="Proper motion, mas/yr")
     parser.add_argument('--schedule-window', default=6, type=float)
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted. If omitted, nothing will be submitted.')
