@@ -45,7 +45,7 @@ def create_request_for_star_scheduler(context):
                     "proposal": "LCOEngineering",
                     "ipp_value": context.ipp,
                     "operator": "SINGLE" if context.nodither else "MANY",
-                    "observation_type": "NORMAL",
+                    "observation_type": "DIRECT",
                     "requests": []
                     }
 
@@ -84,11 +84,13 @@ def create_request_for_star_scheduler(context):
                 {
                     'exposure_time': exptime,
                     'exposure_count': context.exp_cnt,
-                    'readout_mode': context.readmode,
+                    'mode': context.readmode,
                     'optical_elements': {
                         'filter': context.filter
                     },
-                    'defocus': min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
+                    "extra_params": {
+                        "defocus": min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
+                    }
                 })
 
             configurations.append (configuration)
