@@ -115,6 +115,8 @@ def parseCommandLine():
     parser.add_argument('--readmode', default="full_frame")
     parser.add_argument('--noreprocessing', action='store_true',
                         help="Do not reprocess if data are already in database")
+    parser.add_argument('--ignoretemp', action='store_true',
+                        help="ignore if actual temperature differs from set point temperature. Reject by default.")
 
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
@@ -145,7 +147,7 @@ def findkeywordinhdul(hdulist, keyword):
     return None
 
 
-def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame"):
+def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame", ignoretemp=False):
     """ go through the list of input and sort files by bias and flat type. Find pairs of flats that are of the same exposure time / closest in illumination level."""
 
     sortedlistofFiles = {}
@@ -166,7 +168,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
             continue
 
         tempdiff = 0
-        if (ccdstemp is not None) & (ccdatemp is not None):
+        if (ccdstemp is not None) & (ccdatemp is not None) & (not ignoretemp):
             tempdiff = float(ccdatemp) - float(ccdstemp)
 
         if (abs(tempdiff) > 2):
@@ -315,7 +317,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     for ext in alllevels:
         gains = np.asarray(allgains[ext])
         levels = np.asarray(alllevels[ext])
-        statdata = gains[(levels > 5000) & (levels < 55000) & (gains < 20)]
+        statdata = gains[(levels > 1000) & (levels < 30000) & (gains < 20)]
         for iter in range(2):
             mediangain = np.median(statdata)
             stdgain = np.std(statdata)
@@ -326,7 +328,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
         plt.hlines(bestgain, 0, 64000, label="Ext %d gain: %5.2f e-/ADU" % (ext, bestgain))
         print("Best gain for ext %d: %5.2f" % (ext, bestgain))
 
-    plt.ylim([2, 20])
+    plt.ylim([2, 5])
 
     plt.legend()
     plt.xlabel(("Exposure level [ADU]"))
@@ -386,7 +388,7 @@ def do_noisegain_for_fileset(inputlist, database, args):
     allexptimes = {}
 
 
-    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode)
+    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode, ignoretemp=args.ignoretemp)
     _logger.debug ("Sorted input files {}".format (sortedinputlist))
 
 

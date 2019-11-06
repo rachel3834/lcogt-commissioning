@@ -91,6 +91,7 @@ def astrometryServiceRefineWCSFromImage(imagepath, wcs=None):
                'image_path': imagepath,
                }
     try:
+        log.debug ("Sending payload: {}".format (payload))
         response = requests.post("{}/image/".format(LCO_GAIA_ASTROMETRY_URL), json=payload)
         response = response.json()
         log.debug(response)

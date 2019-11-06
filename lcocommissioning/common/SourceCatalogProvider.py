@@ -113,14 +113,15 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
 
         # find sources
         objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=deblend, minarea=minarea,segmentation_map=True)
-        #plt.imshow (segmap)
-        #plt.show()
         objects = Table(objects)
         # cleanup
         objects = objects[objects['flag'] == 0]
         objects = prune_nans_from_table(objects)
         #fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
         fwhm = np.sqrt ( (objects['x2'] + objects['y2']) / 2) * 2.3548
+        objects['theta'][objects['theta'] > (np.pi / 2.0)] -= np.pi
+        objects['theta'][objects['theta'] < (-np.pi / 2.0)] += np.pi
+        objects['ellipticity'] = 1.0 - (objects['b'] / objects['a'])
         objects = objects[fwhm > 1.0]
 
         flux_radii, flag = sep.flux_radius(image_data, objects['x'], objects['y'],
@@ -129,7 +130,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         sig = 2.0 / 2.35 * flux_radii[:, 1]
         xwin, ywin, flag = sep.winpos(image_data, objects['x'], objects['y'], sig)
         # python to FITS zero point convention. lower left pixel in image is 1/1, not 0/0
-        sourcecatalog = Table([xwin + 1, ywin + 1, objects['flux'], fwhm], names=['x', 'y', 'flux','fwhm'])
+        sourcecatalog = Table([xwin + 1, ywin + 1, objects['flux'], objects['theta'],  objects['ellipticity'],  fwhm], names=['x', 'y', 'flux','theta', 'ellipticity','fwhm'])
 
         log.debug("Sep found {} sources in image".format(len(sourcecatalog['x'])))
 
