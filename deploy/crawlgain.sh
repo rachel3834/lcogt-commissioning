@@ -9,15 +9,16 @@
 
 noisegaindatabase="noisegain.sqlite"   # Output database file to store results.
 webpageoutputdir="/home/dharbeck/public_html/gainhistory"         # existing local subdiretory into which an overview html page will be rendered.
-
+reprocessing="--noreprocessing"
+reprocessing=""
 
 base=/archive/engineering              # Location of archive mount
 
 NCPU=40                                # How many CPUs to employ
 NDAYS=3
 
-time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS --noreprocessing  --cameratype "fa??" --readmode "full_frame" --loglevel INFO --database ${noisegaindatabase}
-time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS --noreprocessing --cameratype "fs??" --readmode "default" --loglevel INFO --database ${noisegaindatabase}
-time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS --noreprocessing --cameratype "kb??" --readmode "default" --loglevel INFO --database ${noisegaindatabase}
+time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing  --cameratype "fa??" --readmode "full_frame" --loglevel INFO --database ${noisegaindatabase}
+time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing --cameratype "fs??" --readmode "default" --loglevel INFO --database ${noisegaindatabase}
+time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing --cameratype "kb??" --readmode "default" --loglevel INFO --database ${noisegaindatabase}
 
 time analysgainhistory --outputdir ${webpageoutputdir} --database ${noisegaindatabase}

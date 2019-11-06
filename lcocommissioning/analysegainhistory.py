@@ -255,7 +255,7 @@ def main():
 
     args = parseCommandLine()
     plt.style.use('ggplot')
-    matplotlib.rcParams['savefig.dpi'] = 200
+    matplotlib.rcParams['savefig.dpi'] = 400
 
     database = noisegaindbinterface(args.database)
     cameras = database.getcameras()
