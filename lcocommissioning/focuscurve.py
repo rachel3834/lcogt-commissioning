@@ -72,8 +72,9 @@ def main():
     fwhmlist = []
     for image in sys.argv[1:]:
         focus, fwhm = getImageFWHM(image)
-        focuslist.append(focus)
-        fwhmlist.append(fwhm)
+        if np.isfinite(fwhm):
+            focuslist.append(focus)
+            fwhmlist.append(fwhm)
 
     of = focuslist
     os = fwhmlist
@@ -104,6 +105,8 @@ def main():
                           'fit_exponent': round(exponential_p[3], 2),
                           'fit_rms': round(bestfocus_error, 2),
                           'errormsg': error_string}
+    else:
+        return_package = None
     print (json.dumps(return_package))
 
     plt.figure()

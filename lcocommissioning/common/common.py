@@ -41,7 +41,7 @@ archon_readout_modes = ["full_frame", "central_2k_2x2"]
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
-default_constraints = {"max_airmass": 2.5,
+default_constraints = {"max_airmass": 3,
                       "min_lunar_distance": 30.0, }
 
 
@@ -101,6 +101,29 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
     return None
 
 
+def send_request_to_portal (requestgroup, dosubmit=False):
+
+    if not dosubmit:
+        print ("Not submitting as per user request")
+        return
+
+    response = requests.post(
+        'https://observe.lco.global/api/requestgroups/',
+        headers={'Authorization': 'Token {}'.format(VALHALLA_API_TOKEN)},
+        json=requestgroup  # Make sure you use json!
+    )
+    # Make sure the API call was successful
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        print('API call failed: {}'.format(response.content))
+        return
+
+    requestgroup_dict = response.json()  # The API will return the newly submitted requestgroup as json
+
+    # Print out the url on the portal where we can view the submitted request
+    print('View the observing request: https://observe.lco.global/requestgroups/{}/'.format(requestgroup_dict['id']))
+
 
 
 def send_to_scheduler(user_request, dosubmit=False):
@@ -139,3 +162,24 @@ def send_to_lake(block, dosubmit=False):
             _log.error(
                 'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
 
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+def dateformat (starttime=None,endtime=None):
+    """ Utility to prettify a plot with dates.
+    """
+
+    plt.xlim([starttime, endtime])
+    plt.gcf().autofmt_xdate()
+    years = mdates.YearLocator()   # every year
+    months = mdates.MonthLocator(bymonth=[4, 7, 10])  # every month
+    yearsFmt = mdates.DateFormatter('%Y %b')
+    monthformat = mdates.DateFormatter('%b')
+    plt.gca().xaxis.set_major_locator(years)
+    plt.gca().xaxis.set_major_formatter(yearsFmt)
+    plt.gca().xaxis.set_minor_locator(months)
+    plt.gca().xaxis.set_minor_formatter(monthformat)
+    plt.setp(plt.gca().xaxis.get_minorticklabels(), rotation=45)
+    plt.setp(plt.gca().xaxis.get_majorticklabels(), rotation=45)
+    plt.gca().grid(which='minor')
