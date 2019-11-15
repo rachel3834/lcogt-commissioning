@@ -328,7 +328,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
         plt.hlines(bestgain, 0, 64000, label="Ext %d gain: %5.2f e-/ADU" % (ext, bestgain))
         print("Best gain for ext %d: %5.2f" % (ext, bestgain))
 
-    plt.ylim([2, 5])
+    plt.ylim([2, 7])
 
     plt.legend()
     plt.xlabel(("Exposure level [ADU]"))

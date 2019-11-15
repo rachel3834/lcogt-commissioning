@@ -21,6 +21,8 @@ endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=3
 endtime.replace(day=1)
 
 
+fareadmodes =  [ ['full_frame', 'None'], 'central_2k_2x2']
+
 def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='Analyse long term gain behaviour in LCO cameras')
@@ -30,6 +32,7 @@ def parseCommandLine():
 
     parser.add_argument('--outputdir', default='gainhistory', help="directory for output graphs")
 
+    parser.add_argument('--cameras', default = None,  nargs="*")
     parser.add_argument('--database', default="noisegain.sqlite")
     parser.add_argument('--ncpu', default=1, type=int)
     args = parser.parse_args()
@@ -62,18 +65,28 @@ def renderHTMLPage(args, cameras):
 <h1> Details by Camera: </h1>
 """
 
+
+
+
     for camera in cameras:
+
+        readmodes = [None,]
         if 'fl' in camera:
             continue
-        message = message + " <h2> %s </h2>\n" % (camera)
+        if 'fa' in camera:
+            readmodes = fareadmodes
 
-        historyname = "gainhist-%s.png" % camera
-        ptcname = "ptchist-%s.png" % camera
-        lvlname = "levelgain-%s.png" % camera
-        noisename = "noise-%s.png" % camera
-        flatlevelname = "flatlevel-%s.png" % camera
-        line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a> <a href="{lvlname}"><img src="{lvlname}" height="450"/> </a>  <a href="{noisename}"><img src="{noisename}" height="450"/> </a> <a href="{flatlevelname}"><img src="{flatlevelname}" height="450"/> </a>'
-        message = message + line
+        message = message + " <h2> %s </h2>\n" % (camera)
+        for readmode in readmodes:
+            readmode = "".join (readmode) if readmode is not None else ""
+
+            historyname = "gainhist-%s%s.png" % (camera, readmode)
+            ptcname = "ptchist-%s%s.png" % (camera, readmode)
+            lvlname = "levelgain-%s%s.png" % (camera, readmode)
+            noisename = "noise-%s%s.png" % (camera, readmode)
+            flatlevelname = "flatlevel-%s%s.png" % (camera, readmode)
+            line = f'<a href="{historyname}"><img src="{historyname}" height="450"/></a>  <a href="{ptcname}"><img src="{ptcname}" height="450"/> </a> <a href="{lvlname}"><img src="{lvlname}" height="450"/> </a>  <a href="{noisename}"><img src="{noisename}" height="450"/> </a> <a href="{flatlevelname}"><img src="{flatlevelname}" height="450"/><br/> </a>'
+            message = message + line
 
     message = message + "</body></html>"
 
@@ -84,95 +97,57 @@ def renderHTMLPage(args, cameras):
 
 def make_plots_for_camera(camera, args):
     database = noisegaindbinterface(args.database)
+    outputdir = args.outputdir
 
-    readmodes = database.get_readmodes_for_cameras(camera)
+    readmodes = [None, ]
     _logger.info("readout modes for camera {}: {}".format(camera, readmodes))
 
     starttime = starttimeall
     if 'fa' in camera:
         starttime = starttimefa
+        readmodes = fareadmodes
+    _logger.info("readout modes for camera {}: {}".format(camera, readmodes))
 
-    dataset = database.readmeasurements(camera, levelratio=0.02, filters=goodfilters)
-    if dataset is None:
-        return
-    extensions = sorted(set(dataset['extension']))
+    for readmode in readmodes:
+        dataset = database.readmeasurements(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
+        if dataset is None:
+            return
+        extensions = sorted(set(dataset['extension']))
 
-    plt.figure()
+        plot_ptc(camera, dataset, extensions, outputdir, readmode)
+        plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode)
+        plot_levelgain(camera, dataset, extensions, outputdir, readmode)
+        plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode)
+        plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode)
 
-    for ext in extensions:
-        l = dataset['level'][dataset['extension'] == ext]
-        n = (dataset['diffnoise'][dataset['extension'] == ext])
-        plt.loglog(l, n, '.', label="ext %s" % ext, markersize=1)
+    database.close()
 
-    plt.title("Photon transfer curve %s" % camera)
-    plt.xlabel('Level [ADU]')
-    plt.ylabel('delta flat Noise [ADU]')
-    plt.ylim([5, 1000])
-    plt.xlim([1, 70000])
-    plt.legend()
-    plt.savefig("%s/ptchist-%s.png" % (args.outputdir, camera))
-    plt.cla()
-    plt.close()
 
-    ######################################
+def plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode=None):
     plt.figure()
     for ext in extensions:
         d = dataset['dateobs'][dataset['extension'] == ext]
-        g = dataset['gain'][dataset['extension'] == ext]
-        plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
-
-    if 'fa' in camera:
-        plt.ylim([2.5, 4])
-    if 'fl' in camera:
-        plt.ylim([1, 3])
-    if 'fs' in camera:
-        plt.ylim([6, 8])
-    if 'kb' in camera:
-        plt.ylim([1, 3])
-
-    plt.xlabel('Date Obs')
-    plt.ylabel('Gain [e-/ADU]')
-    plt.title('Gain history for %s' % camera)
+        l = dataset['level'][dataset['extension'] == ext]
+        plt.plot(d, l, '.', label="ext %s" % ext, markersize=1)
+    plt.ylim([1, 100000])
     dateformat(starttime, endtime)
+    plt.xlabel('Date')
+    plt.ylabel('Flat Level [ADU]')
+    plt.title('Flat level vs time for %s' % camera)
     plt.legend()
-    plt.savefig("%s/gainhist-%s.png" % (args.outputdir, camera))
+    readmode = "".join (readmode) if readmode is not None else ""
+    plt.savefig("{}/flatlevel-{}{}.png".format (outputdir, camera,readmode))
     plt.cla()
     plt.close()
 
-    ##################################3
 
-    plt.figure()
-    for ext in extensions:
-        d = dataset['level'][dataset['extension'] == ext]
-        g = dataset['gain'][dataset['extension'] == ext]
-        plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
-
-    if 'fa' in camera:
-        plt.ylim([2.5, 4])
-    if 'fl' in camera:
-        plt.ylim([1, 3])
-    if 'fs' in camera:
-        plt.ylim([6, 8])
-    if 'kb' in camera:
-        plt.ylim([1, 3])
-
-    plt.xlim([0, 70000])
-    plt.xlabel('Avg. Level [ADU]')
-    plt.ylabel('Gain [e-/ADU]')
-    plt.title('Level vs Gain for %s' % camera)
-
-    plt.legend()
-    plt.savefig("%s/levelgain-%s.png" % (args.outputdir, camera))
-    plt.cla()
-    plt.close()
-
-    ######################################
+def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode = None):
+    readmode = "".join (readmode) if readmode is not None else ""
     plt.figure()
     for ext in extensions:
         d = dataset['dateobs'][dataset['extension'] == ext]
         g = dataset['readnoise'][dataset['extension'] == ext]
         plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
-
     if 'fa' in camera:
         plt.ylim([5, 10])
     if 'fl' in camera:
@@ -181,38 +156,85 @@ def make_plots_for_camera(camera, args):
         plt.ylim([5, 15])
     if 'kb' in camera:
         plt.ylim([7, 20])
-
     dateformat(starttime, endtime)
     plt.xlabel('Date')
     plt.ylabel('Readnoise [e-]')
-    plt.title('Readnoise vs time for %s' % camera)
-
+    plt.title('Readnoise vs time for %s %s' % (camera, readmode))
     plt.legend()
-    plt.savefig("%s/noise-%s.png" % (args.outputdir, camera))
+
+    plt.savefig("{}/noise-{}{}.png".format  (outputdir, camera, readmode))
     plt.cla()
     plt.close()
 
-    ### history of levels
 
+def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
+    readmode = "".join (readmode) if readmode is not None else ""
+    plt.figure()
+    for ext in extensions:
+        d = dataset['level'][dataset['extension'] == ext]
+        g = dataset['gain'][dataset['extension'] == ext]
+        plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
+    if 'fa' in camera:
+        plt.ylim([2.5, 4])
+    if 'fl' in camera:
+        plt.ylim([1, 3])
+    if 'fs' in camera:
+        plt.ylim([6, 8])
+    if 'kb' in camera:
+        plt.ylim([1, 3])
+    plt.xlim([0, 70000])
+    plt.xlabel('Avg. Level [ADU]')
+    plt.ylabel('Gain [e-/ADU]')
+    plt.title('Level vs Gain for %s %s' % (camera, readmode))
+    plt.legend()
+
+    plt.savefig("{}/levelgain-{}{}.png".format(outputdir, camera, readmode))
+    plt.cla()
+    plt.close()
+
+
+def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=None):
+    readmode = "".join (readmode) if readmode is not None else ""
     plt.figure()
     for ext in extensions:
         d = dataset['dateobs'][dataset['extension'] == ext]
-        l = dataset['level'][dataset['extension'] == ext]
-        plt.plot(d, l, '.', label="ext %s" % ext, markersize=1)
-
-    plt.ylim([1, 100000])
-
+        g = dataset['gain'][dataset['extension'] == ext]
+        plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
+    if 'fa' in camera:
+        plt.ylim([2.5, 4])
+    if 'fl' in camera:
+        plt.ylim([1, 3])
+    if 'fs' in camera:
+        plt.ylim([6, 8])
+    if 'kb' in camera:
+        plt.ylim([1, 3])
+    plt.xlabel('Date Obs')
+    plt.ylabel('Gain [e-/ADU]')
+    plt.title('Gain history for %s %s ' % (camera, readmode))
     dateformat(starttime, endtime)
-    plt.xlabel('Date')
-    plt.ylabel('Flat Level [ADU]')
-    plt.title('Flat level vs time for %s' % camera)
-
     plt.legend()
-    plt.savefig("%s/flatlevel-%s.png" % (args.outputdir, camera))
+    plt.savefig("{}/gainhist-{}{}.png".format(outputdir, camera, readmode))
     plt.cla()
     plt.close()
 
-    database.close()
+
+def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
+    readmode = "".join (readmode) if readmode is not None else ""
+
+    plt.figure()
+    for ext in extensions:
+        l = dataset['level'][dataset['extension'] == ext]
+        n = (dataset['diffnoise'][dataset['extension'] == ext])
+        plt.loglog(l, n, '.', label="ext %s" % ext, markersize=1)
+    plt.title("Photon transfer curve %s %s " % (camera, readmode))
+    plt.xlabel('Level [ADU]')
+    plt.ylabel('delta flat Noise [ADU]')
+    plt.ylim([5, 1000])
+    plt.xlim([1, 70000])
+    plt.legend()
+    plt.savefig("{}/ptchist-{}{}.png".format (outputdir, camera, readmode))
+    plt.cla()
+    plt.close()
 
 
 goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'U', 'B', 'V', 'R', 'I']
@@ -224,12 +246,12 @@ def main():
     matplotlib.rcParams['savefig.dpi'] = 400
 
     database = noisegaindbinterface(args.database)
-    cameras = database.getcameras()
+    cameras = args.cameras if args.cameras is not None else database.getcameras()
     _logger.debug("Cameras: {}".format(cameras))
     for camera in cameras:
         make_plots_for_camera(camera, args)
 
-    renderHTMLPage(args, sorted(database.getcameras()))
+    renderHTMLPage(args, sorted(cameras))
     database.close()
 
 
