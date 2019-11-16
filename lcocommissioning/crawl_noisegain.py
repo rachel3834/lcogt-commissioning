@@ -36,7 +36,8 @@ def parseCommandLine():
 
     parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
     parser.add_argument('--showimages', action='store_true', help="Interactively show difference flat and bias images.")
-
+    parser.add_argument('--ignoretemp', action='store_true',
+                        help="ignore if actual temperature differs from set point temperature. Reject by default.")
     parser.add_argument('--loglevel', dest='log_level', default='DEBUG', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
