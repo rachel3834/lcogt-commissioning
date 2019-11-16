@@ -21,7 +21,7 @@ endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=3
 endtime.replace(day=1)
 
 
-fareadmodes =  [ ['full_frame', 'None'], 'central_2k_2x2']
+fareadmodes =  [ ['full_frame', None], ['central_2k_2x2',]]
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
@@ -78,6 +78,8 @@ def renderHTMLPage(args, cameras):
 
         message = message + " <h2> %s </h2>\n" % (camera)
         for readmode in readmodes:
+            readmode = [ x if x is not None else 'None' for x in readmode]
+
             readmode = "".join (readmode) if readmode is not None else ""
 
             historyname = "gainhist-%s%s.png" % (camera, readmode)
@@ -98,22 +100,21 @@ def renderHTMLPage(args, cameras):
 def make_plots_for_camera(camera, args):
     database = noisegaindbinterface(args.database)
     outputdir = args.outputdir
-
+    _logger.info ("readmodes: {}".format (database.get_readmodes_for_cameras(camera)))
     readmodes = [None, ]
-    _logger.info("readout modes for camera {}: {}".format(camera, readmodes))
 
     starttime = starttimeall
     if 'fa' in camera:
         starttime = starttimefa
         readmodes = fareadmodes
-    _logger.info("readout modes for camera {}: {}".format(camera, readmodes))
+
 
     for readmode in readmodes:
         dataset = database.readmeasurements(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
         if dataset is None:
             return
         extensions = sorted(set(dataset['extension']))
-
+        readmode = [ x if x is not None else 'None' for x in readmode]
         plot_ptc(camera, dataset, extensions, outputdir, readmode)
         plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode)
         plot_levelgain(camera, dataset, extensions, outputdir, readmode)
@@ -176,6 +177,8 @@ def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
         plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
     if 'fa' in camera:
         plt.ylim([2.5, 4])
+        if '2x2' in readmode:
+            plt.ylim([5.5, 7])
     if 'fl' in camera:
         plt.ylim([1, 3])
     if 'fs' in camera:
@@ -202,6 +205,8 @@ def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=No
         plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
     if 'fa' in camera:
         plt.ylim([2.5, 4])
+        if '2x2' in readmode:
+            plt.ylim([5.5, 7])
     if 'fl' in camera:
         plt.ylim([1, 3])
     if 'fs' in camera:

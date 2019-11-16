@@ -193,14 +193,21 @@ class noisegaindbinterface(lcoimagerpropertydatabase):
         if readmode is not None:
             if isinstance (readmode, str):
                 readmode = [readmode,]
-            readmodecondition = 'AND (readmode in ({seq}))'.format (seq=','.join(['?'] * len(readmode)))
+            readmodecondition = 'AND ('
+            for m in readmode:
+                readmodecondition = readmodecondition + "(readmode is ?) OR"
+            if readmodecondition.endswith('OR'):
+                readmodecondition = readmodecondition[:-2]
+            readmodecondition = readmodecondition + ")"
+
+
 
             query = query.replace("__READMODE__", readmodecondition)
             queryargs.extend(readmode)
         else:
             query = query.replace("__READMODE__", "")
 
-        _logger.debug("Read from database with query\n  %s\n  %s\n" % (query, queryargs))
+        _logger.info("Read from database with query\n  %s\n  %s\n" % (query, queryargs))
 
         cursor = self.conn.execute(query, queryargs)
 
