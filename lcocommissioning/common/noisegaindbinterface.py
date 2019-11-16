@@ -191,7 +191,10 @@ class noisegaindbinterface(lcoimagerpropertydatabase):
             query = query.replace("__FILTER__", "")
 
         if readmode is not None:
-            readmodecondition = 'AND (readmode like (?))'
+            if isinstance (readmode, str):
+                readmode = [readmode,]
+            readmodecondition = 'AND (readmode in ({seq}))'.format (seq=','.join(['?'] * len(readmode)))
+
             query = query.replace("__READMODE__", readmodecondition)
             queryargs.extend(readmode)
         else:
