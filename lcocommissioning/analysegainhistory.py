@@ -1,6 +1,7 @@
 import errno
 import os
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
@@ -20,8 +21,8 @@ starttimefa = datetime.datetime(2018, 7, 1)
 endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=31 + 4)
 endtime.replace(day=1)
 
+fareadmodes = [['full_frame', None], ['central_2k_2x2', ]]
 
-fareadmodes =  [ ['full_frame', None], ['central_2k_2x2',]]
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
@@ -32,7 +33,7 @@ def parseCommandLine():
 
     parser.add_argument('--outputdir', default='gainhistory', help="directory for output graphs")
 
-    parser.add_argument('--cameras', default = None,  nargs="*")
+    parser.add_argument('--cameras', default=None, nargs="*")
     parser.add_argument('--database', default="noisegain.sqlite")
     parser.add_argument('--ncpu', default=1, type=int)
     args = parser.parse_args()
@@ -65,12 +66,9 @@ def renderHTMLPage(args, cameras):
 <h1> Details by Camera: </h1>
 """
 
-
-
-
     for camera in cameras:
 
-        readmodes = [None,]
+        readmodes = [None, ]
         if 'fl' in camera:
             continue
         if 'fa' in camera:
@@ -78,9 +76,10 @@ def renderHTMLPage(args, cameras):
 
         message = message + " <h2> %s </h2>\n" % (camera)
         for readmode in readmodes:
-            readmode = [ x if x is not None else 'None' for x in readmode]
+            if readmode is not None:
+                readmode = [x if x is not None else 'None' for x in readmode]
 
-            readmode = "".join (readmode) if readmode is not None else ""
+            readmode = "".join(readmode) if readmode is not None else ""
 
             historyname = "gainhist-%s%s.png" % (camera, readmode)
             ptcname = "ptchist-%s%s.png" % (camera, readmode)
@@ -100,7 +99,7 @@ def renderHTMLPage(args, cameras):
 def make_plots_for_camera(camera, args):
     database = noisegaindbinterface(args.database)
     outputdir = args.outputdir
-    _logger.info ("readmodes: {}".format (database.get_readmodes_for_cameras(camera)))
+    _logger.info("readmodes: {}".format(database.get_readmodes_for_cameras(camera)))
     readmodes = [None, ]
 
     starttime = starttimeall
@@ -108,13 +107,13 @@ def make_plots_for_camera(camera, args):
         starttime = starttimefa
         readmodes = fareadmodes
 
-
     for readmode in readmodes:
         dataset = database.readmeasurements(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
         if dataset is None:
             return
         extensions = sorted(set(dataset['extension']))
-        readmode = [ x if x is not None else 'None' for x in readmode]
+        if readmode is not None:
+            readmode = [x if x is not None else 'None' for x in readmode]
         plot_ptc(camera, dataset, extensions, outputdir, readmode)
         plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode)
         plot_levelgain(camera, dataset, extensions, outputdir, readmode)
@@ -136,14 +135,14 @@ def plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmo
     plt.ylabel('Flat Level [ADU]')
     plt.title('Flat level vs time for %s' % camera)
     plt.legend()
-    readmode = "".join (readmode) if readmode is not None else ""
-    plt.savefig("{}/flatlevel-{}{}.png".format (outputdir, camera,readmode))
+    readmode = "".join(readmode) if readmode is not None else ""
+    plt.savefig("{}/flatlevel-{}{}.png".format(outputdir, camera, readmode))
     plt.cla()
     plt.close()
 
 
-def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode = None):
-    readmode = "".join (readmode) if readmode is not None else ""
+def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=None):
+    readmode = "".join(readmode) if readmode is not None else ""
     plt.figure()
     for ext in extensions:
         d = dataset['dateobs'][dataset['extension'] == ext]
@@ -163,13 +162,13 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode = 
     plt.title('Readnoise vs time for %s %s' % (camera, readmode))
     plt.legend()
 
-    plt.savefig("{}/noise-{}{}.png".format  (outputdir, camera, readmode))
+    plt.savefig("{}/noise-{}{}.png".format(outputdir, camera, readmode))
     plt.cla()
     plt.close()
 
 
 def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
-    readmode = "".join (readmode) if readmode is not None else ""
+    readmode = "".join(readmode) if readmode is not None else ""
     plt.figure()
     for ext in extensions:
         d = dataset['level'][dataset['extension'] == ext]
@@ -197,7 +196,7 @@ def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
 
 
 def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=None):
-    readmode = "".join (readmode) if readmode is not None else ""
+    readmode = "".join(readmode) if readmode is not None else ""
     plt.figure()
     for ext in extensions:
         d = dataset['dateobs'][dataset['extension'] == ext]
@@ -224,7 +223,7 @@ def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=No
 
 
 def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
-    readmode = "".join (readmode) if readmode is not None else ""
+    readmode = "".join(readmode) if readmode is not None else ""
 
     plt.figure()
     for ext in extensions:
@@ -237,7 +236,7 @@ def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
     plt.ylim([5, 1000])
     plt.xlim([1, 70000])
     plt.legend()
-    plt.savefig("{}/ptchist-{}{}.png".format (outputdir, camera, readmode))
+    plt.savefig("{}/ptchist-{}{}.png".format(outputdir, camera, readmode))
     plt.cla()
     plt.close()
 
