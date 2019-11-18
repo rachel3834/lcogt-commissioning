@@ -45,7 +45,7 @@ def create_request_for_star_scheduler(context):
                     "proposal": "LCOEngineering",
                     "ipp_value": context.ipp,
                     "operator": "SINGLE" if context.nodither else "MANY",
-                    "observation_type": "DIRECT",
+                    "observation_type": "NORMAL",
                     "requests": []
                     }
 
