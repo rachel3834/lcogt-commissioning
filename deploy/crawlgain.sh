@@ -18,6 +18,7 @@ NCPU=40                                # How many CPUs to employ
 NDAYS=3
 
 time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing  --cameratype "fa??" --readmode "full_frame" --loglevel INFO --database ${noisegaindatabase}
+time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing  --cameratype "fa??" --readmode "central_2k_2x2" --loglevel INFO --database ${noisegaindatabase}
 time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing --cameratype "fs??" --readmode "default" --loglevel INFO --database ${noisegaindatabase}
 time python lcocommissioning/crawl_noisegain.py --ncpu $NCPU --ndays $NDAYS $reprocessing --cameratype "kb??" --readmode "default" --loglevel INFO --database ${noisegaindatabase}
 
