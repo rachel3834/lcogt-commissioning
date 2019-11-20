@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import math
@@ -102,6 +103,8 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
 
 
 def send_request_to_portal (requestgroup, dosubmit=False):
+
+    _log.debug (json.dumps (requestgroup, indent=4))
 
     if not dosubmit:
         print ("Not submitting as per user request")

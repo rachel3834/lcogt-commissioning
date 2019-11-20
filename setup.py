@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="lco-commissioning",
+    name="lcocommissioning",
     version="1.0",
     author="Daniel Harbeck",
     author_email="dharbeck@lco.global",
