@@ -89,7 +89,7 @@ def create_request_for_star_scheduler(context):
                         'filter': context.filter
                     },
                     "extra_params": {
-                        "defocus": min(3, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
+                        "defocus": min(5, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
                     }
                 })
 
@@ -199,7 +199,7 @@ def parseCommandLine():
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
     parser.add_argument('--offsetDec', default=0, help="Extra pointing offset to apply Dec")
     parser.add_argument('--pp', default=[0., 0.], nargs=2, type=float, help="Proper motion, mas/yr")
-    parser.add_argument('--schedule-window', default=6, type=float)
+    parser.add_argument('--schedule-window', default=2, type=float)
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted. If omitted, nothing will be submitted.')
     parser.add_argument('--scheduler', action='store_true',
