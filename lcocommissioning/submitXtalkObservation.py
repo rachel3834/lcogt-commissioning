@@ -11,10 +11,10 @@ import lcocommissioning.common.common as common
 
 _log = logging.getLogger(__name__)
 
-sinistro_1m_quadrant_offsets = {0: [-60, 60],
-                                1: [60, 60],
-                                2: [60, -60],
-                                3: [-60, -60]}
+sinistro_1m_quadrant_offsets = {0: [-120, 120],
+                                1: [120, 120],
+                                2: [120, -120],
+                                3: [-120, -120]}
 
 no_dither = {0: [0, 0], }
 
