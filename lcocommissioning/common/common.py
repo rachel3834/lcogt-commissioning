@@ -130,13 +130,14 @@ def send_request_to_portal (requestgroup, dosubmit=False):
 
 
 
-def send_to_scheduler(user_request, dosubmit=False):
+def send_to_scheduler(user_request,  dosubmit=False):
     """Submit a user request to LCO Scheduler via Valhalla interface
     """
 
     auth = 'Token {token}'.format(token=VALHALLA_API_TOKEN)
     print(auth)
     url = '{api_root}/api/userrequests/'.format(api_root=VALHALLA_URL)
+
     headers = {
         'Authorization': auth
     }
