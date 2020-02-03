@@ -6,7 +6,8 @@ from concurrent.futures.process import ProcessPoolExecutor
 
 from lcocommissioning.noisegainrawmef import do_noisegain_for_fileset
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
-from lcocommissioning.common.lcoarchivecrawler import ArchiveCrawler
+from lcocommissioning.common.lcoarchivecrawler import ArchiveCrawler, get_frames_for_noisegainanalysis, \
+    filename_to_archivepath
 
 log = logging.getLogger(__name__)
 
@@ -16,9 +17,11 @@ def parseCommandLine():
         description='Crawl LCO archive tyo measure noise, gain from paitrs of biases and darks',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--cameratype', type=str, nargs='+', default=['fa??', 'fs??', 'kb??'],
+    parser.add_argument('--cameratype', type=str, nargs='+', default=['fa', 'fs', 'kb'],
                         help='Type of cameras to parse')
 
+    parser.add_argument('--instrument', type=str,  default=None,
+                        help='Individual camera to request')
     group = parser.add_argument_group(
         'Optionally, specify the location of statistics window. All units in pixels with an FITS image extension')
     group.add_argument('--minx', type=int, default=None, help="minimum x.")
@@ -48,39 +51,46 @@ def parseCommandLine():
     return args
 
 
-def findfilesanddonoisegain(camera, date, args):
-    files = ArchiveCrawler.findfiles_for_camera_dates(camera, date, 'raw', "*[bf]00.fits*")
+def findfilesanddonoisegain(date, args, camera=None, cameratype=None, useElasticsearch=True):
 
-    if len(files) > 3:
-        database = noisegaindbinterface(args.database) if args.database is not None else None
-        if (database is not None) and args.noreprocessing:
-            for inputname in files:
-                if database.checkifalreadyused(os.path.basename(inputname)):
-                    log.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
-                    if database is not None:
-                        database.close()
-                    return
 
-        log.debug("{} {} # files: {}".format(camera, date, len(files)))
-        try:
-            do_noisegain_for_fileset(files, database, args)
-        except Exception as e:
-            log.error ('While launching task:',e)
-        if database is not None:
-            database.close()
+    if useElasticsearch:
+        files = get_frames_for_noisegainanalysis(date, camera=camera, cameratype=cameratype[0] if cameratype else None)
+        filedict =  filename_to_archivepath(files)
+    else:
+        if camera is None:
+            raise ("Camera is not specified")
+        filedict = {camera:  ArchiveCrawler.findfiles_for_camera_dates(camera, date, 'raw', "*[bf]00.fits*")}
+
+    for camera in filedict:
+        files = filedict[camera]
+        if len(files) > 3:
+            database = noisegaindbinterface(args.database) if args.database is not None else None
+            if (database is not None) and args.noreprocessing:
+                for inputname in files:
+                    if database.checkifalreadyused(os.path.basename(inputname)):
+                        log.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
+                        if database is not None:
+                            database.close()
+                        return
+
+            log.debug("{} {} # files: {}".format(camera, date, len(files)))
+            try:
+                do_noisegain_for_fileset(files, database, args)
+            except Exception as e:
+                log.error ('While launching task:',e)
+            if database is not None:
+                database.close()
 
 
 if __name__ == '__main__':
     args = parseCommandLine()
 
     exec = ProcessPoolExecutor (max_workers = args.ncpu)
-    c = ArchiveCrawler()
-    dates = c.get_last_N_days(args.ndays)
-    cameras = c.find_cameras(cameras=args.cameratype)
 
-    for camera in cameras:
-        for date in dates:
-            exec.submit (findfilesanddonoisegain, camera, date, args)
+    dates = ArchiveCrawler.get_last_N_days(args.ndays)
+    for date in dates:
+        exec.submit (findfilesanddonoisegain, date, args, args.instrument, args.cameratype)
 
     log.info("Waiting for all threads to complete.")
     exec.shutdown()
