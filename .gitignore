@@ -1,3 +1,7 @@
 /gainhistory/
 /venv/
 /darkcurrent.sqlite
+/noisegain.sqlite
+/darkhistory/
+/build/
+/dist/
