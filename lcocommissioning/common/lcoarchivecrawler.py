@@ -1,55 +1,58 @@
 import datetime
 import glob
+import io
 import logging
+import os
+
 import numpy as np
+import requests
+from astropy.io import fits
 from astropy.table import Table
 
 from lcocommissioning.common.common import lco_site_lonlat
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
 
-
 log = logging.getLogger(__name__)
+logging.getLogger('elasticsearch').setLevel(logging.WARNING)
+logging.getLogger('connectionpool').setLevel(logging.WARNING)
 
-ARCHIVE_ROOT="/archive/engineering"
-
+ARCHIVE_ROOT = "/archive/engineering"
 
 
 class ArchiveCrawler:
-
     archive_root = None
 
-    def __init__(self, rootdirectory = ARCHIVE_ROOT):
+    def __init__(self, rootdirectory=ARCHIVE_ROOT):
         self.archive_root = rootdirectory
 
-
-
-    def find_cameras (self, sites=lco_site_lonlat, cameras=["fa??", "fs??", "kb??"]):
+    def find_cameras(self, sites=lco_site_lonlat, cameras=["fa??", "fs??", "kb??"]):
         sitecameras = []
 
         for site in sites:
             for camera in cameras:
-                dir = "{}/{}/{}".format (self.archive_root, site, camera)
-                candiates=glob.glob (dir)
-                sitecameras.extend (candiates)
+                dir = "{}/{}/{}".format(self.archive_root, site, camera)
+                candiates = glob.glob(dir)
+                sitecameras.extend(candiates)
         return sitecameras
 
-
     @staticmethod
-    def get_last_N_days (lastNdays):
-        date=[]
+    def get_last_N_days(lastNdays):
+        date = []
         today = datetime.datetime.utcnow()
-        for ii in range (lastNdays):
+        for ii in range(lastNdays):
             day = today - datetime.timedelta(days=ii)
-            date.append (day.strftime("%Y%m%d"))
+            date.append(day.strftime("%Y%m%d"))
         return date[::-1]
 
     @staticmethod
-    def findfiles_for_camera_dates (sitecamera, date, raworprocessed, filetempalte):
-        dir="{}/{}/{}/{}".format ( sitecamera, date, raworprocessed, filetempalte)
-        files = glob.glob (dir)
+    def findfiles_for_camera_dates(sitecamera, date, raworprocessed, filetempalte, prefix=""):
+        dir = "{}{}/{}/{}/{}".format(prefix, sitecamera, date, raworprocessed, filetempalte)
+        files = glob.glob(dir)
+        print(dir, files)
+        files = [[f, "-1"] for f in files]
+        return Table(files, names=['FILENAME', 'FRAMEID'])
         return (files)
-
 
 
 def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, range_filters=None, prefix_filters=None,
@@ -106,18 +109,18 @@ def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, ran
     return s
 
 
-def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=None, mintexp=30,
-                                     filterlist=['gp', 'rp', 'ip', 'zp'], obstype=['BIAS','SKYFLAT'],  es_url='http://elasticsearch.lco.gtn:9200'):
-
+def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=None, readmode='full_frame', mintexp=30,
+                                     filterlist=['gp', 'rp', 'ip', 'zp'], obstype=['BIAS', 'SKYFLAT'],
+                                     es_url='http://elasticsearch.lco.gtn:9200'):
     """ Queries for a list of processed LCO images that are viable to get a photometric zeropoint in the griz bands measured.
 
         Selection criteria are by DAY-OBS, site, by camaera type (fs,fa,kb), what filters to use, and minimum exposure time.
         Only day-obs is a mandatory fields, we do not want to query the entire archive at once.
      """
 
-    query_filters = [{'DAY-OBS': dayobs}, {'RLEVEL': 0}, ]
+    query_filters = [{'DAY-OBS': dayobs}, {'RLEVEL': 0}, {'CONFMODE': readmode}]
     range_filters = []
-    terms_filters = [ {'OBSTYPE': obstype}]
+    terms_filters = [{'OBSTYPE': obstype}]
     prefix_filters = []
 
     if site is not None:
@@ -131,21 +134,53 @@ def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=
     records = make_elasticsearch('fitsheaders', query_filters, queries, exclusion_filters=None, es_url=es_url,
                                  range_filters=range_filters, prefix_filters=prefix_filters,
                                  terms_filters=terms_filters).scan()
-    records_sanitized = [[record['filename'], record['SITEID'], record['INSTRUME'], record['RLEVEL'], record['DAY-OBS']]
-                         for record in records if (record['FILTER'] in filterlist) or (record['OBSTYPE']=='BIAS')]
+    records_sanitized = [[record['filename'], record['SITEID'], record['INSTRUME'], record['RLEVEL'], record['DAY-OBS'],
+                          record['frameid']]
+                         for record in records if (record['FILTER'] in filterlist) or (record['OBSTYPE'] == 'BIAS')]
 
-    t = Table (np.asarray(records_sanitized), names=('FILENAME','SITEID','INSTRUME','RLEVEL','DAY-OBS'))
+    t = Table(np.asarray(records_sanitized), names=('FILENAME', 'SITEID', 'INSTRUME', 'RLEVEL', 'DAY-OBS', 'frameid'))
     return t
 
 
-def filename_to_archivepath (filenametable, rootpath='/archive/engineering'):
+def filename_to_archivepath(filenametable, rootpath='/archive/engineering'):
     '''return a dictionary with camera -> list of FileIO-able path of iamgers
     '''
-    cameras = set (filenametable['INSTRUME'])
+    cameras = set(filenametable['INSTRUME'])
     returndict = {}
     for camera in cameras:
-        returndict[camera] = ['{}/{}/{}/{}/{}/{}'.format(rootpath, record['SITEID'],record['INSTRUME'],record['DAY-OBS'],'raw',record['FILENAME']) for record in filenametable[filenametable['INSTRUME']== camera] ]
+        # returndict[camera] = ['{}/{}/{}/{}/{}/{}'.format(rootpath, record['SITEID'],record['INSTRUME'],record['DAY-OBS'],'raw',record['FILENAME']) for record in filenametable[filenametable['INSTRUME']== camera] ]
+        returndict[camera] = [['{}/{}/{}/{}/{}/{}'.format(rootpath, record['SITEID'], record['INSTRUME'],
+                                                          record['DAY-OBS'], 'raw', record['FILENAME']),
+                               record['frameid']] for record in filenametable[filenametable['INSTRUME'] == camera]]
+
+        returndict[camera] = Table(np.asarray(returndict[camera]), names=['FILENAME', 'frameid'])
     return returndict
+
+
+ARCHIVE_API_TOKEN = os.getenv('ARCHIVE_API_TOKEN', '')
+
+
+def download_from_archive(frameid):
+    """
+    Download a file from the LCO archive by frame id.
+    :param frameid: Archive API frame ID
+    :return: Astropy HDUList
+    """
+    url = f'https://archive-api.lco.global/frames/{frameid}'
+    log.info("Downloading image frameid {} from URL: {}".format(frameid, url))
+    headers = {'Authorization': 'Token {}'.format(ARCHIVE_API_TOKEN)}
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    response_dict = response.json()
+    if response_dict == {}:
+        log.warning("No file url was returned from id query")
+        raise Exception('Could not find file remotely.')
+    frame_url = response_dict['url']
+    log.debug(frame_url)
+    file_response = requests.get(frame_url)
+    file_response.raise_for_status()
+    f = fits.open(io.BytesIO(file_response.content))
+    return f
 
 
 if __name__ == '__main__':
@@ -156,13 +191,9 @@ if __name__ == '__main__':
     for dayobs in dates:
         listofframes = get_frames_for_noisegainanalysis(dayobs, cameratype='fa')
         filelist = filename_to_archivepath(listofframes)
-        print ("{} {} ".format (dayobs, filelist.keys()))
+        print("{} {} ".format(dayobs, filelist.keys()))
 
     # c = ArchiveCrawler()
     # for dayobs in dates:
     #     listofframes = c.findfiles_for_camera_dates("/archive/engineering/lsc/{}".format(camera), dayobs, 'raw', "*[xbf]00.fits*")
     #     #print ("{} {} ".format (dayobs, listofframes))
-
-
-
-

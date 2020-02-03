@@ -10,7 +10,7 @@ import numpy as np
 import math
 import argparse
 
-from lcocommissioning.common import common
+from common import lcoarchivecrawler
 from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 from lcocommissioning.common.Image import Image
 import matplotlib.pyplot as plt
@@ -19,6 +19,7 @@ from astropy.io import fits
 _logger = logging.getLogger(__name__)
 mpl_logger = logging.getLogger('matplotlib')
 mpl_logger.setLevel(logging.WARNING)
+
 
 def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=None, maxy=None, showImages=False):
     """
@@ -30,10 +31,10 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     TODO: return actual values, not just print them out
     TODO: gross outlier rejection, e.g., cosmic ray hits
 
-    :param flat1: flat field 1
-    :param flat2: flat field 2
-    :param bias1: bias 1
-    :param bias2: bias 2
+    :param flat1: flat field 1  as numpy array
+    :param flat2: flat field 2 as numpy array
+    :param bias1: bias 1 as numpy array
+    :param bias2: bias 2 as numpy array
     :param minx:
     :param maxx:
     :param miny:
@@ -56,14 +57,12 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     bias2lvl = np.median(bias2[miny:maxy, minx:maxx])
 
     avgbiaslevel = 0.5 * (bias2lvl + bias2lvl)
-
     leveldifference = abs(flat1lvl - flat2lvl)
     avglevel = (flat1lvl - avgbiaslevel + flat2lvl - avgbiaslevel) / 2
     if (leveldifference > avglevel * 0.1):
         _logger.warning("flat level difference % 8f is large compared to level % 8f. Result will be questionable" % (
             leveldifference, flat1lvl - bias1lvl))
-
-    # Measure noise of flat and biad differential iamges
+    # Measure noise of flat and bias differential images
     deltaflat = (flat1 - flat2)[miny:maxy, minx:maxx]
     deltabias = (bias1 - bias2)[miny:maxy, minx:maxx]
     biasnoise = np.std(deltabias)
@@ -88,6 +87,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
         plt.colorbar()
         plt.title("Delta Bias")
         plt.show()
+
     return (gain, readnoise, flatlevel, flatnoise, (flat1lvl - avgbiaslevel), (flat2lvl - avgbiaslevel))
 
 
@@ -147,23 +147,31 @@ def findkeywordinhdul(hdulist, keyword):
     return None
 
 
-def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame", ignoretemp=False):
-    """ go through the list of input and sort files by bias and flat type. Find pairs of flats that are of the same exposure time / closest in illumination level."""
+def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame", ignoretemp=False, useaws=False):
+    """ go through the list of input and sort files by bias and flat type.
+    Find pairs of flats that are of the same exposure time / closest in illumination level."""
 
     sortedlistofFiles = {}
-
     filemetrics = {}
-    random.shuffle (listoffiles)
+    # random.shuffle(listoffiles)
     for filecandidate in listoffiles:
+        # First stage: go through the images and derive the metrics from them to pair.
+        # TODO: avoid opening all biases, it is pointless, need only 2!
 
-        hdu = fits.open(filecandidate)
+        if useaws:
+            hdu = lcoarchivecrawler.download_from_archive(filecandidate['frameid'])
+        else:
+            fitsfilepath = str(filecandidate['FILENAME'])
+            hdu = fits.open(fitsfilepath)
 
+        # Note: The values below could come from the elasticsearch already. But not if working on lcoal files.
         ccdstemp = findkeywordinhdul(hdu, 'CCDSTEMP')
         ccdatemp = findkeywordinhdul(hdu, 'CCDATEMP')
         readoutmode = findkeywordinhdul(hdu, 'CONFMODE')
 
         if readoutmode not in selectedreadmode:
-            _logger.info ("Rejecting file as it is not in the correct readout mode ({} != {})".format(readoutmode, selectedreadmode))
+            _logger.info("Rejecting file as it is not in the correct readout mode ({} != {})".format(readoutmode,
+                                                                                                     selectedreadmode))
             hdu.close()
             continue
 
@@ -177,30 +185,28 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
                 "rejecting file {}: CCD temp is not near set point, delta = {:5.2f}".format(filecandidate, tempdiff))
             continue
 
-        if ('b00' in filecandidate):  # it is a bias
-
+        if ('b00' in filecandidate['FILENAME']):  # it is a bias
             if 'bias' not in sortedlistofFiles:
                 sortedlistofFiles['bias'] = []
             if len(sortedlistofFiles['bias']) < 2:
-                sortedlistofFiles['bias'].append(filecandidate)
+                sortedlistofFiles['bias'].append(str(filecandidate['FILENAME']))
 
-        else:  # it is a flat
-
+        else:  # it is (interpreted as) a flat
             if (sortby == 'exptime'):
                 exptime = findkeywordinhdul(hdu, 'EXPTIME')
                 if exptime is not None:
-                    filemetrics[filecandidate] = str(exptime)
+                    filemetrics[str(filecandidate['FILENAME'])] = str(exptime)
 
             if (sortby == 'filterlevel'):
                 filter = findkeywordinhdul(hdu, "FILTER")
-                if (filter is not None) and ('b00' not in filecandidate):
-                    image = Image(filecandidate, overscancorrect=True)
+                if (filter is not None) and ('b00' not in filecandidate['FILENAME']):
+                    image = Image(hdu, overscancorrect=True, alreadyopenedhdu=True)
                     if image.data is None:
                         level = -1
                     else:
-                        level = np.median(image.data[0][50:-50,50:-50])
+                        level = np.median(image.data[0][50:-50, 50:-50])
                     _logger.debug("Input file metrics %s %s %s" % (filecandidate, filter, level))
-                    filemetrics[filecandidate] = (filter, level)
+                    filemetrics[str(filecandidate['FILENAME'])] = (filter, level)
 
         hdu.close()
 
@@ -229,7 +235,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         for filename in filemetrics.keys():
             (filter, level) = filemetrics[filename]
             if level < 10:
-                _logger.info ("rejecting image {}, level is to low".format (filename))
+                _logger.info("rejecting image {}, level is to low".format(filename))
 
             if (filter not in tempsortedListofFiles.keys()):
                 tempsortedListofFiles[filter] = {}
@@ -262,13 +268,24 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
     return sortedlistofFiles
 
 
-def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True):
-    bias1 = Image(fbias1, overscancorrect=overscancorrect)
-    bias2 = Image(fbias2, overscancorrect=overscancorrect)
-    flat1 = Image(fflat1, overscancorrect=overscancorrect)
-    flat2 = Image(fflat2, overscancorrect=overscancorrect)
+def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True, alreadyopenhdu=False):
+    """
+    Calculate for each extension the noise and gain and print the result to console.
 
-    print("Based on:\n Bias 1 %s\n Bias 2 %s\n Flat 1 %s\n Flat 2 %s\n" % (fbias1, fbias2, fflat1, fflat2))
+    :param fbias1:
+    :param fbias2:
+    :param fflat1:
+    :param fflat2:
+    :param args:
+    :param overscancorrect:
+    :param alreadyopenhdu: if True, treat the input files as FITS hdu. Otherwise, trweat them as filenames.
+    :return:
+    """
+
+    bias1 = Image(fbias1, overscancorrect=overscancorrect, alreadyopenedhdu=alreadyopenhdu)
+    bias2 = Image(fbias2, overscancorrect=overscancorrect, alreadyopenedhdu=alreadyopenhdu)
+    flat1 = Image(fflat1, overscancorrect=overscancorrect, alreadyopenedhdu=alreadyopenhdu)
+    flat2 = Image(fflat2, overscancorrect=overscancorrect, alreadyopenedhdu=alreadyopenhdu)
 
     gains = []
     levels = []
@@ -338,7 +355,6 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
 
     _logger.debug("Plotting ptc")
     plt.figure()
-    # print (alllevels)
     for ext in alllevels:
         plt.loglog(alllevels[ext], allshotnoises[ext], '.', label="extension %s" % ext)
     plt.legend()
@@ -377,8 +393,12 @@ def main():
     database.close()
 
 
+def frameidfromname(fname, filelist):
+    # _logger.debug ("Finding frame id for {}: \n {}".format (fname, filelist[filelist['FILENAME'] == fname]))
+    return filelist[filelist['FILENAME'] == fname]['frameid'][0]
 
-def do_noisegain_for_fileset(inputlist, database, args):
+
+def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=None):
     alllevels = {}
     allgains = {}
     allnoises = {}
@@ -387,51 +407,51 @@ def do_noisegain_for_fileset(inputlist, database, args):
     alllevel2s = {}
     allexptimes = {}
 
+    _logger.info("Sifting through the input files and finding viable candidates")
+    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode,
+                                         ignoretemp=args.ignoretemp, useaws=args.useaws)
 
-    sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode, ignoretemp=args.ignoretemp)
-    _logger.debug ("Sorted input files {}".format (sortedinputlist))
+    _logger.info("Found {} viable sets for input. Starting noise gain calculation.".format(len(sortedinputlist)))
 
+    bias1_fname = sortedinputlist['bias'][0]
+    bias2_fname = sortedinputlist['bias'][1]
 
+    if frameidtranslationtable is not None:
+        bias1_frameid = frameidfromname(sortedinputlist['bias'][0], frameidtranslationtable)
+        bias2_frameid = frameidfromname(sortedinputlist['bias'][1], frameidtranslationtable)
+        print("Bias1 id", bias1_fname, bias1_frameid)
+        print("Bias2 id", bias2_fname, bias2_frameid)
+
+    bias1 = fits.open(sortedinputlist['bias'][0]) if not args.useaws else lcoarchivecrawler.download_from_archive(
+        bias1_frameid)
+    bias2 = fits.open(sortedinputlist['bias'][1]) if not args.useaws else lcoarchivecrawler.download_from_archive(
+        bias2_frameid)
 
     for pair_ii in sortedinputlist:
 
         if 'bias' not in pair_ii:
             if len(sortedinputlist[pair_ii]) == 2:
-                print("\nNoise / Gain measuremnt based on metric %s" % pair_ii)
+                print("\nNoise / Gain measurement based on metric %s" % pair_ii)
                 print("===========================================")
 
+                flat_1_fname = sortedinputlist[pair_ii][0]
+                flat_2_fname = sortedinputlist[pair_ii][1]
+                flat1 = fits.open(flat_1_fname) if not args.useaws else lcoarchivecrawler.download_from_archive(
+                    frameidfromname(flat_1_fname, frameidtranslationtable))
+                flat2 = fits.open(flat_2_fname) if not args.useaws else lcoarchivecrawler.download_from_archive(
+                    frameidfromname(flat_2_fname, frameidtranslationtable))
+
                 gains, levels, noises, shotnoises, level1s, level2s, exptimes = dosingleLevelGain(
-                    sortedinputlist['bias'][0],
-                    sortedinputlist['bias'][1],
-                    sortedinputlist[pair_ii][0],
-                    sortedinputlist[pair_ii][1], args)
+                    bias1, bias2, flat1, flat2, args, alreadyopenhdu=True)
 
-                hdu = fits.open(sortedinputlist[pair_ii][0])
-                dateobs = None
-                if 'DATE-OBS' in hdu[0].header:
-                    dateobs = hdu[0].header['DATE-OBS']
-                if 'DATE-OBS' in hdu[1].header:
-                    dateobs = hdu[1].header['DATE-OBS']
-                camera = None
+                # grabbing some meta data while we can
+                dateobs = findkeywordinhdul(flat1, 'DATE-OBS')
+                camera = findkeywordinhdul(flat1, 'INSTRUME')
+                filter = findkeywordinhdul(flat1, 'FILTER')
+                readmode = findkeywordinhdul(flat1, 'CONFMODE')
 
-                if 'INSTRUME' in hdu[0].header:
-                    camera = hdu[0].header['INSTRUME']
-                if 'INSTRUME' in hdu[1].header:
-                    camera = hdu[1].header['INSTRUME']
-
-                filer = None
-                if 'FILTER' in hdu[0].header:
-                    filter = hdu[0].header['FILTER']
-                if 'FILTER' in hdu[1].header:
-                    filter = hdu[1].header['FILTER']
-
-                readmode = None
-                if 'CONFMODE' in hdu[0].header:
-                    readmode = hdu[0].header['CONFMODE']
-                if 'CONFMODE' in hdu[1].header:
-                    readmode = hdu[1].header['CONFMODE']
-
-                hdu.close()
+                flat1.close()
+                flat2.close()
 
                 for extension in range(len(levels)):
                     if extension not in alllevels:
@@ -444,10 +464,11 @@ def do_noisegain_for_fileset(inputlist, database, args):
                         allexptimes[extension] = []
 
                     if database is not None:
-                        database.addmeasurement("%s-%s-%s" % (
+                        identifier = "%s-%s-%s" % (
                             os.path.basename(sortedinputlist[pair_ii][0]),
                             os.path.basename(sortedinputlist[pair_ii][1]),
-                            extension), dateobs, camera, filter,
+                            extension)
+                        database.addmeasurement(identifier, dateobs, camera, filter,
                                                 extension, gains[extension], noises[extension], levels[extension],
                                                 shotnoises[extension], level1s[extension], level2s[extension],
                                                 readmode=readmode)
@@ -459,6 +480,10 @@ def do_noisegain_for_fileset(inputlist, database, args):
                     alllevel1s[extension].append(level1s[extension])
                     alllevel2s[extension].append(level2s[extension])
                     allexptimes[extension].append(exptimes[extension])
+
+    bias1.close()
+    bias2.close()
+
     if args.makepng:
         graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
 

@@ -38,7 +38,7 @@ class lcoimagerpropertydatabase:
         """ Check if a noisegain measurement based on two flat field expsoures already exists or not"""
 
         with self.conn:
-            query = 'select name from {} where (name like ?)'.format(tablename)
+            query = 'select name from {} where (name like %?%)'.format(tablename)
             cursor = self.conn.execute(query, ("%{}%".format(fitsimage),))
             allmatch = cursor.fetchall()
             if len(allmatch) > 0:
