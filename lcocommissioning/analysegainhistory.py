@@ -2,14 +2,13 @@ import errno
 import os
 import matplotlib
 
-from common.noisegaindb_orm import noisegaindb
+from lcocommissioning.common.noisegaindb_orm import noisegaindb
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
 import logging
 import datetime
-from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 from lcocommissioning.common.common import dateformat
 
 _logger = logging.getLogger(__name__)
