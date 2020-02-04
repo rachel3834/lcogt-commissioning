@@ -9,6 +9,7 @@ import numpy as np
 import argparse
 
 from build.lib.lcocommissioning.common import lcoarchivecrawler
+from lcocommissioning.common import lco_archive_utilities
 from lcocommissioning.common.ccd_noisegain import dosingleLevelGain
 from lcocommissioning.common.noisegaindb_orm import NoiseGainMeasurement, noisegaindb
 from lcocommissioning.common.Image import Image
@@ -28,6 +29,7 @@ def findkeywordinhdul(hdulist, keyword):
             return val
     return None
 
+
 def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame", ignoretemp=False, useaws=False):
     """ go through the list of input and sort files by bias and flat type.
     Find pairs of flats that are of the same exposure time / closest in illumination level."""
@@ -40,7 +42,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         # TODO: avoid opening all biases, it is pointless, need only 2!
 
         if useaws:
-            hdu = lcoarchivecrawler.download_from_archive(filecandidate['frameid'])
+            hdu = lco_archive_utilities.download_from_archive(filecandidate['frameid'])
         else:
             fitsfilepath = str(filecandidate['FILENAME'])
             hdu = fits.open(fitsfilepath)
@@ -198,12 +200,25 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.savefig("texplevel.png")
     plt.close()
 
+
 def frameidfromname(fname, filelist):
     """ Tool to look up a lco archive frame id for a filename.
     """
     return filelist[filelist['FILENAME'] == fname]['frameid'][0]
 
-def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=None):
+
+def do_noisegain_for_fileset(inputlist, database: noisegaindb, args, frameidtranslationtable=None):
+    ''' Go through a list of files (bias and flats) to measure noise and gain
+    on them. Optionally store results into a database backend make a nice graph.
+
+    :param inputlist: List full path to flat, bias images.
+    :param database: Database storage backend
+    :param args:
+    :param frameidtranslationtable: a table containing the 'FILENAME' and 'frameid' columns to translate
+                                    image path into a lco archive request. Used if the args.useaws flag is set,
+                                    in which case the images are downloaded via the archive API and not read from disk.
+    :return:
+    '''
     alllevels = {}
     allgains = {}
     allnoises = {}
@@ -212,7 +227,7 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
     alllevel2s = {}
     allexptimes = {}
 
-    _logger.info("Sifting through the input files and finding viable candidates")
+    _logger.info("Sifting through the input files and finding viable flat pair candidates")
     sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode,
                                          ignoretemp=args.ignoretemp, useaws=args.useaws)
     _logger.info("Found {} viable sets for input. Starting noise gain calculation.".format(len(sortedinputlist)))
@@ -226,9 +241,9 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
         print("Bias1 id", bias1_fname, bias1_frameid)
         print("Bias2 id", bias2_fname, bias2_frameid)
 
-    bias1 = fits.open(sortedinputlist['bias'][0]) if not args.useaws else lcoarchivecrawler.download_from_archive(
+    bias1 = fits.open(sortedinputlist['bias'][0]) if not args.useaws else lco_archive_utilities.download_from_archive(
         bias1_frameid)
-    bias2 = fits.open(sortedinputlist['bias'][1]) if not args.useaws else lcoarchivecrawler.download_from_archive(
+    bias2 = fits.open(sortedinputlist['bias'][1]) if not args.useaws else lco_archive_utilities.download_from_archive(
         bias2_frameid)
 
     for pair_ii in sortedinputlist:
@@ -240,13 +255,13 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
 
                 flat_1_fname = sortedinputlist[pair_ii][0]
                 flat_2_fname = sortedinputlist[pair_ii][1]
-                flat1 = fits.open(flat_1_fname) if not args.useaws else lcoarchivecrawler.download_from_archive(
+                flat1 = fits.open(flat_1_fname) if not args.useaws else lco_archive_utilities.download_from_archive(
                     frameidfromname(flat_1_fname, frameidtranslationtable))
-                flat2 = fits.open(flat_2_fname) if not args.useaws else lcoarchivecrawler.download_from_archive(
+                flat2 = fits.open(flat_2_fname) if not args.useaws else lco_archive_utilities.download_from_archive(
                     frameidfromname(flat_2_fname, frameidtranslationtable))
 
                 gains, levels, noises, shotnoises, level1s, level2s, exptimes = dosingleLevelGain(
-                    bias1, bias2, flat1, flat2, args, alreadyopenhdu=True)
+                    bias1, bias2, flat1, flat2, args)
 
                 # grabbing some meta data while we can
                 dateobs = findkeywordinhdul(flat1, 'DATE-OBS')
@@ -295,6 +310,7 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
     if args.makepng:
         graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
 
+
 def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='General purpose CCD noise and gain measurement from pairs of flat fields and biases.',
@@ -340,6 +356,7 @@ def parseCommandLine():
             sys.exit(0)
 
     return args
+
 
 def main():
     args = parseCommandLine()

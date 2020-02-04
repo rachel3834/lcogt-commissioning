@@ -141,12 +141,11 @@ def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=
     records = make_elasticsearch('fitsheaders', query_filters, queries, exclusion_filters=None, es_url=es_url,
                                  range_filters=range_filters, prefix_filters=prefix_filters,
                                  terms_filters=terms_filters).scan()
-    log.debug ("Reordering query results")
     records_sanitized = [[record['filename'], record['SITEID'], record['INSTRUME'], record['RLEVEL'], record['DAY-OBS'],
                           record['frameid']] for record in records]
-    log.debug ('Creating Table')
+
     t = Table(np.asarray(records_sanitized), names=('FILENAME', 'SITEID', 'INSTRUME', 'RLEVEL', 'DAY-OBS', 'frameid'))
-    log.debug (t)
+
     return t
 
 

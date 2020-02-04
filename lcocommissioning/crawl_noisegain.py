@@ -9,6 +9,34 @@ from lcocommissioning.noisegainrawmef import do_noisegain_for_fileset
 
 log = logging.getLogger(__name__)
 
+def find_files_and_invoke_noisegain(date, args, camera=None, cameratype=None):
+    """ Identify viable files for noisegain measuremnt from elasticsearch  and execute the noise gain calculation on those.
+    """
+    files = get_frames_for_noisegainanalysis(date, camera=camera, cameratype=cameratype if cameratype else None,
+                                             readmode=args.readmode)
+    filedict = filename_to_archivepath_dict(files)
+    for camera in filedict:
+        files = filedict[camera]
+        if len(files) >= 4:  # Chances we have two flats and two biases..... if less, no need to go on.
+            database = noisegaindb(args.database) if args.database is not None else None
+            if (database is not None) and args.noreprocessing:
+                # Remove duplicates - do not touch data we already analyzed and have a database record of.
+                for inputname in files['FILENAME']:
+                    if database.checkifalreadyused(os.path.basename(inputname)):
+                        log.info(
+                            "File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
+                        if database is not None:
+                            database.close()
+                        return
+            log.info("{} {} # files: {}".format(camera, date, len(files)))
+            try:
+                do_noisegain_for_fileset(files, database, args, frameidtranslationtable=files)
+            except Exception as e:
+                log.error('While doing noisegain for file set:', e)
+            if database is not None:
+                database.close()
+
+
 def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='Crawl LCO archive tyo measure noise, gain from paitrs of biases and darks',
@@ -56,36 +84,6 @@ def parseCommandLine():
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
     return args
-
-
-def find_files_and_invoke_noisegain(date, args, camera=None, cameratype=None):
-    """ Identify viable files for noisegain measuremnt from elasticsearch  and execute the noise gain calculation on those.
-    """
-    files = get_frames_for_noisegainanalysis(date, camera=camera, cameratype=cameratype if cameratype else None,
-                                             readmode=args.readmode)
-    filedict = filename_to_archivepath_dict(files)
-    print ("Filedict:" , filedict)
-    for camera in filedict:
-        files = filedict[camera]
-        if len(files) >= 4:  # Chances we have two flats and two biases..... if less, no need to go on.
-            database = noisegaindb(args.database) if args.database is not None else None
-            if (database is not None) and args.noreprocessing:
-                # Remove duplicates - do not touch data we already analyzed and have a database record of.
-                for inputname in files['FILENAME']:
-                    if database.checkifalreadyused(os.path.basename(inputname)):
-                        log.info(
-                            "File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
-                        if database is not None:
-                            database.close()
-                        return
-            log.info("{} {} # files: {}".format(camera, date, len(files)))
-            try:
-                do_noisegain_for_fileset(files, database, args, frameidtranslationtable=files)
-            except Exception as e:
-                log.error('While doing noisegain for file set:', e)
-            if database is not None:
-                database.close()
-
 
 def main():
     args = parseCommandLine()
