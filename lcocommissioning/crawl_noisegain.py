@@ -4,8 +4,8 @@ import multiprocessing as mp
 import os
 from concurrent.futures.process import ProcessPoolExecutor
 
+from lcocommissioning.common.noisegaindb_orm import noisegaindb
 from lcocommissioning.noisegainrawmef import do_noisegain_for_fileset
-from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
 from lcocommissioning.common.lcoarchivecrawler import ArchiveCrawler, get_frames_for_noisegainanalysis, \
     filename_to_archivepath
 
@@ -32,6 +32,7 @@ def parseCommandLine():
     mutex = parser.add_mutually_exclusive_group()
     mutex.add_argument('--date', dest='date', nargs='+', help='Specific date to process.')
     mutex.add_argument('--ndays', type=int)
+
     parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
     parser.add_argument('--readmode', default="full_frame",
                         help="CCD readmode, typically full_frame, default, or central_2k_2x2")
@@ -78,7 +79,7 @@ def findfilesanddonoisegain(date, args, camera=None, cameratype=None, useElastic
         files = filedict[camera]
 
         if len(files) >= 4:  # Chances we have two flats and two biases.....
-            database = noisegaindbinterface(args.database) if args.database is not None else None
+            database = noisegaindb(args.database) if args.database is not None else None
             if (database is not None) and args.noreprocessing:
                 # Remove duplicates - do not touch data we already analyzed and have a database record of.
                 for inputname in files['FILENAME']:

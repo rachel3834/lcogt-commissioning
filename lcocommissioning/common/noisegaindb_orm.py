@@ -101,6 +101,10 @@ class noisegaindb():
 
         return t
 
+    def checkifalreadyused(self, filename):
+        q = self.query(NoiseGainMeasurement.name).filter (NoiseGainMeasurement.name.like(f'%{filename}%'))
+        return q.all().count()
+
 
 if __name__ == '__main__':
     c = noisegaindb('noisegain.sqlite')

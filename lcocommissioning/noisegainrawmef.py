@@ -2,16 +2,14 @@
 Program to calculate the noise and gain for each extension of a given mef file
 """
 import logging
-import random
 import sys
 import os
 import os.path
 import numpy as np
 import math
 import argparse
-
-from common import lcoarchivecrawler
-from lcocommissioning.common.noisegaindbinterface import noisegaindbinterface
+from lcocommissioning.common import lcoarchivecrawler
+from lcocommissioning.common.noisegaindb_orm import NoiseGainMeasurement, noisegaindb
 from lcocommissioning.common.Image import Image
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -90,6 +88,7 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
 
     return (gain, readnoise, flatlevel, flatnoise, (flat1lvl - avgbiaslevel), (flat2lvl - avgbiaslevel))
 
+
 def findkeywordinhdul(hdulist, keyword):
     # f&*& fpack!
     for ext in hdulist:
@@ -97,6 +96,7 @@ def findkeywordinhdul(hdulist, keyword):
         if val is not None:
             return val
     return None
+
 
 def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame", ignoretemp=False, useaws=False):
     """ go through the list of input and sort files by bias and flat type.
@@ -218,6 +218,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
 
     return sortedlistofFiles
 
+
 def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True, alreadyopenhdu=False):
     """
     Calculate for each extension the noise and gain and print the result to console.
@@ -277,6 +278,7 @@ def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True
     print()
     return retval
 
+
 def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     _logger.debug("Plotting gain vs level")
     plt.figure()
@@ -326,10 +328,12 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.savefig("texplevel.png")
     plt.close()
 
+
 def frameidfromname(fname, filelist):
     """ Tool to look up a lco archive frame id for a filename.
     """
     return filelist[filelist['FILENAME'] == fname]['frameid'][0]
+
 
 def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=None):
     alllevels = {}
@@ -343,7 +347,6 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
     _logger.info("Sifting through the input files and finding viable candidates")
     sortedinputlist = sortinputfitsfiles(inputlist, sortby=args.sortby, selectedreadmode=args.readmode,
                                          ignoretemp=args.ignoretemp, useaws=args.useaws)
-
     _logger.info("Found {} viable sets for input. Starting noise gain calculation.".format(len(sortedinputlist)))
 
     bias1_fname = sortedinputlist['bias'][0]
@@ -401,10 +404,14 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
                             os.path.basename(sortedinputlist[pair_ii][0]),
                             os.path.basename(sortedinputlist[pair_ii][1]),
                             extension)
-                        database.addmeasurement(identifier, dateobs, camera, filter,
-                                                extension, gains[extension], noises[extension], levels[extension],
-                                                shotnoises[extension], level1s[extension], level2s[extension],
-                                                readmode=readmode)
+                        m = NoiseGainMeasurement(name=identifier,
+                                                 dateobs=dateobs, camera=camera, filter=filter, extension=extension,
+                                                 gain=gains[extension], readnoise=noises[extension],
+                                                 level=levels[extension],
+                                                 differencenoise=shotnoises[extension], level1=level1s[extension],
+                                                 level2=level2s[extension],
+                                                 readmode=readmode)
+                        database.addMeasureemnt(m)
 
                     alllevels[extension].append(levels[extension])
                     allgains[extension].append(gains[extension])
@@ -468,7 +475,7 @@ def parseCommandLine():
 
 def main():
     args = parseCommandLine()
-    database = noisegaindbinterface(args.database) if args.database is not None else None
+    database = noisegaindb(args.database) if args.database is not None else None
 
     if (database is not None) and args.noreprocessing:
         for inputname in args.fitsfile:
@@ -479,6 +486,7 @@ def main():
     do_noisegain_for_fileset(args.fitsfile, database, args)
 
     database.close()
+
 
 if __name__ == '__main__':
     main()

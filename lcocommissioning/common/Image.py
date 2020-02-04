@@ -5,10 +5,7 @@ import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
 
-from common import lcoarchivecrawler
-
 _log = logging.getLogger(__name__)
-
 
 class Image(object):
     """ Generic class to read in all SCI extensions from a fits file, be it fz compressed or not.

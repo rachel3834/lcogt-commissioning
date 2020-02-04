@@ -7,5 +7,6 @@ scipy
 sep
 peakutils
 sqlalchemy
+sqlalchemy_utils
 elasticsearch
 elasticsearch_dsl
