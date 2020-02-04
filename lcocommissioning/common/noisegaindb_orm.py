@@ -15,7 +15,6 @@ _logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
-
 class NoiseGainMeasurement(Base):
     __tablename__ = 'noisegain'
 
@@ -107,6 +106,7 @@ class noisegaindb():
 
 
 if __name__ == '__main__':
+    # TODO: Move this stuff into a test routine
     c = noisegaindb('noisegain.sqlite')
     print(c.getCameras())
     print(c.getReadmodesFroCamera('fa03'))

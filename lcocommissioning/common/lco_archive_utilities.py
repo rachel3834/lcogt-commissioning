@@ -20,7 +20,14 @@ logging.getLogger('connectionpool').setLevel(logging.WARNING)
 ARCHIVE_ROOT = "/archive/engineering"
 
 
-class ArchiveCrawler:
+class ArchiveDiskCrawler:
+    ''' Legacy code from the good old times (2019) when the /archive mount was accessible, and everybody was happy in
+    the file system land.
+
+    Now everybody moved on to databases, object stores, and other witchcraft.
+
+    '''
+
     archive_root = None
 
     def __init__(self, rootdirectory=ARCHIVE_ROOT):
@@ -28,7 +35,6 @@ class ArchiveCrawler:
 
     def find_cameras(self, sites=lco_site_lonlat, cameras=["fa??", "fs??", "kb??"]):
         sitecameras = []
-
         for site in sites:
             for camera in cameras:
                 dir = "{}/{}/{}".format(self.archive_root, site, camera)
@@ -37,7 +43,9 @@ class ArchiveCrawler:
         return sitecameras
 
     @staticmethod
-    def get_last_N_days(lastNdays):
+    def get_last_n_days(lastNdays):
+        ''' Utility method to return the last N days as string YYYYMMDD, nicely arranged in an array.'''
+
         date = []
         today = datetime.datetime.utcnow()
         for ii in range(lastNdays):
@@ -109,15 +117,14 @@ def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, ran
     return s
 
 
-def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=None, readmode='full_frame', mintexp=30,
-                                     filterlist=['gp', 'rp', 'ip', 'zp'], obstype=['BIAS', 'SKYFLAT'],
-                                     es_url='http://elasticsearch.lco.gtn:9200'):
+def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=None, readmode='full_frame',
+                                     obstype=['BIAS', 'SKYFLAT'], es_url='http://elasticsearch.lco.gtn:9200'):
     """ Queries for a list of processed LCO images that are viable to get a photometric zeropoint in the griz bands measured.
 
         Selection criteria are by DAY-OBS, site, by camaera type (fs,fa,kb), what filters to use, and minimum exposure time.
         Only day-obs is a mandatory fields, we do not want to query the entire archive at once.
      """
-
+    log.debug ("Starting elasticsearch query")
     query_filters = [{'DAY-OBS': dayobs}, {'RLEVEL': 0}, {'CONFMODE': readmode}]
     range_filters = []
     terms_filters = [{'OBSTYPE': obstype}]
@@ -134,21 +141,23 @@ def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=
     records = make_elasticsearch('fitsheaders', query_filters, queries, exclusion_filters=None, es_url=es_url,
                                  range_filters=range_filters, prefix_filters=prefix_filters,
                                  terms_filters=terms_filters).scan()
+    log.debug ("Reordering query results")
     records_sanitized = [[record['filename'], record['SITEID'], record['INSTRUME'], record['RLEVEL'], record['DAY-OBS'],
-                          record['frameid']]
-                         for record in records if (record['FILTER'] in filterlist) or (record['OBSTYPE'] == 'BIAS')]
-
+                          record['frameid']] for record in records]
+    log.debug ('Creating Table')
     t = Table(np.asarray(records_sanitized), names=('FILENAME', 'SITEID', 'INSTRUME', 'RLEVEL', 'DAY-OBS', 'frameid'))
+    log.debug (t)
     return t
 
 
-def filename_to_archivepath(filenametable, rootpath='/archive/engineering'):
-    '''return a dictionary with camera -> list of FileIO-able path of iamgers
+def filename_to_archivepath_dict(filenametable, rootpath='/archive/engineering'):
+    ''' Return a dictionary with camera -> list of FileIO-able path of imagers from an elastic search result.
+        We are still married to /archive file names here - because reasons. Long term we should go away from that.
     '''
+
     cameras = set(filenametable['INSTRUME'])
     returndict = {}
     for camera in cameras:
-        # returndict[camera] = ['{}/{}/{}/{}/{}/{}'.format(rootpath, record['SITEID'],record['INSTRUME'],record['DAY-OBS'],'raw',record['FILENAME']) for record in filenametable[filenametable['INSTRUME']== camera] ]
         returndict[camera] = [['{}/{}/{}/{}/{}/{}'.format(rootpath, record['SITEID'], record['INSTRUME'],
                                                           record['DAY-OBS'], 'raw', record['FILENAME']),
                                record['frameid']] for record in filenametable[filenametable['INSTRUME'] == camera]]
@@ -186,11 +195,11 @@ def download_from_archive(frameid):
 if __name__ == '__main__':
 
     camera = 'fa15'
-    dates = ArchiveCrawler.get_last_N_days(20)
+    dates = ArchiveDiskCrawler.get_last_n_days(20)
 
     for dayobs in dates:
         listofframes = get_frames_for_noisegainanalysis(dayobs, cameratype='fa')
-        filelist = filename_to_archivepath(listofframes)
+        filelist = filename_to_archivepath_dict(listofframes)
         print("{} {} ".format(dayobs, filelist.keys()))
 
     # c = ArchiveCrawler()

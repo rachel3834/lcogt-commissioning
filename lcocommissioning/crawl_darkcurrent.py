@@ -91,7 +91,7 @@ def main ():
 if __name__ == '__main__':
     args = parseCommandLine()
     c = ArchiveCrawler()
-    dates = c.get_last_N_days(args.ndays)
+    dates = c.get_last_n_days(args.ndays)
     cameras = c.find_cameras(cameras=args.cameratype)
 
     for camera in cameras:
