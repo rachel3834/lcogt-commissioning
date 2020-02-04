@@ -90,54 +90,6 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
 
     return (gain, readnoise, flatlevel, flatnoise, (flat1lvl - avgbiaslevel), (flat2lvl - avgbiaslevel))
 
-
-def parseCommandLine():
-    parser = argparse.ArgumentParser(
-        description='General purpose CCD noise and gain measurement from pairs of flat fields and biases.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('fitsfile', type=str, nargs='+',
-                        help='Input fits files, must include at least two bias and two flat field frames.')
-
-    group = parser.add_argument_group(
-        'Optionally, specify the location of statistics window. All units in pixels with an FITS image extension')
-    group.add_argument('--minx', type=int, default=None, help="minimum x.")
-    group.add_argument('--maxx', type=int, default=None, help="maximum x.")
-    group.add_argument('--miny', type=int, default=None, help="miniumm y.")
-    group.add_argument('--maxy', type=int, default=None, help="maximum y.")
-
-    parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None,
-                        help="pathname to prepend to fits file names.")
-    parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
-    parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime', 'filterlevel'],
-                        help="Automatically group flat fiel;ds by exposure time (great if using dome flas, or lab flats)."
-                             ", or by measured light level (great when using sky flats, but more computing intensive")
-    parser.add_argument('--readmode', default="full_frame")
-    parser.add_argument('--noreprocessing', action='store_true',
-                        help="Do not reprocess if data are already in database")
-    parser.add_argument('--ignoretemp', action='store_true',
-                        help="ignore if actual temperature differs from set point temperature. Reject by default.")
-
-    parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
-                        help='Set the debug level')
-    parser.add_argument('--showimages', action='store_true', help="Interactively show difference flat and bias images.")
-    parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
-
-    args = parser.parse_args()
-
-    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
-                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
-
-    for ii in range(len(args.fitsfile)):
-        if args.opt_imagepath is not None:
-            args.fitsfile[ii] = "%s/%s" % (args.opt_imagepath, args.fitsfile[ii])
-        if not os.path.isfile(args.fitsfile[ii]):
-            _logger.error("File %s does not exist. Giving up." % (args.fitsfile[ii]))
-            sys.exit(0)
-
-    return args
-
-
 def findkeywordinhdul(hdulist, keyword):
     # f&*& fpack!
     for ext in hdulist:
@@ -145,7 +97,6 @@ def findkeywordinhdul(hdulist, keyword):
         if val is not None:
             return val
     return None
-
 
 def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_frame", ignoretemp=False, useaws=False):
     """ go through the list of input and sort files by bias and flat type.
@@ -267,7 +218,6 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
 
     return sortedlistofFiles
 
-
 def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True, alreadyopenhdu=False):
     """
     Calculate for each extension the noise and gain and print the result to console.
@@ -327,7 +277,6 @@ def dosingleLevelGain(fbias1, fbias2, fflat1, fflat2, args, overscancorrect=True
     print()
     return retval
 
-
 def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     _logger.debug("Plotting gain vs level")
     plt.figure()
@@ -377,26 +326,10 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.savefig("texplevel.png")
     plt.close()
 
-
-def main():
-    args = parseCommandLine()
-    database = noisegaindbinterface(args.database) if args.database is not None else None
-
-    if (database is not None) and args.noreprocessing:
-        for inputname in args.fitsfile:
-            if database.checkifalreadyused(os.path.basename(inputname)):
-                _logger.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
-                exit(0)
-
-    do_noisegain_for_fileset(args.fitsfile, database, args)
-
-    database.close()
-
-
 def frameidfromname(fname, filelist):
-    # _logger.debug ("Finding frame id for {}: \n {}".format (fname, filelist[filelist['FILENAME'] == fname]))
+    """ Tool to look up a lco archive frame id for a filename.
+    """
     return filelist[filelist['FILENAME'] == fname]['frameid'][0]
-
 
 def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=None):
     alllevels = {}
@@ -487,6 +420,65 @@ def do_noisegain_for_fileset(inputlist, database, args, frameidtranslationtable=
     if args.makepng:
         graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes)
 
+def parseCommandLine():
+    parser = argparse.ArgumentParser(
+        description='General purpose CCD noise and gain measurement from pairs of flat fields and biases.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('fitsfile', type=str, nargs='+',
+                        help='Input fits files, must include at least two bias and two flat field frames.')
+
+    group = parser.add_argument_group(
+        'Optionally, specify the location of statistics window. All units in pixels with an FITS image extension')
+    group.add_argument('--minx', type=int, default=None, help="minimum x.")
+    group.add_argument('--maxx', type=int, default=None, help="maximum x.")
+    group.add_argument('--miny', type=int, default=None, help="miniumm y.")
+    group.add_argument('--maxy', type=int, default=None, help="maximum y.")
+
+    parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None,
+                        help="pathname to prepend to fits file names.")
+    parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
+    parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime', 'filterlevel'],
+                        help="Automatically group flat fiel;ds by exposure time (great if using dome flas, or lab flats)."
+                             ", or by measured light level (great when using sky flats, but more computing intensive")
+    parser.add_argument('--readmode', default="full_frame")
+    parser.add_argument('--noreprocessing', action='store_true',
+                        help="Do not reprocess if data are already in database")
+    parser.add_argument('--ignoretemp', action='store_true',
+                        help="ignore if actual temperature differs from set point temperature. Reject by default.")
+
+    parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
+                        help='Set the debug level')
+    parser.add_argument('--showimages', action='store_true', help="Interactively show difference flat and bias images.")
+    parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
+
+    args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
+    for ii in range(len(args.fitsfile)):
+        if args.opt_imagepath is not None:
+            args.fitsfile[ii] = "%s/%s" % (args.opt_imagepath, args.fitsfile[ii])
+        if not os.path.isfile(args.fitsfile[ii]):
+            _logger.error("File %s does not exist. Giving up." % (args.fitsfile[ii]))
+            sys.exit(0)
+
+    return args
+
+def main():
+    args = parseCommandLine()
+    database = noisegaindbinterface(args.database) if args.database is not None else None
+
+    if (database is not None) and args.noreprocessing:
+        for inputname in args.fitsfile:
+            if database.checkifalreadyused(os.path.basename(inputname)):
+                _logger.info("File %s was already used in a noise measurement. Skipping this entire batch." % inputname)
+                exit(0)
+
+    do_noisegain_for_fileset(args.fitsfile, database, args)
+
+    database.close()
 
 if __name__ == '__main__':
     main()

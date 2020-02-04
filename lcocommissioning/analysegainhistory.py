@@ -2,6 +2,8 @@ import errno
 import os
 import matplotlib
 
+from common.noisegaindb_orm import noisegaindb
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
@@ -96,10 +98,10 @@ def renderHTMLPage(args, cameras):
         f.close()
 
 
-def make_plots_for_camera(camera, args):
-    database = noisegaindbinterface(args.database)
+def make_plots_for_camera(camera, args, database):
+
     outputdir = args.outputdir
-    _logger.info("readmodes: {}".format(database.get_readmodes_for_cameras(camera)))
+    _logger.info("readmodes: {} {}".format(camera, database.getReadmodesFroCamera(camera)))
     readmodes = [None, ]
 
     starttime = starttimeall
@@ -108,7 +110,7 @@ def make_plots_for_camera(camera, args):
         readmodes = fareadmodes
 
     for readmode in readmodes:
-        dataset = database.readmeasurements(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
+        dataset = database.getMeasurementsForCamera(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
         if dataset is None:
             return
         extensions = sorted(set(dataset['extension']))
@@ -119,8 +121,6 @@ def make_plots_for_camera(camera, args):
         plot_levelgain(camera, dataset, extensions, outputdir, readmode)
         plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode)
         plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode)
-
-    database.close()
 
 
 def plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode=None):
@@ -249,11 +249,11 @@ def main():
     plt.style.use('ggplot')
     matplotlib.rcParams['savefig.dpi'] = 400
 
-    database = noisegaindbinterface(args.database)
-    cameras = args.cameras if args.cameras is not None else database.getcameras()
-    _logger.debug("Cameras: {}".format(cameras))
+    database = noisegaindb(args.database)
+    cameras = args.cameras if args.cameras is not None else database.getCameras()
+    _logger.info("Cameras: {}".format(cameras))
     for camera in cameras:
-        make_plots_for_camera(camera, args)
+        make_plots_for_camera(camera, args, database)
 
     renderHTMLPage(args, sorted(cameras))
     database.close()

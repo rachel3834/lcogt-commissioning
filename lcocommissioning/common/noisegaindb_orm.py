@@ -70,13 +70,13 @@ class noisegaindb():
         if commit:
             self.session.commit()
 
-    def getMeasurementsForCamera(self, camera=None, readmode=None, filter=None, extension=None, levelratio=None):
+    def getMeasurementsForCamera(self, camera=None, readmode=None, filters=None, extension=None, levelratio=None):
 
         q = self.session.query(NoiseGainMeasurement).filter(NoiseGainMeasurement.camera == camera)
         if readmode is not None:
-            q = q.filter(NoiseGainMeasurement.readmode == readmode)
-        if filter is not None:
-            q = q.filter(NoiseGainMeasurement.filter == filter)
+            q = q.filter(NoiseGainMeasurement.readmode.in_(readmode))
+        if filters is not None:
+            q = q.filter(NoiseGainMeasurement.filter.in_(filters))
         if extension is not None:
             q = q.filter(NoiseGainMeasurement.extension == extension)
 
@@ -106,5 +106,5 @@ if __name__ == '__main__':
     c = noisegaindb('noisegain.sqlite')
     print(c.getCameras())
     print(c.getReadmodesFroCamera('fa03'))
-    print(c.getMeasurementsForCamera('fa03', readmode= 'full_frame'))
+    print(c.getMeasurementsForCamera('fa03', readmode= 'full_frame', filter=['gp','rp']))
     c.close()
