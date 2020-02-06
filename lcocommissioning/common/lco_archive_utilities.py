@@ -18,6 +18,7 @@ logging.getLogger('elasticsearch').setLevel(logging.WARNING)
 logging.getLogger('connectionpool').setLevel(logging.WARNING)
 
 ARCHIVE_ROOT = "/archive/engineering"
+ARCHIVE_API_TOKEN = os.getenv('ARCHIVE_API_TOKEN', '')
 
 
 class ArchiveDiskCrawler:
@@ -163,9 +164,6 @@ def filename_to_archivepath_dict(filenametable, rootpath='/archive/engineering')
 
         returndict[camera] = Table(np.asarray(returndict[camera]), names=['FILENAME', 'frameid'])
     return returndict
-
-
-ARCHIVE_API_TOKEN = os.getenv('ARCHIVE_API_TOKEN', '')
 
 
 def download_from_archive(frameid):

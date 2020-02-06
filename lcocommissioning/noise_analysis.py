@@ -92,6 +92,7 @@ def plot_quadrant_ffts(params):
     log.info ("Working on image {}".format (args.fitsfile))
 
     plotord = [ 1, 3, 4, 2 ]
+    plotord = [1]
     fig = plt.figure(2)
     for q,qid in enumerate(plotord):
 
@@ -226,7 +227,7 @@ def quadrant_stats(params):
     
     (image, params) = get_image_data(params)
     image_stats = {}
-    for q in range(0,4,1):
+    for q in range(0,1,4):
         region = params['regions'][q]
         quad_image = image[region[0]:region[1],region[2]:region[3]]
         image_stats[q] = basic_stats(quad_image)
