@@ -1,9 +1,6 @@
 import errno
 import os
 import matplotlib
-
-from lcocommissioning.common.noisegaindb_orm import noisegaindb
-
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
@@ -12,6 +9,7 @@ import datetime
 import boto3
 import io
 from lcocommissioning.common.common import dateformat
+from lcocommissioning.common.noisegaindb_orm import noisegaindb
 
 _logger = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.FATAL)
@@ -308,6 +306,8 @@ def main():
 
     database = noisegaindb(args.database)
     cameras = args.cameras if args.cameras is not None else database.getCameras()
+    #we are not intersted in old fl data that may be included
+    cameras = [ c for c in cameras if not c.startswith('fl')]
     _logger.info("Cameras: {}".format(cameras))
 
     filenames = []

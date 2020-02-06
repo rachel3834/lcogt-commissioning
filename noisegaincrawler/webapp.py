@@ -4,7 +4,9 @@
 Simple Flask application to handle dynamically generating the HTML based on
 the available images for the Long Term Photometric Zero Point web application
 '''
+import logging
 
+from botocore.exceptions import ClientError
 from flask import Flask
 from flask import render_template
 
@@ -40,19 +42,21 @@ def s3_list_objects():
         for elem in page.get('Contents', []):
             yield elem
 
+
+
 def build_site_info_dict():
     retval = collections.defaultdict(list)
     # TODO: instead of site -> filenames make a site->telescope->filenames dictionary
     for objdict in s3_list_objects():
         filename = objdict['Key']
         parts = filename.split('-')
-        if len(parts) >= 2 and parts[0] == 'photzptrend' and parts[4].startswith('rp'):
-            sitecode = parts[1]
-            retval[sitecode].append(filename)
+        if len(parts) >= 2 and parts[0] == 'photzptrend':
+            cameracode = parts[1]
+            retval[cameracode].append(filename)
 
     # Sort it appropriately
     for key, values in retval.items():
-        values.sort(key = lambda x: x[-16: -4])
+        values.sort(key = lambda x: x[0: 4])
 
     return retval
 
