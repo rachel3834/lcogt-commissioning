@@ -4,8 +4,8 @@ import re
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
-_log = logging.getLogger(__name__)
 
+_log = logging.getLogger(__name__)
 
 class Image(object):
     """ Generic class to read in all SCI extensions from a fits file, be it fz compressed or not.
@@ -16,7 +16,7 @@ class Image(object):
 
     filename = None
 
-    def __init__(self, filename, overscancorrect=False, gaincorrect=False, skycorrect=False, trim=True, minx=None, maxx=None,miny=None,maxy=None):
+    def __init__(self, filename, alreadyopenedhdu=False , overscancorrect=False, gaincorrect=False, skycorrect=False, trim=True, minx=None, maxx=None,miny=None,maxy=None):
         """
         Load an image from a FITS file
 
@@ -47,10 +47,14 @@ class Image(object):
         Sinsitro frames that were taken as datacubes will be munged later so that the
         output images are consistent
         """
-        hdulist = fits.open(filename, 'readonly')
+        if alreadyopenedhdu:
+            hdulist = filename
+        else:
+            hdulist = fits.open(filename, 'readonly')
+
         # Get the main header
         self.primaryheader = hdulist[0].header
-        if filename.endswith(".fz"):
+        if alreadyopenedhdu or filename.endswith(".fz") :
             for card in hdulist[1].header:
                 self.primaryheader.append (card)
 
@@ -126,7 +130,8 @@ class Image(object):
         except KeyError:
             self.bpm = None
 
-        hdulist.close()
+        if not alreadyopenedhdu:
+            hdulist.close()
 
     def getccddata (self, extension):
         """
