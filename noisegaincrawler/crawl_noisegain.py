@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-from concurrent.futures.process import ProcessPoolExecutor
 from lcocommissioning.common.lco_archive_utilities import ArchiveDiskCrawler, get_frames_for_noisegainanalysis, \
     filename_to_archivepath_dict
 from lcocommissioning.common.noisegaindb_orm import noisegaindb
@@ -10,7 +9,7 @@ from lcocommissioning.noisegainrawmef import do_noisegain_for_fileset
 log = logging.getLogger(__name__)
 
 def find_files_and_invoke_noisegain(date, args, camera=None, cameratype=None):
-    """ Identify viable files for noisegain measuremnt from elasticsearch  and execute the noise gain calculation on those.
+    """ Identify viable files for noisegain measurement from elasticsearch  and execute the noise gain calculation on those.
     """
     files = get_frames_for_noisegainanalysis(date, camera=camera, cameratype=cameratype if cameratype else None,
                                              readmode=args.readmode)
