@@ -22,7 +22,7 @@ setuptools.setup(
                             'noisegainmef = lcocommissioning.noisegainrawmef:main',
                             'submitXtalkObservation = lcocommissioning.submitXtalkObservation:main',
                             'analysgainhistory = lcocommissioning.analysegainhistory:main',
-                            'crawlnoisegain = lcocommissioning.crawl_noisegain:main',
+                            'crawlnoisegain = noisegaincrawler.crawl_noisegain:main',
                             'submitNamedModeTest = lcocommissioning.submitNameModeTest:main',
                             'sinistrocrosstalk = lcocommissioning.crosstalk:main',
                             'focuscurve = lcocommissioning.focuscurve:main'],

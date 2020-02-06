@@ -95,6 +95,5 @@ def main():
             find_files_and_invoke_noisegain(date, args, camera=args.instrument, cameratype=ct)
     log.info("All Done")
 
-
 if __name__ == '__main__':
     main()
