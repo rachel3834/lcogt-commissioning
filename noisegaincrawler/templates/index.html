@@ -27,23 +27,36 @@
 
     {% for image in filenames %}
 
-    {% set photzptrend_image = image %}
-    {% set url = generate_presigned_url(photzptrend_image) %}
+    {% set gainhistory_image = image %}
+    {% set url = generate_presigned_url(gainhistory_image) %}
     <a href="{{ url|safe }}">
       <img src="{{ url|safe }}" height="450" />
     </a>
 
-    {% set colortermtrend_image = image.replace('photzptrend', 'colortermtrend') %}
-    {% set url = generate_presigned_url(colortermtrend_image) %}
+    {% set ptc_image = image.replace('gainhist', 'ptchist') %}
+    {% set url = generate_presigned_url(ptc_image) %}
     <a href="{{ url|safe }}">
       <img src="{{ url|safe }}" height="450" />
     </a>
 
-    {% set airmasstrend_image = image.replace('photzptrend', 'airmasstrend') %}
-    {% set url = generate_presigned_url(colortermtrend_image) %}
+    {% set gainhist_image = image.replace('gainhist', 'levelgain') %}
+    {% set url = generate_presigned_url(gainhist_image) %}
     <a href="{{ url|safe }}">
       <img src="{{ url|safe }}" height="450" />
     </a>
+
+    {% set noise_image = image.replace('gainhist', 'noise') %}
+    {% set url = generate_presigned_url(noise_image) %}
+    <a href="{{ url|safe }}">
+      <img src="{{ url|safe }}" height="450" />
+    </a>
+
+    {% set flatlevel_image = image.replace('gainhist', 'flatlevel') %}
+    {% set url = generate_presigned_url(flatlevel_image) %}
+    <a href="{{ url|safe }}">
+      <img src="{{ url|safe }}" height="450" />
+    </a>
+
     <br/>
     {% endfor %}
     {% endfor %}

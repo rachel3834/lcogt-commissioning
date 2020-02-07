@@ -13,7 +13,6 @@ from flask import render_template
 import collections
 import datetime
 import boto3
-import sys
 import os
 
 app = Flask(__name__)
@@ -22,7 +21,7 @@ def get_last_update_time_from_object():
     client = boto3.client('s3')
     params = {
         'Bucket': os.environ.get('AWS_S3_BUCKET', None),
-        'Key': 'allmodels_2m01m0_rp.png',
+        'Key': 'index.html',
     }
     response = client.head_object(**params)
     return response['LastModified']
@@ -50,7 +49,7 @@ def build_site_info_dict():
     for objdict in s3_list_objects():
         filename = objdict['Key']
         parts = filename.split('-')
-        if len(parts) >= 2 and parts[0] == 'photzptrend':
+        if len(parts) >= 2 and parts[0] == 'gainhist':
             cameracode = parts[1]
             retval[cameracode].append(filename)
 
@@ -66,6 +65,7 @@ def generate_presigned_url(filename):
     params = {
         'Bucket': os.environ.get('AWS_S3_BUCKET', None),
         'Key': filename,
+        'filedir' : os.environ.get('PNG_FILE_DIR', None)
     }
     expiration = int(datetime.timedelta(days=7).total_seconds())
     try:
