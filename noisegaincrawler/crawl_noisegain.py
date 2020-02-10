@@ -58,7 +58,7 @@ def parseCommandLine():
     mutex.add_argument('--ndays', type=int, help='Look back for the last 3 days, including current one, as in DAY-OBS')
 
     parser.add_argument('--useaws', action='store_true')
-    parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
+    parser.add_argument('--database', default="sqlite:///noisegain.sqlite", help="sqlite database where to store results.")
 
     parser.add_argument('--readmode', default="full_frame",
                         help="CCD readmode, typically full_frame, default, or central_2k_2x2")

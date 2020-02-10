@@ -32,7 +32,7 @@ def parseCommandLine():
     parser.add_argument('--outputdir', default='gainhistory', help="directory for output graphs")
 
     parser.add_argument('--cameras', default=None, nargs="*")
-    parser.add_argument('--database', default="noisegain.sqlite")
+    parser.add_argument('--database', default="sqlite:///noisegain.sqlite")
     parser.add_argument('--ncpu', default=1, type=int)
     args = parser.parse_args()
 

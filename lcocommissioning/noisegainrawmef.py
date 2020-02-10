@@ -294,7 +294,7 @@ def do_noisegain_for_fileset(inputlist, database: noisegaindb, args, frameidtran
                                                  differencenoise=shotnoises[extension], level1=level1s[extension],
                                                  level2=level2s[extension],
                                                  readmode=readmode)
-                        database.addMeasureemnt(m)
+                        database.addMeasurement(m)
 
                     alllevels[extension].append(levels[extension])
                     allgains[extension].append(gains[extension])
