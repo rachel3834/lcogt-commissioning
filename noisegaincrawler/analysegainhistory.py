@@ -1,24 +1,21 @@
 import errno
 import os
 import matplotlib
-
-from lcocommissioning.common.noisegaindb_orm import noisegaindb
-
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
 import logging
 import datetime
+import boto3
+import io
 from lcocommissioning.common.common import dateformat
+from lcocommissioning.common.noisegaindb_orm import noisegaindb
 
 _logger = logging.getLogger(__name__)
-
-mpl_logger = logging.getLogger('matplotlib')
-mpl_logger.setLevel(logging.FATAL)
+logging.getLogger('matplotlib').setLevel(logging.FATAL)
 
 starttimeall = datetime.datetime(2016, 1, 1)
 starttimefa = datetime.datetime(2018, 7, 1)
-
 endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=31 + 4)
 endtime.replace(day=1)
 
@@ -53,7 +50,35 @@ def parseCommandLine():
     return args
 
 
-def renderHTMLPage(args, cameras):
+def aws_enabled():
+    '''Return True if AWS support is configured'''
+    access_key = os.environ.get('AWS_ACCESS_KEY_ID', None)
+    secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+    s3_bucket = os.environ.get('AWS_S3_BUCKET', None)
+    region = os.environ.get('AWS_DEFAULT_REGION', None)
+
+    return access_key and secret_key and s3_bucket and region
+
+
+def write_to_storage_backend(directory, filename, data, binary=True):
+    _logger.info (f"writing object {filename}")
+    if aws_enabled():
+        # AWS S3 Bucket upload
+        client = boto3.client('s3')
+        bucket = os.environ.get('AWS_S3_BUCKET', None)
+        with io.BytesIO(data) as fileobj:
+            _logger.debug(f'Write data to AWS S3: {bucket}/{filename}')
+            response = client.upload_fileobj(fileobj, bucket, filename)
+            return response
+    else:
+        fullpath = os.path.join(directory, filename)
+        _logger.info (f'writing to file system {fullpath}')
+        with open(fullpath, 'wb' if binary else 'w') as fileobj:
+            fileobj.write(data)
+            return True
+
+
+def renderHTMLPage(args, cameras, filenames):
     _logger.info("Now rendering output html page")
 
     outputfile = "%s/index.html" % (args.outputdir)
@@ -92,13 +117,18 @@ def renderHTMLPage(args, cameras):
 
     message = message + "</body></html>"
 
-    with open(outputfile, 'w+') as f:
-        f.write(message)
-        f.close()
+    with io.StringIO() as fileobj:
+        fileobj.write(message)
+        filename = 'index.html'
+        write_to_storage_backend(args.outputdir, filename, fileobj.getvalue(), binary=False)
+
 
 
 def make_plots_for_camera(camera, args, database):
+    ''' Crate a list of plots for all cameras matching pattern and retuirn a list of filenames of the resulting plots.
+    '''
 
+    filenames = []
     outputdir = args.outputdir
     _logger.info("readmodes: {} {}".format(camera, database.getReadmodesFroCamera(camera)))
     readmodes = [None, ]
@@ -115,11 +145,14 @@ def make_plots_for_camera(camera, args, database):
         extensions = sorted(set(dataset['extension']))
         if readmode is not None:
             readmode = [x if x is not None else 'None' for x in readmode]
-        plot_ptc(camera, dataset, extensions, outputdir, readmode)
-        plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode)
-        plot_levelgain(camera, dataset, extensions, outputdir, readmode)
-        plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode)
-        plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode)
+
+        filenames.append(plot_ptc(camera, dataset, extensions, outputdir, readmode))
+        filenames.append(plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode))
+        filenames.append(plot_levelgain(camera, dataset, extensions, outputdir, readmode))
+        filenames.append(plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode))
+        filenames.append(plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode))
+
+    return filenames
 
 
 def plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmode=None):
@@ -135,9 +168,14 @@ def plot_flatlevelhist(camera, dataset, extensions, outputdir, starttime, readmo
     plt.title('Flat level vs time for %s' % camera)
     plt.legend()
     readmode = "".join(readmode) if readmode is not None else ""
-    plt.savefig("{}/flatlevel-{}{}.png".format(outputdir, camera, readmode))
+
+    with io.BytesIO() as fileobj:
+        plt.savefig(fileobj, format='png', bbox_inches='tight')
+        plt.close()
+        filename = "flatlevel-{}{}.png".format(camera, readmode)
+        write_to_storage_backend(outputdir, filename, fileobj.getvalue())
     plt.cla()
-    plt.close()
+    return filename
 
 
 def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=None):
@@ -161,9 +199,13 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
     plt.title('Readnoise vs time for %s %s' % (camera, readmode))
     plt.legend()
 
-    plt.savefig("{}/noise-{}{}.png".format(outputdir, camera, readmode))
+    with io.BytesIO() as fileobj:
+        plt.savefig(fileobj, format='png', bbox_inches='tight')
+        plt.close()
+        filename = "noise-{}{}.png".format(camera, readmode)
+        write_to_storage_backend(outputdir, filename, fileobj.getvalue())
     plt.cla()
-    plt.close()
+    return filename
 
 
 def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
@@ -189,9 +231,13 @@ def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
     plt.title('Level vs Gain for %s %s' % (camera, readmode))
     plt.legend()
 
-    plt.savefig("{}/levelgain-{}{}.png".format(outputdir, camera, readmode))
+    with io.BytesIO() as fileobj:
+        plt.savefig(fileobj, format='png', bbox_inches='tight')
+        plt.close()
+        filename = "levelgain-{}{}.png".format(camera, readmode)
+        write_to_storage_backend(outputdir, filename, fileobj.getvalue())
     plt.cla()
-    plt.close()
+    return filename
 
 
 def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=None):
@@ -216,9 +262,15 @@ def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=No
     plt.title('Gain history for %s %s ' % (camera, readmode))
     dateformat(starttime, endtime)
     plt.legend()
-    plt.savefig("{}/gainhist-{}{}.png".format(outputdir, camera, readmode))
+
+    with io.BytesIO() as fileobj:
+        plt.savefig(fileobj, format='png', bbox_inches='tight')
+        plt.close()
+        filename = "gainhist-{}{}.png".format(camera, readmode)
+        write_to_storage_backend(outputdir, filename, fileobj.getvalue())
+
     plt.cla()
-    plt.close()
+    return filename
 
 
 def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
@@ -235,9 +287,13 @@ def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
     plt.ylim([5, 1000])
     plt.xlim([1, 70000])
     plt.legend()
-    plt.savefig("{}/ptchist-{}{}.png".format(outputdir, camera, readmode))
+    with io.BytesIO() as fileobj:
+        plt.savefig(fileobj, format='png', bbox_inches='tight')
+        plt.close()
+        filename = "ptchist-{}{}.png".format(camera, readmode)
+        write_to_storage_backend(outputdir, filename, fileobj.getvalue())
     plt.cla()
-    plt.close()
+    return filename
 
 
 goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'U', 'B', 'V', 'R', 'I']
@@ -250,11 +306,15 @@ def main():
 
     database = noisegaindb(args.database)
     cameras = args.cameras if args.cameras is not None else database.getCameras()
+    #we are not intersted in old fl data that may be included
+    cameras = [ c for c in cameras if not c.startswith('fl')]
     _logger.info("Cameras: {}".format(cameras))
-    for camera in cameras:
-        make_plots_for_camera(camera, args, database)
 
-    renderHTMLPage(args, sorted(cameras))
+    filenames = []
+    for camera in cameras:
+        filenames += make_plots_for_camera(camera, args, database)
+
+    renderHTMLPage(args, sorted(cameras), filenames)
     database.close()
 
 

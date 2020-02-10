@@ -10,3 +10,6 @@ sqlalchemy
 sqlalchemy_utils
 elasticsearch
 elasticsearch_dsl
+boto3==1.11.10
+Flask==1.1.1
+gunicorn[gevent]==20.0.4
