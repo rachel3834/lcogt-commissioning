@@ -8,7 +8,6 @@ import os.path
 import numpy as np
 import argparse
 
-from build.lib.lcocommissioning.common import lcoarchivecrawler
 from lcocommissioning.common import lco_archive_utilities
 from lcocommissioning.common.ccd_noisegain import dosingleLevelGain
 from lcocommissioning.common.noisegaindb_orm import NoiseGainMeasurement, noisegaindb
