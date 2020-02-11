@@ -65,7 +65,6 @@ def generate_presigned_url(filename):
     params = {
         'Bucket': os.environ.get('AWS_S3_BUCKET', None),
         'Key': filename,
-        'filedir' : os.environ.get('PNG_FILE_DIR', None)
     }
     expiration = int(datetime.timedelta(days=7).total_seconds())
     try:
