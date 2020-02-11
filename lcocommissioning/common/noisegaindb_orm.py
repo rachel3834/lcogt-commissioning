@@ -51,10 +51,11 @@ class NoiseGainMeasurement(Base):
 
 class noisegaindb():
     def __init__(self, fname):
-        _logger.debug("Open data base file %s" % (fname))
-        self.engine = create_engine(f'{fname}', echo=False)
-        if not database_exists(self.engine.url):
-            create_database(self.engine.url)
+        _logger.debug("Open data base file %s" % fname)
+        self.engine = create_engine(fname, echo=False)
+        # This fails in AWS since user has no privilege to inspect databases.....
+        #if not database_exists(self.engine.url):
+        #    create_database(self.engine.url)
         NoiseGainMeasurement.__table__.create(bind=self.engine, checkfirst=True)
         self.session = sessionmaker(bind=self.engine)()
 

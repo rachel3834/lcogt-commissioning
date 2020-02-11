@@ -13,4 +13,4 @@ elasticsearch_dsl==7.1.0
 boto3==1.11.14
 Flask==1.1.1
 gunicorn[gevent]==20.0.4
-psycopg2==2.8.4
+psycopg2-binary==2.8.4
