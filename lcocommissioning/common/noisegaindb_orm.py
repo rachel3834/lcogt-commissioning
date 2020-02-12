@@ -1,6 +1,8 @@
 import logging
 import sys
 import datetime
+from copy import deepcopy
+
 import numpy as np
 import sqlalchemy
 from astropy.table import Table
@@ -21,18 +23,18 @@ class NoiseGainMeasurement(Base):
     __tablename__ = 'noisegain'
 
     # def __init__(self, rec):
-    #     self.name=rec.name
-    #     self.dateobs = rec.dateobs
-    #     self.camera = rec.camera
-    #     self.filter = rec. filter
-    #     self.extension = rec.extension
-    #     self.gain = rec.gain
-    #     self.radnoise = rec.readnoise
-    #     self.level = rec.level
-    #     self.differencenoise = rec.differencenoise
-    #     self.level1 = rec.level1
-    #     self.level2 = rec.level2
-    #     self.readmode = rec.readmode
+    #       self.name=rec.name
+    #       self.dateobs = rec.dateobs
+    #       self.camera = rec.camera
+    #       self.filter = rec. filter
+    #       self.extension = rec.extension
+    #       self.gain = rec.gain
+    #       self.readnoise = rec.readnoise
+    #       self.level = rec.level
+    #       self.differencenoise = rec.differencenoise
+    #       self.level1 = rec.level1
+    #       self.level2 = rec.level2
+    #       self.readmode = rec.readmode
 
     name = Column(String, primary_key=True)
     dateobs = Column(String)
@@ -54,11 +56,11 @@ class NoiseGainMeasurement(Base):
 class noisegaindb():
     def __init__(self, fname):
         _logger.debug("Open data base file %s" % fname)
-        self.engine = create_engine(fname, echo=True)
+        self.engine = create_engine(fname, echo=False)
         # This fails in AWS since user has no privilege to inspect databases.....
         # if not database_exists(self.engine.url):
         #    create_database(self.engine.url)
-        NoiseGainMeasurement.__table__.create(bind=self.engine, checkfirst=False)
+        NoiseGainMeasurement.__table__.create(bind=self.engine, checkfirst=True)
         self.session = sessionmaker(bind=self.engine)()
 
     def close(self):
@@ -96,8 +98,9 @@ class noisegaindb():
             if not (None in readmode):
                 q = q.filter(NoiseGainMeasurement.readmode.in_(readmode))
             else:
-                readmode.remove(None)
-                q = q.filter(or_(NoiseGainMeasurement.readmode.in_(readmode), NoiseGainMeasurement.readmode.is_(None)))
+                newmodearray =deepcopy(readmode)
+                newmodearray.remove(None)
+                q = q.filter(or_(NoiseGainMeasurement.readmode.in_(newmodearray), NoiseGainMeasurement.readmode.is_(None)))
 
         if filters is not None:
             q = q.filter(NoiseGainMeasurement.filter.in_(filters))
