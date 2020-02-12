@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="lcocommissioning",
-    version="1.0.1",
+    version="2.0.1",
     author="Daniel Harbeck",
     author_email="dharbeck@lco.global",
     description="Tool to characterize CCD detectors and other commissioning tasks for the LCO observatory.",
@@ -21,7 +21,7 @@ setuptools.setup(
         'console_scripts': ['submitNRESObservation = lcocommissioning.nres.submitNRESObservation:main',
                             'noisegainmef = lcocommissioning.noisegainrawmef:main',
                             'submitXtalkObservation = lcocommissioning.submitXtalkObservation:main',
-                            'analysgainhistory = noisegaincrawler.analysegainhistory:main',
+                            'analysegainhistory = noisegaincrawler.analysegainhistory:main',
                             'crawlnoisegain = noisegaincrawler.crawl_noisegain:main',
                             'submitNamedModeTest = lcocommissioning.submitNameModeTest:main',
                             'sinistrocrosstalk = lcocommissioning.crosstalk:main',

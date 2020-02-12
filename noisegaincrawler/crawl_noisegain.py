@@ -31,7 +31,7 @@ def find_files_and_invoke_noisegain(date, args, camera=None, cameratype=None):
             try:
                 do_noisegain_for_fileset(files, database, args, frameidtranslationtable=files)
             except Exception as e:
-                log.error('While doing noisegain for file set:', e)
+                log.error(f'While doing noisegain for file set: {e}')
             if database is not None:
                 database.close()
 
@@ -58,7 +58,7 @@ def parseCommandLine():
     mutex.add_argument('--ndays', type=int, help='Look back for the last 3 days, including current one, as in DAY-OBS')
 
     parser.add_argument('--useaws', action='store_true')
-    parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
+    parser.add_argument('--database', default="sqlite:///noisegain.sqlite", help="sqlite database where to store results.")
 
     parser.add_argument('--readmode', default="full_frame",
                         help="CCD readmode, typically full_frame, default, or central_2k_2x2")
@@ -74,20 +74,26 @@ def parseCommandLine():
                         help='Set the debug level')
 
     args = parser.parse_args()
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
     args.sortby = "filterlevel"
     if args.ndays is not None:
+        log.info (f"Determining dates from ndays argument {args.ndays}")
         args.dates = ArchiveDiskCrawler.get_last_n_days(args.ndays)
     else:
         args.dates = args.date
 
-    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
-                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
+
     return args
 
 def main():
     args = parseCommandLine()
+
     if args.cameratype is None:
         args.cameratype = args.camera[0:2]
+    log.info (f"These are the dates to process: {args.dates}")
     for date in args.dates:
         for ct in args.cameratype:
             log.debug ("Processing fro date, cameratype, camera {} {} {}".format (date, args.cameratype, args.instrument))

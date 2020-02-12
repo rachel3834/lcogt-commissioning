@@ -8,7 +8,6 @@ import os.path
 import numpy as np
 import argparse
 
-from build.lib.lcocommissioning.common import lcoarchivecrawler
 from lcocommissioning.common import lco_archive_utilities
 from lcocommissioning.common.ccd_noisegain import dosingleLevelGain
 from lcocommissioning.common.noisegaindb_orm import NoiseGainMeasurement, noisegaindb
@@ -44,6 +43,8 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         if useaws:
             hdu = lco_archive_utilities.download_from_archive(filecandidate['frameid'])
         else:
+            print ("Candidates: ", filecandidate)
+            filecandidate = {"FILENAME" : filecandidate}
             fitsfilepath = str(filecandidate['FILENAME'])
             hdu = fits.open(fitsfilepath)
 
@@ -157,12 +158,14 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     for ext in alllevels:
         gains = np.asarray(allgains[ext])
         levels = np.asarray(alllevels[ext])
-        statdata = gains[(levels > 1000) & (levels < 30000) & (gains < 20)]
+        statdata = gains[(levels > 1000) & (levels < 50000) & (gains < 20)]
+        bestgain = np.mean(statdata)
         for iter in range(2):
-            mediangain = np.median(statdata)
-            stdgain = np.std(statdata)
-            goodgains = (np.abs(statdata - mediangain) < 1 * stdgain)
-            bestgain = np.mean(statdata[goodgains])
+            if len(statdata >=3):
+                mediangain = np.median(statdata)
+                stdgain = np.std(statdata)
+                goodgains = (np.abs(statdata - mediangain) < 1 * stdgain)
+                bestgain = np.mean(statdata[goodgains])
 
         plt.plot(alllevels[ext], allgains[ext], 'o', label="extension %s data" % (ext))
         plt.hlines(bestgain, 0, 64000, label="Ext %d gain: %5.2f e-/ADU" % (ext, bestgain))
@@ -289,12 +292,12 @@ def do_noisegain_for_fileset(inputlist, database: noisegaindb, args, frameidtran
                             extension)
                         m = NoiseGainMeasurement(name=identifier,
                                                  dateobs=dateobs, camera=camera, filter=filter, extension=extension,
-                                                 gain=gains[extension], readnoise=noises[extension],
-                                                 level=levels[extension],
-                                                 differencenoise=shotnoises[extension], level1=level1s[extension],
-                                                 level2=level2s[extension],
+                                                 gain=float(gains[extension]), readnoise=float(noises[extension]),
+                                                 level=float(levels[extension]),
+                                                 differencenoise=float(shotnoises[extension]), level1=float(level1s[extension]),
+                                                 level2=float(level2s[extension]),
                                                  readmode=readmode)
-                        database.addMeasureemnt(m)
+                        database.addMeasurement(m)
 
                     alllevels[extension].append(levels[extension])
                     allgains[extension].append(gains[extension])
@@ -328,7 +331,7 @@ def parseCommandLine():
 
     parser.add_argument('--imagepath', dest='opt_imagepath', type=str, default=None,
                         help="pathname to prepend to fits file names.")
-    parser.add_argument('--database', default="noisegain.sqlite", help="sqlite database where to store results.")
+    parser.add_argument('--database', default="sqlite:///noisegain.sqlite", help="sqlite database where to store results.")
     parser.add_argument('--sortby', type=str, default="exptime", choices=['exptime', 'filterlevel'],
                         help="Automatically group flat fiel;ds by exposure time (great if using dome flas, or lab flats)."
                              ", or by measured light level (great when using sky flats, but more computing intensive")
@@ -344,6 +347,7 @@ def parseCommandLine():
     parser.add_argument('--makepng', action='store_true', help="Create a png output image of noise, gain, and ptc.")
 
     args = parser.parse_args()
+    args.useaws=False
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')

@@ -18,6 +18,20 @@ Base = declarative_base()
 class NoiseGainMeasurement(Base):
     __tablename__ = 'noisegain'
 
+    # def __init__(self, rec):
+    #     self.name=rec.name
+    #     self.dateobs = rec.dateobs
+    #     self.camera = rec.camera
+    #     self.filter = rec. filter
+    #     self.extension = rec.extension
+    #     self.gain = rec.gain
+    #     self.radnoise = rec.readnoise
+    #     self.level = rec.level
+    #     self.differencenoise = rec.differencenoise
+    #     self.level1 = rec.level1
+    #     self.level2 = rec.level2
+    #     self.readmode = rec.readmode
+
     name = Column(String, primary_key=True)
     dateobs = Column(String)
     camera = Column(String, index=True)
@@ -31,13 +45,17 @@ class NoiseGainMeasurement(Base):
     level2 = Column(Float)
     readmode = Column(String, index=True)
 
+    def __repr__(self):
+        return f'{self.name} {self.filter} {self.gain} {self.readnoise}'
+
 
 class noisegaindb():
     def __init__(self, fname):
-        _logger.debug("Open data base file %s" % (fname))
-        self.engine = create_engine(f'sqlite:///{fname}', echo=False)
-        if not database_exists(self.engine.url):
-            create_database(self.engine.url)
+        _logger.debug("Open data base file %s" % fname)
+        self.engine = create_engine(fname, echo=False)
+        # This fails in AWS since user has no privilege to inspect databases.....
+        #if not database_exists(self.engine.url):
+        #    create_database(self.engine.url)
         NoiseGainMeasurement.__table__.create(bind=self.engine, checkfirst=True)
         self.session = sessionmaker(bind=self.engine)()
 
@@ -59,7 +77,7 @@ class noisegaindb():
         allrows = np.asarray([e.readmode for e in q.all()])
         return allrows
 
-    def addMeasureemnt(self, m, commit=True):
+    def addMeasurement(self, m, commit=True):
         existingEntry = self.exists(m.name)
         if (existingEntry):
             existingEntry.dateobs = m.dateobs
@@ -101,8 +119,8 @@ class noisegaindb():
         return t
 
     def checkifalreadyused(self, filename):
-        q = self.query(NoiseGainMeasurement.name).filter (NoiseGainMeasurement.name.like(f'%{filename}%'))
-        return q.all().count()
+        q = self.session.query(NoiseGainMeasurement.name).filter (NoiseGainMeasurement.name.like(f'%{filename}%'))
+        return q.all().count(NoiseGainMeasurement.name)
 
 
 if __name__ == '__main__':
