@@ -292,10 +292,10 @@ def do_noisegain_for_fileset(inputlist, database: noisegaindb, args, frameidtran
                             extension)
                         m = NoiseGainMeasurement(name=identifier,
                                                  dateobs=dateobs, camera=camera, filter=filter, extension=extension,
-                                                 gain=gains[extension], readnoise=noises[extension],
-                                                 level=levels[extension],
-                                                 differencenoise=shotnoises[extension], level1=level1s[extension],
-                                                 level2=level2s[extension],
+                                                 gain=float(gains[extension]), readnoise=float(noises[extension]),
+                                                 level=float(levels[extension]),
+                                                 differencenoise=float(shotnoises[extension]), level1=float(level1s[extension]),
+                                                 level2=float(level2s[extension]),
                                                  readmode=readmode)
                         database.addMeasurement(m)
 
