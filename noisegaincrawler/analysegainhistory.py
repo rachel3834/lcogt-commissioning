@@ -308,7 +308,7 @@ goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'U', 'B', 'V', 'R', 'I']
 def main():
     args = parseCommandLine()
     plt.style.use('ggplot')
-    matplotlib.rcParams['savefig.dpi'] = 400
+    matplotlib.rcParams['savefig.dpi'] = 300
 
     database = noisegaindb(args.database)
     cameras = args.cameras if args.cameras is not None else database.getCameras()
