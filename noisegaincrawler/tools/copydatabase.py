@@ -32,11 +32,11 @@ if __name__ == '__main__':
 
 
     q = input.session.query (NoiseGainMeasurement)
-
     print ("Found {} records to copy.".format(q.count()))
-    for e in q.all():
-        d = NoiseGainMeasurement(e)
-        output.session.add (d)
+    newdata = [NoiseGainMeasurement(e) for e in q.all()]
+
+    print ("Now doing bulk insert")
+    output.session.bulk_save_objects (newdata)
 
     output.session.commit()
 
