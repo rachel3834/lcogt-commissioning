@@ -31,7 +31,7 @@ def find_files_and_invoke_noisegain(date, args, camera=None, cameratype=None):
             try:
                 do_noisegain_for_fileset(files, database, args, frameidtranslationtable=files)
             except Exception as e:
-                log.error('While doing noisegain for file set:', e)
+                log.error(f'While doing noisegain for file set: {e}')
             if database is not None:
                 database.close()
 
