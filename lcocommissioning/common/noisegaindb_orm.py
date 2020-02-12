@@ -119,8 +119,8 @@ class noisegaindb():
         return t
 
     def checkifalreadyused(self, filename):
-        q = self.query(NoiseGainMeasurement.name).filter (NoiseGainMeasurement.name.like(f'%{filename}%'))
-        return q.all().count()
+        q = self.session.query(NoiseGainMeasurement.name).filter (NoiseGainMeasurement.name.like(f'%{filename}%'))
+        return q.all().count(NoiseGainMeasurement.name)
 
 
 if __name__ == '__main__':
