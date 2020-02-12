@@ -27,12 +27,12 @@ CRAWLNOISEGAIN_ARGS=(
     "--database=${DATABASE}"
 )
 
-time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --cameratype="fa??" --readmode="full_frame"
-time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --cameratype="fa??" --readmode="central_2k_2x2"
-time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --cameratype="fs??" --readmode="default"
-time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --cameratype="kb??" --readmode="default"
+time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --useaws --cameratype="fa??" --readmode="full_frame"
+time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --useaws --cameratype="fa??" --readmode="central_2k_2x2"
+time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --useaws --cameratype="fs??" --readmode="default"
+time crawlnoisegain "${CRAWLNOISEGAIN_ARGS[@]}" --useaws --cameratype="kb??" --readmode="default"
 
-time analysegainhistory --database="${DATABASE}" --outputdir="${OUTPUTDIR}"
+time analysegainhistory --database="${DATABASE}"
 
 # This script doesn't check any exit codes to confirm successful operation,
 # so we won't bother either, and just always assume the best and exit with

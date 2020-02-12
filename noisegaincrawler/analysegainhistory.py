@@ -29,7 +29,7 @@ def parseCommandLine():
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
-    parser.add_argument('--outputdir', default='gainhistory', help="directory for output graphs")
+    parser.add_argument('--outputdir', default=None,  help="directory for output graphs")
 
     parser.add_argument('--cameras', default=None, nargs="*")
     parser.add_argument('--database', default="sqlite:///noisegain.sqlite")
@@ -39,13 +39,16 @@ def parseCommandLine():
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
 
-    if not os.path.exists(args.outputdir):
-        _logger.info("Creating output directory [%s]" % args.outputdir)
-        try:
-            os.makedirs(args.outputdir)
-        except OSError as exc:  # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
+    if not aws_enabled():
+        if (args.outputdir is not None) and (not os.path.exists(args.outputdir)):
+            _logger.info("Creating output directory [%s]" % args.outputdir)
+            try:
+                os.makedirs(args.outputdir)
+            except OSError as exc:  # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+    else:
+        _logger.info ("Working in AWS environment, not using file system storage backend.")
 
     return args
 
