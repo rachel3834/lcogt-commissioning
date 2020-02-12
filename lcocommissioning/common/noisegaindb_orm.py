@@ -2,18 +2,20 @@ import logging
 import sys
 import datetime
 import numpy as np
+import sqlalchemy
 from astropy.table import Table
 import astropy.time as astt
 import math
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Float, create_engine
+from sqlalchemy import Column, Integer, String, Float, create_engine, or_
 
 assert sys.version_info >= (3, 5)
 _logger = logging.getLogger(__name__)
 
 Base = declarative_base()
+
 
 class NoiseGainMeasurement(Base):
     __tablename__ = 'noisegain'
@@ -52,11 +54,11 @@ class NoiseGainMeasurement(Base):
 class noisegaindb():
     def __init__(self, fname):
         _logger.debug("Open data base file %s" % fname)
-        self.engine = create_engine(fname, echo=False)
+        self.engine = create_engine(fname, echo=True)
         # This fails in AWS since user has no privilege to inspect databases.....
-        #if not database_exists(self.engine.url):
+        # if not database_exists(self.engine.url):
         #    create_database(self.engine.url)
-        NoiseGainMeasurement.__table__.create(bind=self.engine, checkfirst=True)
+        NoiseGainMeasurement.__table__.create(bind=self.engine, checkfirst=False)
         self.session = sessionmaker(bind=self.engine)()
 
     def close(self):
@@ -91,7 +93,12 @@ class noisegaindb():
 
         q = self.session.query(NoiseGainMeasurement).filter(NoiseGainMeasurement.camera == camera)
         if readmode is not None:
-            q = q.filter(NoiseGainMeasurement.readmode.in_(readmode))
+            if not (None in readmode):
+                q = q.filter(NoiseGainMeasurement.readmode.in_(readmode))
+            else:
+                readmode.remove(None)
+                q = q.filter(or_(NoiseGainMeasurement.readmode.in_(readmode), NoiseGainMeasurement.readmode.is_(None)))
+
         if filters is not None:
             q = q.filter(NoiseGainMeasurement.filter.in_(filters))
         if extension is not None:
@@ -113,13 +120,15 @@ class noisegaindb():
         t['level1'] = t['level1'].astype(float)
         t['level2'] = t['level2'].astype(float)
 
+        print("Unique items: {} {}".format(set(t['readmode']), set(t['filter'])))
+
         if levelratio is not None:
             t = t[abs((t['level1'] - t['level2']) / t['level']) < levelratio]
 
         return t
 
     def checkifalreadyused(self, filename):
-        q = self.session.query(NoiseGainMeasurement.name).filter (NoiseGainMeasurement.name.like(f'%{filename}%'))
+        q = self.session.query(NoiseGainMeasurement.name).filter(NoiseGainMeasurement.name.like(f'%{filename}%'))
         return q.all().count(NoiseGainMeasurement.name)
 
 
@@ -128,5 +137,5 @@ if __name__ == '__main__':
     c = noisegaindb('noisegain.sqlite')
     print(c.getCameras())
     print(c.getReadmodesFroCamera('fa03'))
-    print(c.getMeasurementsForCamera('fa03', readmode= 'full_frame', filter=['gp','rp']))
+    print(c.getMeasurementsForCamera('fa03', readmode='full_frame', filter=['gp', 'rp']))
     c.close()
