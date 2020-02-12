@@ -18,19 +18,19 @@ Base = declarative_base()
 class NoiseGainMeasurement(Base):
     __tablename__ = 'noisegain'
 
-    def __init__(self, rec):
-        self.name=rec.name
-        self.dateobs = rec.dateobs
-        self.camera = rec.camera
-        self.filter = rec. filter
-        self.extension = rec.extension
-        self.gain = rec.gain
-        self.radnoise = rec.readnoise
-        self.level = rec.level
-        self.differencenoise = rec.differencenoise
-        self.level1 = rec.level1
-        self.level2 = rec.level2
-        self.readmode = rec.readmode
+    # def __init__(self, rec):
+    #     self.name=rec.name
+    #     self.dateobs = rec.dateobs
+    #     self.camera = rec.camera
+    #     self.filter = rec. filter
+    #     self.extension = rec.extension
+    #     self.gain = rec.gain
+    #     self.radnoise = rec.readnoise
+    #     self.level = rec.level
+    #     self.differencenoise = rec.differencenoise
+    #     self.level1 = rec.level1
+    #     self.level2 = rec.level2
+    #     self.readmode = rec.readmode
 
     name = Column(String, primary_key=True)
     dateobs = Column(String)
