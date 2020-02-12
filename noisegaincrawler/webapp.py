@@ -21,10 +21,17 @@ def get_last_update_time_from_object():
     client = boto3.client('s3')
     params = {
         'Bucket': os.environ.get('AWS_S3_BUCKET', None),
-        'Key': 'index.html',
+        'Key': 'gainhist-fa03full_frameNone.png',
     }
-    response = client.head_object(**params)
-    return response['LastModified']
+    try:
+        response = client.head_object(**params)
+        return response['LastModified']
+    except:
+        print ("Error while identifying last modified tag")
+        pass
+    return None
+
+
 
 def s3_list_objects():
     '''
@@ -90,9 +97,12 @@ def healthz():
     return 'Healthy!\n'
 
 def main():
+    #app.run(port=8080)
     pass
 
 if __name__ == '__main__':
     main()
+
+
 
 # vim: set ts=4 sts=4 sw=4 et tw=120:
