@@ -69,10 +69,13 @@ def write_to_storage_backend(directory, filename, data, binary=True):
         # AWS S3 Bucket upload
         client = boto3.client('s3')
         bucket = os.environ.get('AWS_S3_BUCKET', None)
-        with io.BytesIO(data) as fileobj:
-            _logger.debug(f'Write data to AWS S3: {bucket}/{filename}')
-            response = client.upload_fileobj(fileobj, bucket, filename)
-            return response
+        try:
+            with io.BytesIO(data) as fileobj:
+                _logger.debug(f'Write data to AWS S3: {bucket}/{filename}')
+                response = client.upload_fileobj(fileobj, bucket, filename)
+                return response
+        except:
+            _logger.exception(f"While storing object {filename} into backend.")
     else:
         fullpath = os.path.join(directory, filename)
         _logger.info (f'writing to file system {fullpath}')
