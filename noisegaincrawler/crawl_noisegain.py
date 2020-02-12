@@ -74,20 +74,26 @@ def parseCommandLine():
                         help='Set the debug level')
 
     args = parser.parse_args()
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
     args.sortby = "filterlevel"
     if args.ndays is not None:
+        log.info (f"Determining dates from ndays argument {args.ndays}")
         args.dates = ArchiveDiskCrawler.get_last_n_days(args.ndays)
     else:
         args.dates = args.date
 
-    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
-                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
+
     return args
 
 def main():
     args = parseCommandLine()
+
     if args.cameratype is None:
         args.cameratype = args.camera[0:2]
+    log.info (f"These are the dates to process: {args.dates}")
     for date in args.dates:
         for ct in args.cameratype:
             log.debug ("Processing fro date, cameratype, camera {} {} {}".format (date, args.cameratype, args.instrument))
