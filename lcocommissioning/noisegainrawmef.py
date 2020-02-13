@@ -298,6 +298,7 @@ def do_noisegain_for_fileset(inputlist, database: noisegaindb, args, frameidtran
                                                  level2=float(level2s[extension]),
                                                  readmode=readmode)
                         database.addMeasurement(m)
+                        _logger.info (f"Added to database: {m}")
 
                     alllevels[extension].append(levels[extension])
                     allgains[extension].append(gains[extension])
