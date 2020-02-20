@@ -18,14 +18,17 @@ def createRequestsForStar(context):
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
     targetPointing = SkyCoord(context.radec.ra, context.radec.dec)
+    pm_ra = context.pm[0]
+    pm_dec = context.pm[1]
+    print (f"Proper motion is {pm_ra} {pm_dec}")
 
     pointing = {
         "type": "SIDEREAL",
         "name": "NRES commissioning {}".format(context.targetname),
         "epoch": "2000.0000000",
         "equinox": "2000.0000000",
-        "pro_mot_ra": "0",
-        "pro_mot_dec": "0",
+        "proper_motion_ra": pm_ra,
+        "proper_motion_dec": pm_dec,
         "parallax": "0.0000000",
         "ra": "%10f" % targetPointing.ra.degree,
         "dec": "%10f" % targetPointing.dec.degree,
@@ -93,6 +96,7 @@ def parseCommandLine():
                         help='Force WCSW based acquistion')
     parser.add_argument('--window', default=3, type=int, help="scheduling window length")
     parser.add_argument('--ipp', default=1.0, help="IPP priority for block")
+    parser.add_argument('--pm', type=float, nargs=2,help="proper motion RA DEC in marcsec / year")
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
@@ -130,6 +134,7 @@ def parseCommandLine():
 def main():
     args = parseCommandLine()
     createRequestsForStar(args)
+    exit (0)
 
 if __name__ == '__main__':
     main()
