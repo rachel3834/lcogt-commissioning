@@ -44,4 +44,7 @@ request = {
 
 }
 
-common.send_to_lake (request, dosubmit=True)
+print ("Need to update this program for direct submission. Quitting.")
+exit(1)
+
+common.submit_observation (request, dosubmit=True)
