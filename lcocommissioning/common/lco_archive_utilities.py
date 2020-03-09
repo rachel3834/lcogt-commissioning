@@ -58,10 +58,8 @@ class ArchiveDiskCrawler:
     def findfiles_for_camera_dates(sitecamera, date, raworprocessed, filetempalte, prefix=""):
         dir = "{}{}/{}/{}/{}".format(prefix, sitecamera, date, raworprocessed, filetempalte)
         files = glob.glob(dir)
-        print(dir, files)
         if (files is not None) and (len(files) > 0):
             myfiles = np.asarray ([[f, "-1"] for f in files])
-            print (myfiles)
             return Table(myfiles, names=['FILENAME', 'FRAMEID'])
         return None
 
