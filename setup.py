@@ -10,7 +10,7 @@ setuptools.setup(
     author_email="dharbeck@lco.global",
     description="Tool to characterize CCD detectors and other commissioning tasks for the LCO observatory.",
     long_description=long_description,
-    url="https://github.com/drhaz/lcogt-commissioning",
+    url="https://github.com/LCOGT/lcogt-commissioning",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
