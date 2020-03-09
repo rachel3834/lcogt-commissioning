@@ -115,61 +115,72 @@ def createRequestsForStar_pond(context):
         start = str(start).replace(' ', 'T')
         end = str(end).replace(' ', 'T')
 
-        print("Block for %s Q %d from %s to %s" % (context.targetname, quadrant, str(start), str(end)))
-
-        block_params = {
-            "molecules": [],
-            'start': start,
-            'end': end,
-            'site': context.site,
-            'observatory': context.dome,
-            'telescope': context.telescope,
-            'instrument_class': '1m0-SciCam-Sinistro'.upper(),
-            'priority': 30,
-        }
+        print("Observation for %s Q %d from %s to %s" % (context.targetname, quadrant, str(start), str(end)))
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
 
+        observation = {
+            'name': 'Sinistro x talk commissioning',
+            'proposal': 'LCOEngineering',
+            'start': start,
+            'end': end,
+            'site': context.site,
+            'enclosure': context.dome,
+            'telescope': context.telescope,
+            'priority': 30,
+            'request': {
+                'configurations': [{
+                    'type': 'EXPOSE',
+                    'instrument_type': '1m0-SciCam-Sinistro'.upper(),
+                    'instrument_name': context.instrument,
+                    'instrument_configs': [],
+                    'target': {
+                        'type': 'ICRS',
+                        'name': '%s x talk q %d' % (context.targetname, quadrant),
+                        'epoch': 2000,
+                        'ra': '%10f' % offsetPointing.ra.degree,
+                        'dec': '%7f' % offsetPointing.dec.degree,
+                        'proper_motion_ra': '%7.3f' % context.pp[0],
+                        'proper_motion_dec': '%7.3f' % context.pp[1],
+                    },
+                    'acquisition_config': {
+                        'mode': 'OFF'
+                    },
+                    'guiding_config': {
+                        'mode': 'ON',
+                        'optional': True
+                    },
+                    'constraints': {
+                        'max_airmass': 20.0,
+                        'min_lunar_distance': 0.0,
+                    }
+                }]
+            }
+        }
         for exptime in context.exp_times:
-            moleculeargs = {
-                'inst_name': context.instrument,
-                'bin': 2,
+            instrument_config = {
                 'exposure_time': exptime,
-                "readout_mode": context.readmode,
                 'exposure_count': context.exp_cnt,
+                'mode': context.readmode,
                 'bin_x': 2,
                 'bin_y': 2,
-                #         'ag_mode': 'ON',
-
-                'filter': context.filter,
-                'pointing': {"type": "SP",
-                             "name": "%s x talk q %d" % (context.targetname, quadrant),
-                             "coord_type": "RD",
-                             "coord_sys": "ICRS",
-                             "epoch": "2000",
-                             "equinox": "2000",
-                             "ra": "%10f" % offsetPointing.ra.degree,
-                             "dec": "%7f" % offsetPointing.dec.degree,
-                             "proper_motion_ra": "%7.3f" % context.pp[0],
-                             "proper_motion_dec": "%7.3f" % context.pp[1],
-                             },
-
-                'group': 'Sinistro x talk commissioning',
-                'user_id': context.user,
-                'prop_id': 'LCOEngineering',
-                'defocus': context.defocus,
-                'type': 'EXPOSE'
+                'optical_elements': {
+                    'filter': context.filter
+                },
+                'extra_params': {}
             }
+            if context.defocus is not None:
+                instrument_config['extra_params']['defocus'] = context.defocus
 
-            block_params['molecules'].append(moleculeargs)
+            observation['request']['configurations'][0]['instrument_configs'].append(instrument_config)
 
-        common.send_to_lake(block_params, context.opt_confirmed)
+        common.submit_observation(observation, context.opt_confirmed)
 
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='X-Talk calibration submission tool\nSubmit to LAKE the request to observe a bright star, '
-                    'defocussed, at 1,3,6,12 sec exposure time, on each quadrant. Useful when commissioing a camera '
+        description='X-Talk calibration submission tool\nSubmit to Observation Portal the request to observe a bright star, '
+                    'defocussed, at 1,3,6,12 sec exposure time, on each quadrant. Useful when commissioning a camera '
                     'that is not available via scheduler yet.')
 
     parser.add_argument('--site', required=True, choices=common.lco_1meter_sites,
@@ -191,7 +202,6 @@ def parseCommandLine():
     parser.add_argument('--nodither', action='store_true',
                         help='Do not dither the exposure')
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
-    parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
     parser.add_argument('--exp-times', nargs="*", type=float, default=[2, 4, 6, 12], help="List of exposure times")
     parser.add_argument('--exp-cnt', type=int, default=1, help="How often to reapeat each exposure")
     parser.add_argument('--ipp', type=float, default=1.0, help="ipp value")
@@ -201,9 +211,9 @@ def parseCommandLine():
     parser.add_argument('--pp', default=[0., 0.], nargs=2, type=float, help="Proper motion, mas/yr")
     parser.add_argument('--schedule-window', default=2, type=float)
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
-                        help='If set, block will be submitted. If omitted, nothing will be submitted.')
+                        help='If set, observation will be submitted. If omitted, nothing will be submitted.')
     parser.add_argument('--scheduler', action='store_true',
-                        help='If set, submit to scheduler instead of Lake.')
+                        help='If set, submit to scheduler instead of directly.')
 
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')

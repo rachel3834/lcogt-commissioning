@@ -44,4 +44,4 @@ request = {
 
 }
 
-common.send_to_lake (request, dosubmit=True)
+common.submit_observation (request, dosubmit=True)

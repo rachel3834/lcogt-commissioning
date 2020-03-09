@@ -10,9 +10,8 @@ from astropy.coordinates import SkyCoord, Angle
 
 _log = logging.getLogger(__name__)
 # LCO Request submisison definitions
-LAKE_URL = 'http://lake.lco.gtn'
 VALHALLA_URL = os.getenv('VALHALLA_URL', 'http://internal-observation-portal.lco.gtn')
-VALHALLA_API_TOKEN = os.getenv('VALHALLA_API_TOKEN', '')
+VALHALLA_TOKEN = os.getenv('VALHALLA_TOKEN', '')
 
 # LCO sites
 lco_site_lonlat = {'bpl': (-119.863103, 34.433161),
@@ -113,7 +112,7 @@ def send_request_to_portal (requestgroup, dosubmit=False):
 
     response = requests.post(
         'https://observe.lco.global/api/requestgroups/',
-        headers={'Authorization': 'Token {}'.format(VALHALLA_API_TOKEN)},
+        headers={'Authorization': 'Token {}'.format(VALHALLA_TOKEN)},
         json=requestgroup  # Make sure you use json!
     )
     # Make sure the API call was successful
@@ -134,7 +133,7 @@ def send_to_scheduler(user_request,  dosubmit=False):
     """Submit a user request to LCO Scheduler via Valhalla interface
     """
 
-    auth = 'Token {token}'.format(token=VALHALLA_API_TOKEN)
+    auth = 'Token {token}'.format(token=VALHALLA_TOKEN)
     print(auth)
     url = '{api_root}/api/userrequests/'.format(api_root=VALHALLA_URL)
 
@@ -155,18 +154,21 @@ def send_to_scheduler(user_request,  dosubmit=False):
         print('UserRequest that was validated: {}'.format(user_request))
 
 
-def send_to_lake(block, dosubmit=False):
+def submit_observation(observation, dosubmit=False):
     """ Submit a user request to LCO POND"""
     if dosubmit:
-        response = requests.post(LAKE_URL + '/blocks/', json=block)
+        headers = {'Authorization': 'Token {token}'.format(token=VALHALLA_TOKEN)}
+        response = requests.post(VALHALLA_URL + '/api/schedule/', json=observation, headers=headers)
         try:
             response.raise_for_status()
             _log.info(
-                'Submitted block with id: {0}. Check it at {1}/blocks/{0}'.format(response.json()['id'], LAKE_URL))
+                'Submitted observation with id: {0}. Check it at {1}/observations/{0}'.format(
+                    response.json()['id'], VALHALLA_URL
+                )
+            )
         except Exception:
             _log.error(
-                'Failed to submit block: error code {}: {}'.format(response.status_code, response.content))
-
+                'Failed to submit observation: error code {}: {}'.format(response.status_code, response.content))
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates

@@ -94,7 +94,7 @@ def createRequestsForStar(context):
         block['molecules'].append (molecule)
 
         _logger.debug (json.dumps(block,indent=4))
-        common.send_to_lake(block, context.opt_confirmed)
+        common.submit_observation(block, context.opt_confirmed)
 
 
 def parseCommandLine():
