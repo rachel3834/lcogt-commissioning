@@ -158,6 +158,8 @@ def parseCommandLine():
 
 
 def main():
+    print ("Need to update this program for direct submission. Quitting.")
+    exit(1)
     args = parseCommandLine()
     createRequestsForStar(args)
 
