@@ -59,9 +59,12 @@ class ArchiveDiskCrawler:
         dir = "{}{}/{}/{}/{}".format(prefix, sitecamera, date, raworprocessed, filetempalte)
         files = glob.glob(dir)
         print(dir, files)
-        files = [[f, "-1"] for f in files]
-        return Table(files, names=['FILENAME', 'FRAMEID'])
-        return (files)
+        if (files is not None) and (len(files) > 0):
+            myfiles = np.asarray ([[f, "-1"] for f in files])
+            print (myfiles)
+            return Table(myfiles, names=['FILENAME', 'FRAMEID'])
+        return None
+
 
 
 def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, range_filters=None, prefix_filters=None,
