@@ -1,5 +1,5 @@
 import requests
-from lcocommissioning.common.common import VALHALLA_TOKEN
+from lcocommissioning.common.common import VALHALLA_API_TOKEN
 
 data = {
     'name': 'NRES ThAr Master test',
@@ -49,7 +49,7 @@ data = {
 
 
 url ='http://internal-observation-portal.lco.gtn/api/schedule/'
-headers =  {'Authorization': 'Token {}'.format(VALHALLA_TOKEN)}
+headers =  {'Authorization': 'Token {}'.format(VALHALLA_API_TOKEN)}
 print (headers)
 response = requests.post(url, json=data, headers=headers)
 print (response.content)

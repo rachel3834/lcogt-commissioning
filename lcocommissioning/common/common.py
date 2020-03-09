@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord, Angle
 _log = logging.getLogger(__name__)
 # LCO Request submisison definitions
 VALHALLA_URL = os.getenv('VALHALLA_URL', 'http://internal-observation-portal.lco.gtn')
-VALHALLA_TOKEN = os.getenv('VALHALLA_TOKEN', '')
+VALHALLA_API_TOKEN = os.getenv('VALHALLA_API_TOKEN', '')
 
 # LCO sites
 lco_site_lonlat = {'bpl': (-119.863103, 34.433161),
@@ -112,7 +112,7 @@ def send_request_to_portal (requestgroup, dosubmit=False):
 
     response = requests.post(
         'https://observe.lco.global/api/requestgroups/',
-        headers={'Authorization': 'Token {}'.format(VALHALLA_TOKEN)},
+        headers={'Authorization': 'Token {}'.format(VALHALLA_API_TOKEN)},
         json=requestgroup  # Make sure you use json!
     )
     # Make sure the API call was successful
@@ -133,7 +133,7 @@ def send_to_scheduler(user_request,  dosubmit=False):
     """Submit a user request to LCO Scheduler via Valhalla interface
     """
 
-    auth = 'Token {token}'.format(token=VALHALLA_TOKEN)
+    auth = 'Token {token}'.format(token=VALHALLA_API_TOKEN)
     print(auth)
     url = '{api_root}/api/userrequests/'.format(api_root=VALHALLA_URL)
 
@@ -157,7 +157,7 @@ def send_to_scheduler(user_request,  dosubmit=False):
 def submit_observation(observation, dosubmit=False):
     """ Submit a user request to LCO POND"""
     if dosubmit:
-        headers = {'Authorization': 'Token {token}'.format(token=VALHALLA_TOKEN)}
+        headers = {'Authorization': 'Token {token}'.format(token=VALHALLA_API_TOKEN)}
         response = requests.post(VALHALLA_URL + '/api/schedule/', json=observation, headers=headers)
         try:
             response.raise_for_status()
