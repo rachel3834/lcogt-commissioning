@@ -1,16 +1,18 @@
 import abc
+import logging
 import re
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
+import sep
 from astropy.io import fits
 from astropy.io.fits import ImageHDU, CompImageHDU
-from astropy.wcs import WCS
 from astropy.table import Table
-import sep
-import logging
+from astropy.wcs import WCS
+
 from lcocommissioning.gaiaastrometryservicetools import astrometryServiceRefineWCSFromCatalog
-import matplotlib.pyplot as plt
+
 __author__ = 'drharbeck@gmail.com'
 
 log = logging.getLogger(__name__)
@@ -66,13 +68,11 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
     def __init__(self, refineWCSViaLCO=True):
         self.refineWCSViaLCO = refineWCSViaLCO
 
-    def get_source_catalog(self, imagename, ext=1, minarea = 20, deblend=0.5):
+    def get_source_catalog(self, imagename, ext=1, minarea=20, deblend=0.5):
 
         image_wcs = None
 
         fitsimage = fits.open(imagename)
-
-
 
         for hdu in fitsimage:
             # search the first valid WCS. Search since we might have a fz compressed file which complicates stuff.
@@ -95,30 +95,31 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
                 datasec = fitsimage[ext].header['DATASEC']
             cs = [int(n) for n in re.split(',|:', datasec[1:-1])]
             bs = [int(n) for n in re.split(',|:', fitsimage[ext].header['BIASSEC'][1:-1])]
-            ovpixels = fitsimage[ext].data[ bs[2]+1:bs[3]-1, bs[0]+1: bs[1]-1  ]
+            ovpixels = fitsimage[ext].data[bs[2] + 1:bs[3] - 1, bs[0] + 1: bs[1] - 1]
             overscan = np.median(ovpixels)
             std = np.std(ovpixels)
             overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 2 * std])
-            image_data = fitsimage[ext].data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan
+            image_data = fitsimage[ext].data[cs[2] - 1:cs[3], cs[0] - 1:cs[1]] - overscan
         except:
-            print ("No overscan specified")
+            print("No overscan specified")
             image_data = fitsimage[ext].data
 
-        image_data = image_data [40:-40,:] # Sinsitro: cut away the thinning artifacts.
+        image_data = image_data[40:-40, :]  # Sinsitro: cut away the thinning artifacts.
 
         image_data = image_data.astype(float)
-        error = ((np.abs(image_data)*gain) + 8 ** 2.0) ** 0.5 / gain
-        backGround = sep.Background(image_data,  bw=32, bh=32, fw=3, fh=3)
+        error = ((np.abs(image_data) * gain) + 8 ** 2.0) ** 0.5 / gain
+        backGround = sep.Background(image_data, bw=32, bh=32, fw=3, fh=3)
         image_data = image_data - backGround
 
         # find sources
-        objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=deblend, minarea=minarea,segmentation_map=True)
+        objects, segmap = sep.extract(image_data, 5, err=error, deblend_cont=deblend, minarea=minarea,
+                                      segmentation_map=True)
         objects = Table(objects)
         # cleanup
         objects = objects[objects['flag'] == 0]
         objects = prune_nans_from_table(objects)
-        #fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
-        fwhm = np.sqrt ( (objects['x2'] + objects['y2']) / 2) * 2.3548
+        # fwhm = 2.0 * (np.log(2) * (objects['a'] ** 2.0 + objects['b'] ** 2.0)) ** 0.5
+        fwhm = np.sqrt((objects['x2'] + objects['y2']) / 2) * 2.3548
         objects['theta'][objects['theta'] > (np.pi / 2.0)] -= np.pi
         objects['theta'][objects['theta'] < (-np.pi / 2.0)] += np.pi
         objects['ellipticity'] = 1.0 - (objects['b'] / objects['a'])
@@ -130,7 +131,8 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         sig = 2.0 / 2.35 * flux_radii[:, 1]
         xwin, ywin, flag = sep.winpos(image_data, objects['x'], objects['y'], sig)
         # python to FITS zero point convention. lower left pixel in image is 1/1, not 0/0
-        sourcecatalog = Table([xwin + 1, ywin + 1, objects['flux'], objects['theta'],  objects['ellipticity'],  fwhm], names=['x', 'y', 'flux','theta', 'ellipticity','fwhm'])
+        sourcecatalog = Table([xwin + 1, ywin + 1, objects['flux'], objects['theta'], objects['ellipticity'], fwhm],
+                              names=['x', 'y', 'flux', 'theta', 'ellipticity', 'fwhm'])
 
         log.debug("Sep found {} sources in image".format(len(sourcecatalog['x'])))
 
@@ -174,8 +176,8 @@ def getImageFWHM(imagename, minarea=20, deblend=0.5):
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     for ii in range(len(hdul)):
-        if isinstance (hdul[ii], ImageHDU) or isinstance (hdul[ii], CompImageHDU):
-            cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend )
+        if isinstance(hdul[ii], ImageHDU) or isinstance(hdul[ii], CompImageHDU):
+            cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend)
             fwhmcat = np.append(fwhmcat, cat['fwhm'])
 
     hdul.close()
@@ -187,7 +189,7 @@ def getImageFWHM(imagename, minarea=20, deblend=0.5):
     for iter in range(4):
         medianfwhm = np.median(fwhmcat[good])
 
-        fwhmstd = np.std (fwhmcat[good])
+        fwhmstd = np.std(fwhmcat[good])
         good = abs(fwhmcat - medianfwhm) < 2 * fwhmstd
         if np.sum(good) > 10:
             medianfwhm = np.median(fwhmcat[good])
@@ -195,49 +197,49 @@ def getImageFWHM(imagename, minarea=20, deblend=0.5):
             log.warning("Not enough sources left in array. aborting")
             continue
 
-    print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format (imagename, deltaFocus, meanfwhm,medianfwhm, fwhmstd))
+    print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format(imagename, deltaFocus,
+                                                                                             meanfwhm, medianfwhm,
+                                                                                             fwhmstd))
 
-    # plotting for the human
-    plt.figure()
-    bins = np.linspace(0, 10, 10)
-    plt.hist ([fwhmcat,fwhmcat[good]], bins,     label=["all", "good"])
-    plt.axvline(x=medianfwhm, label="FWHM median")
-    plt.axvline(x=meanfwhm, label="FWHM median")
-    plt.legend()
-    plt.tight_layout()
-    #plt.show()
-    plt.close()
+    # # plotting for the human
+    # plt.figure()
+    # bins = np.linspace(0, 10, 10)
+    # plt.hist ([fwhmcat,fwhmcat[good]], bins,     label=["all", "good"])
+    # plt.axvline(x=medianfwhm, label="FWHM median")
+    # plt.axvline(x=meanfwhm, label="FWHM median")
+    # plt.legend()
+    # plt.tight_layout()
+    # #plt.show()
+    # plt.close()
 
     return deltaFocus, medianfwhm
 
-import matplotlib.cm as cm
+
 import os
 
+
 def doimagegrid(image):
-
     minareas = [9, 15, 20, 25, 30]
-    deblends = [0.005,0.05,0.1, 0.5, 1.0]
+    deblends = [0.005, 0.05, 0.1, 0.5, 1.0]
     titlename = os.path.basename(image)
-    print (titlename)
+    print(titlename)
 
-    X,Y = np.meshgrid (minareas,deblends)
-    Z = X*0 + Y * 0
+    X, Y = np.meshgrid(minareas, deblends)
+    Z = X * 0 + Y * 0
     for i in range(len(minareas)):
         for j in range(len(deblends)):
-            focus, fwhm = getImageFWHM(image,minarea=X[i,j], deblend=Y[i,j])
-            Z[i,j] = fwhm
-            print ("{} {} {}".format (X[i,j],Y[i,j],Z[i,j]))
-    plt.pcolormesh(X,Y,Z)
+            focus, fwhm = getImageFWHM(image, minarea=X[i, j], deblend=Y[i, j])
+            Z[i, j] = fwhm
+            print("{} {} {}".format(X[i, j], Y[i, j], Z[i, j]))
+    plt.pcolormesh(X, Y, Z)
 
-
-    plt.xlabel ("MINAREA")
-    plt.ylabel ("DEBLEND")
-    plt.title ("Estimated FWHM [pixels]\n{}".format(titlename))
+    plt.xlabel("MINAREA")
+    plt.ylabel("DEBLEND")
+    plt.title("Estimated FWHM [pixels]\n{}".format(titlename))
     plt.colorbar()
-    #plt.show()
-    plt.savefig ("fwhm_deblendminarea_grid_{}.png".format(titlename))
+    # plt.show()
+    plt.savefig("fwhm_deblendminarea_grid_{}.png".format(titlename))
     plt.close()
-
 
 
 if __name__ == '__main__':
@@ -248,5 +250,4 @@ if __name__ == '__main__':
 
     for image in sys.argv[1:]:
         doimagegrid(image)
-        #getImageFWHM(image)
-
+        # getImageFWHM(image)
