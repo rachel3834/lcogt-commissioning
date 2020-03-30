@@ -19,7 +19,8 @@ _MIN_NUMBER_OF_POINTS = 5
 # This describes our model for a focus curve: Seeing and defocus add in quadrature.
 sqrtfit = lambda x, seeing, bestfocus, slope, tweak: (seeing ** 2 + (slope * (x - bestfocus)) ** 2) ** tweak
 
-fermifit = lambda x, thetazero, x0, T, a:  a / (1 + np.e ** ( (x-x0)/ T )) + thetazero
+fermifit = lambda x, thetazero, x0, T, a: a / (1 + np.e ** ((x - x0) / T)) + thetazero
+
 
 def focus_curve_fit(xdata, ydata, func=sqrtfit):
     """
@@ -39,13 +40,13 @@ def focus_curve_fit(xdata, ydata, func=sqrtfit):
     bound = None
     label = None
 
-    if func == sqrtfit :
+    if func == sqrtfit:
         initial_guess = [2, 0, 1, 0.6]
         bounds = [[0, -3, 0, 0.5], [5, 3, 5, _LIMIT_EXPONENT_U]]
 
     if func == fermifit:
-        initial_guess = [0, -0.2 ,1, -1]
-        bounds = [[-np.pi, -np.inf, 0, -2], [+np.pi, np.inf,  np.inf, 2]]
+        initial_guess = [0, -0.2, 1, -1]
+        bounds = [[-np.pi, -np.inf, 0, -2], [+np.pi, np.inf, np.inf, 2]]
 
     for iter in range(2):
         try:
@@ -53,7 +54,7 @@ def focus_curve_fit(xdata, ydata, func=sqrtfit):
         except:
             paramset = None
             istat = None
-            print ("fit error")
+            print("fit error")
 
         if paramset is None:
             continue
@@ -75,7 +76,7 @@ def overplot_fit(func, paramset):
         return
     base = np.arange(-3.6, 3.6, 0.1)
     y = func(base, *paramset)
-    plt.plot(base, y, "--", color='orange' if func == sqrtfit else 'grey',
+    plt.plot(base, y, "--", color='blue' if func == sqrtfit else 'grey',
              label="sqrt {:5.2f}".format(paramset[3]) if func == sqrtfit else "parabola")
 
 
@@ -95,30 +96,30 @@ def getImageData(imagename, minarea=20, deblend=0.5):
     thetacat = np.asarray([])
     ellcat = np.asarray([])
     for ii in range(len(hdul)):
-        if isinstance (hdul[ii], ImageHDU) or isinstance (hdul[ii], CompImageHDU):
-            cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend )
+        if isinstance(hdul[ii], ImageHDU) or isinstance(hdul[ii], CompImageHDU):
+            cat, wcs = catalog.get_source_catalog(imagename, ext=ii, minarea=minarea, deblend=deblend)
             fwhmcat = np.append(fwhmcat, cat['fwhm'])
-            thetacat= np.append(thetacat, cat['theta'])
-            ellcat= np.append(thetacat, cat['ellipticity'])
+            thetacat = np.append(thetacat, cat['theta'])
+            ellcat = np.append(thetacat, cat['ellipticity'])
     hdul.close()
 
     # comprehension of the object catalog....
     good = fwhmcat > 0
     goodtheta = thetacat > -10
-    goodell = ellcat>0
+    goodell = (ellcat > 0 ) & (ellcat <=1)
     meanfwhm = np.mean(fwhmcat[good])
 
     for iter in range(3):
         medianfwhm = np.median(fwhmcat[good])
         mediantheta = np.median(thetacat[goodtheta])
-        medianell =  np.median(ellcat[goodell])
-        fwhmstd = np.std (fwhmcat[good])
-        thetastd = np.std (thetacat[goodtheta])
-        ellstd = np.std (ellcat[goodell])
+        medianell = np.median(ellcat[goodell])
+        fwhmstd = np.std(fwhmcat[good])
+        thetastd = np.std(thetacat[goodtheta])
+        ellstd = np.std(ellcat[goodell])
 
         good = abs(fwhmcat - medianfwhm) < 2 * fwhmstd
-        goodtheta = abs (thetacat - mediantheta) < 2*thetastd
-        goodell = abs (ellcat - medianell) < 2*ellstd
+        goodtheta = abs(thetacat - mediantheta) < 2 * thetastd
+        goodell = abs(ellcat - medianell) < 2 * ellstd
 
         if np.sum(good) > 10:
             medianfwhm = np.median(fwhmcat[good])
@@ -127,8 +128,9 @@ def getImageData(imagename, minarea=20, deblend=0.5):
         if np.sum(goodell) > 10:
             medianell = np.median(ellcat[goodell])
 
-
-    print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format (imagename, deltaFocus, meanfwhm, medianfwhm, fwhmstd))
+    print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format(imagename, deltaFocus,
+                                                                                             meanfwhm, medianfwhm,
+                                                                                             fwhmstd))
     return deltaFocus, medianfwhm, mediantheta, medianell
 
 
@@ -144,21 +146,20 @@ def main():
         if np.isfinite(fwhm):
             focuslist.append(focus)
             fwhmlist.append(fwhm)
-            thetalist.append (theta)
-            elllist.append (ell)
+            thetalist.append(theta)
+            elllist.append(ell)
 
     of = focuslist
     os = fwhmlist
     focuslist = np.asarray(of)
     fwhmlist = np.asarray(os)
     thetalist = np.asarray(thetalist)
-    elllist = np.asarray (elllist)
-    #thetalist = np.mean(thetalist) - thetalist
+    elllist = np.asarray(elllist)
+    # thetalist = np.mean(thetalist) - thetalist
 
-    print ("{}\n{}".format (np.round(focuslist,2), np.round (fwhmlist,2)))
+    print("{}\n{}".format(np.round(focuslist, 2), np.round(fwhmlist, 2)))
     exponential_p, exponential_rms = focus_curve_fit(focuslist, fwhmlist, sqrtfit)
-    fermi_p, fermi_rms = focus_curve_fit(focuslist,thetalist, fermifit)
-
+    fermi_p, fermi_rms = focus_curve_fit(focuslist, thetalist, fermifit)
 
     # we will need this a few times - meaningful references here
     if exponential_p is not None:
@@ -181,32 +182,42 @@ def main():
                           'errormsg': error_string}
     else:
         return_package = None
-    print (json.dumps(return_package))
+    print(json.dumps(return_package))
 
-    fig, ax1 = plt.subplots()
+    fig= plt.figure()
+    ax1 = fig.add_subplot (111)
     if math.isfinite(bestfocus_error):
-        plt.axvline(x=bestfocus, color='orange', label="best focus sqrt")
+
         plt.axes().axvspan(bestfocus - bestfocus_error, bestfocus + bestfocus_error, alpha=0.1, color='grey')
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
-    plt.ylabel("FWHM (Pixels")
+    plt.ylabel("FWHM [Pixels]")
     plt.xlim([-3.6, 3.6])
     plt.ylim([0, 30])
     overplot_fit(sqrtfit, exponential_p)
-    plt.plot(focuslist, fwhmlist, 'o')
+    plt1,=plt.plot(focuslist, fwhmlist, 'o', color="blue")
 
     ax2 = ax1.twinx()
-    ax2.plot (focuslist, thetalist, 'o', color='orange', label='theta')
-    #fermi_p = [  1.41135 ,  0 , 0.06772695 ,-1.34700651 ]
+    plt2,=ax2.plot(focuslist, thetalist, '.', color='grey', label='theta')
+    # fermi_p = [  1.41135 ,  0 , 0.06772695 ,-1.34700651 ]
     overplot_fit(fermifit, fermi_p)
-    ax2.plot (focuslist, elllist, ".", color="lightgreen", label='ellipticity')
 
-    print (fermi_p)
-    ax2.set_ylabel ("theta [radians]")
-    ax2.set_xlim ([-3.6, 3.6])
+    print(fermi_p)
+    ax2.set_ylabel("theta [radians]")
+    ax2.set_xlim([-3.6, 3.6])
+
+    ax3 = ax1.twinx()
+    ax3.spines['right'].set_position(('outward', 60))
+    plt3,=ax3.plot(focuslist, elllist, "o", color="lightgreen", label='ellipticity')
+    print ("Ellipticity", elllist)
+    ax3.set_ylabel ("Ellipticity")
+    ax3.set_xlim([-3.6, 3.6])
+    ax3.set_ylim([0,1])
     plt.legend()
 
-
+    ax1.yaxis.label.set_color (plt1.get_color())
+    ax2.yaxis.label.set_color (plt2.get_color())
+    ax3.yaxis.label.set_color (plt3.get_color())
     plt.title("Sqrt best focus found at {:5.2f} +/- {:5.2f}".format(bestfocus, bestfocus_error) if math.isfinite(
         bestfocus_error) else "Fit failed")
     fig.tight_layout()
