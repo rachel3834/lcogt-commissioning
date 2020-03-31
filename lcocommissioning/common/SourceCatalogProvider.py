@@ -101,7 +101,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
             overscan = np.mean(ovpixels[np.abs(ovpixels - overscan) < 2 * std])
             image_data = fitsimage[ext].data[cs[2] - 1:cs[3], cs[0] - 1:cs[1]] - overscan
         except:
-            print("No overscan specified")
+            log.debug("No overscan specified")
             image_data = fitsimage[ext].data
 
         image_data = image_data[40:-40, :]  # Sinsitro: cut away the thinning artifacts.
@@ -198,7 +198,7 @@ def getImageFWHM(imagename, minarea=20, deblend=0.5):
             log.warning("Not enough sources left in array. aborting")
             continue
 
-    print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format(imagename, deltaFocus,
+    log.debug("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format(imagename, deltaFocus,
                                                                                              meanfwhm, medianfwhm,
                                                                                              fwhmstd))
 
