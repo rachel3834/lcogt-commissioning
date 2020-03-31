@@ -1,14 +1,20 @@
-import json
-import sys
+import logging
 import math
+import os
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
 from astropy.io import fits
 from astropy.io.fits import ImageHDU, CompImageHDU
 from scipy import optimize
 
-from lcocommissioning.common.SourceCatalogProvider import getImageFWHM, SEPSourceCatalogProvider
+from lcocommissioning.common.SourceCatalogProvider import SEPSourceCatalogProvider
+
+from matplotlib import rc
+rc('text', usetex=True)
+
+_log = logging.getLogger(__name__)
 
 L1FWHM = "L1FWHM"
 FOCDMD = "FOCDMD"
@@ -18,7 +24,6 @@ _MIN_NUMBER_OF_POINTS = 5
 
 # This describes our model for a focus curve: Seeing and defocus add in quadrature.
 sqrtfit = lambda x, seeing, bestfocus, slope, tweak: (seeing ** 2 + (slope * (x - bestfocus)) ** 2) ** tweak
-
 fermifit = lambda x, thetazero, x0, T, a: a / (1 + np.e ** ((x - x0) / T)) + thetazero
 
 
@@ -33,9 +38,7 @@ def focus_curve_fit(xdata, ydata, func=sqrtfit):
     :return:
     """
 
-    # TODO: Verification that we have enough points.
-
-    # TODO: Boundaries and intial guess externally driven by context.
+    # TODO: Boundaries and initial guess externally driven by context.
     initial_guess = None
     bound = None
     label = None
@@ -45,8 +48,9 @@ def focus_curve_fit(xdata, ydata, func=sqrtfit):
         bounds = [[0, -3, 0, 0.5], [5, 3, 5, _LIMIT_EXPONENT_U]]
 
     if func == fermifit:
-        initial_guess = [0, -0.2, 1, -1]
-        bounds = [[-np.pi, -np.inf, 0, -2], [+np.pi, np.inf, np.inf, 2]]
+        initial_guess = [0, 0, 100, 0]
+        ydata = ydata * np.pi / 180.
+        bounds = [[-np.pi, -np.inf, 0, -np.pi], [+np.pi, np.inf, np.inf, np.pi]]
 
     for iter in range(2):
         try:
@@ -54,7 +58,7 @@ def focus_curve_fit(xdata, ydata, func=sqrtfit):
         except:
             paramset = None
             istat = None
-            print("fit error")
+            _log.debug("fit error")
 
         if paramset is None:
             continue
@@ -62,21 +66,27 @@ def focus_curve_fit(xdata, ydata, func=sqrtfit):
         fit = func(xdata, *paramset)
         delta = ydata - fit
         s = np.std(delta)
-        good = (delta < 1 * s)
+        good = (delta < 2 * s)
         xdata = xdata[good]
         ydata = ydata[good]
 
     paramerrors = np.sqrt(np.diag(istat)) if istat is not None else None
+    if (func == fermifit) & (paramset is not None):
+        paramset[3] *= 180./np.pi
+        paramset[0] *= 180./np.pi
 
     return paramset, paramerrors
 
 
-def overplot_fit(func, paramset):
+def overplot_fit(func, paramset, color=None):
     if paramset is None:
+        _log.info ("Not plotting function since plot parameters are None")
         return
     base = np.arange(-3.6, 3.6, 0.1)
     y = func(base, *paramset)
-    plt.plot(base, y, "--", color='blue' if func == sqrtfit else 'grey',
+    if color is None:
+        color = 'blue' if func == sqrtfit else 'grey'
+    plt.plot(base, y, "--", color=color,
              label="sqrt {:5.2f}".format(paramset[3]) if func == sqrtfit else "parabola")
 
 
@@ -105,8 +115,9 @@ def getImageData(imagename, minarea=20, deblend=0.5):
 
     # comprehension of the object catalog....
     good = fwhmcat > 0
-    goodtheta = thetacat > -10
-    goodell = (ellcat > 0 ) & (ellcat <=1)
+    goodtheta = thetacat > -720
+    _log.debug("Theta", np.min(thetacat), np.max(thetacat), np.mean(thetacat))
+    goodell = (ellcat > 0) & (ellcat <= 1)
     meanfwhm = np.mean(fwhmcat[good])
 
     for iter in range(3):
@@ -118,7 +129,7 @@ def getImageData(imagename, minarea=20, deblend=0.5):
         ellstd = np.std(ellcat[goodell])
 
         good = abs(fwhmcat - medianfwhm) < 2 * fwhmstd
-        goodtheta = abs(thetacat - mediantheta) < 2 * thetastd
+        goodtheta = abs(thetacat - mediantheta) < 3 * thetastd
         goodell = abs(ellcat - medianell) < 2 * ellstd
 
         if np.sum(good) > 10:
@@ -128,20 +139,29 @@ def getImageData(imagename, minarea=20, deblend=0.5):
         if np.sum(goodell) > 10:
             medianell = np.median(ellcat[goodell])
 
-    print("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel".format(imagename, deltaFocus,
+
+    _log.debug ("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel  {:5.2f}".format(imagename, deltaFocus,
                                                                                              meanfwhm, medianfwhm,
-                                                                                             fwhmstd))
+                                                                                             fwhmstd, mediantheta))
     return deltaFocus, medianfwhm, mediantheta, medianell
 
 
 def main():
-    error_string = None
+    logging.basicConfig(level=getattr(logging, 'INFO'),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
     focuslist = []
     fwhmlist = []
     thetalist = []
     elllist = []
 
-    for image in sys.argv[1:]:
+    efimages = [i for i in sys.argv[1:] if ("ef" in os.path.basename(i))]
+    faimages = [i for i in sys.argv[1:] if ("fa" in os.path.basename(i))]
+
+    _log.debug("EF images:", efimages)
+    _log.debug("FA images:", faimages)
+
+    for image in efimages:
         focus, fwhm, theta, ell = getImageData(image)
         if np.isfinite(fwhm):
             focuslist.append(focus)
@@ -149,17 +169,26 @@ def main():
             thetalist.append(theta)
             elllist.append(ell)
 
-    of = focuslist
-    os = fwhmlist
-    focuslist = np.asarray(of)
-    fwhmlist = np.asarray(os)
+    fafwhmlist = []
+    fafocuslist = []
+
+    for image in faimages:
+        focus, fwhm, theta, ell = getImageData(image)
+        fafwhmlist.append(fwhm)
+        fafocuslist.append(focus)
+
+    focuslist = np.asarray(focuslist)
+    fwhmlist = np.asarray(fwhmlist)
     thetalist = np.asarray(thetalist)
     elllist = np.asarray(elllist)
-    # thetalist = np.mean(thetalist) - thetalist
 
-    print("{}\n{}".format(np.round(focuslist, 2), np.round(fwhmlist, 2)))
+    fafwhmlist = np.asarray(fafwhmlist)
+    fafocuslist = np.asarray(fafocuslist)
+
     exponential_p, exponential_rms = focus_curve_fit(focuslist, fwhmlist, sqrtfit)
     fermi_p, fermi_rms = focus_curve_fit(focuslist, thetalist, fermifit)
+
+    faexponential_p, faexponential_rms = focus_curve_fit(fafocuslist, fafwhmlist, sqrtfit)
 
     # we will need this a few times - meaningful references here
     if exponential_p is not None:
@@ -173,56 +202,57 @@ def main():
         if abs(exponential_p[1]) > 2.5:
             error_string = "Focus offset too large to be credible."
 
-        return_package = {'fitok': True if error_string is None else False,
-                          'fit_seeing': round(exponential_p[0], 2),
-                          'fit_focus': round(bestfocus, 2),
-                          'fit_slope': round(exponential_p[2], 2),
-                          'fit_exponent': round(exponential_p[3], 2),
-                          'fit_rms': round(bestfocus_error, 2),
-                          'errormsg': error_string}
-    else:
-        return_package = None
-    print(json.dumps(return_package))
 
-    fig= plt.figure()
-    ax1 = fig.add_subplot (111)
+    bestfocusfa = faexponential_p[1]
+    bestfocusfa_error = faexponential_rms[1]
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
     if math.isfinite(bestfocus_error):
-
         plt.axes().axvspan(bestfocus - bestfocus_error, bestfocus + bestfocus_error, alpha=0.1, color='grey')
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
     plt.ylabel("FWHM [Pixels]")
     plt.xlim([-3.6, 3.6])
-    plt.ylim([0, 30])
+    plt.ylim([0, 20])
     overplot_fit(sqrtfit, exponential_p)
-    plt1,=plt.plot(focuslist, fwhmlist, 'o', color="blue")
+    plt1, = plt.plot(focuslist, fwhmlist, 'o', color="blue", label="EF FWWM")
+    overplot_fit(sqrtfit, faexponential_p, color="lightblue")
+    plt1fa, = plt.plot(fafocuslist, fafwhmlist, '.', color="lightblue", label="FA FWHM")
 
+    # Plot the position angle and present a nice fermi fit
     ax2 = ax1.twinx()
-    plt2,=ax2.plot(focuslist, thetalist, '.', color='grey', label='theta')
+    plt2, = ax2.plot(focuslist, thetalist, '.', color='grey', label='EF theta')
     # fermi_p = [  1.41135 ,  0 , 0.06772695 ,-1.34700651 ]
     overplot_fit(fermifit, fermi_p)
 
-    print(fermi_p)
-    ax2.set_ylabel("theta [radians]")
+    _log.info(f"fermi fit: {fermi_p}")
+    ax2.set_ylabel("$\Theta$ [$^\circ$]")
     ax2.set_xlim([-3.6, 3.6])
 
+    # Plot the ellipticity.
     ax3 = ax1.twinx()
     ax3.spines['right'].set_position(('outward', 60))
-    plt3,=ax3.plot(focuslist, elllist, "o", color="lightgreen", label='ellipticity')
-    print ("Ellipticity", elllist)
-    ax3.set_ylabel ("Ellipticity")
+    plt3, = ax3.plot(focuslist, elllist, "o", color="green", label='EF ellipticity')
+
+    ax3.set_ylabel("Ellipticity")
     ax3.set_xlim([-3.6, 3.6])
-    ax3.set_ylim([0,1])
-    plt.legend()
+    ax3.set_ylim([0, 1])
 
-    ax1.yaxis.label.set_color (plt1.get_color())
-    ax2.yaxis.label.set_color (plt2.get_color())
-    ax3.yaxis.label.set_color (plt3.get_color())
-    plt.title("Sqrt best focus found at {:5.2f} +/- {:5.2f}".format(bestfocus, bestfocus_error) if math.isfinite(
+    ax1.legend(handles=[plt1, plt1fa, plt2, plt3], loc="lower right", bbox_to_anchor=(1, -0.1),
+               bbox_transform=fig.transFigure, ncol=4)
+
+    ax1.yaxis.label.set_color(plt1.get_color())
+    ax2.yaxis.label.set_color(plt2.get_color())
+    ax3.yaxis.label.set_color(plt3.get_color())
+    plt.title("Best EF focus at {:5.2f} +/- {:5.2f} mm\nBest FA focus at {:5.2f} +/- {:5.2f} mm".format(bestfocus,
+                                                                                                        bestfocus_error,
+                                                                                                        bestfocusfa,
+                                                                                                        bestfocusfa_error) if math.isfinite(
         bestfocus_error) else "Fit failed")
-    fig.tight_layout()
-    plt.savefig("{}".format("ef_focus.png"))
 
+    plt.savefig("{}".format("ef_focus.png"), bbox_inches="tight")
+    _log.info ("All done")
 
 if __name__ == '__main__':
     main()

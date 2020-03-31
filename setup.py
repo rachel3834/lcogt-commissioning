@@ -25,7 +25,8 @@ setuptools.setup(
                             'crawlnoisegain = noisegaincrawler.crawl_noisegain:main',
                             'submitNamedModeTest = lcocommissioning.submitNameModeTest:main',
                             'sinistrocrosstalk = lcocommissioning.crosstalk:main',
-                            'focuscurve = lcocommissioning.focuscurve:main'],
+                            'focuscurve = lcocommissioning.focuscurve:main',
+                            'effocus = lcocommissioning.ef_focuscalibration:main'],
 
     }
 )
