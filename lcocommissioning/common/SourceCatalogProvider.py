@@ -122,6 +122,7 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         fwhm = np.sqrt((objects['x2'] + objects['y2']) / 2) * 2.3548
         objects['theta'][objects['theta'] > (np.pi / 2.0)] -= np.pi
         objects['theta'][objects['theta'] < (-np.pi / 2.0)] += np.pi
+        objects['theta'] = objects['theta'] * 180 / np.pi
         objects['ellipticity'] = 1.0 - (objects['b'] / objects['a'])
         objects = objects[fwhm > 1.0]
 
