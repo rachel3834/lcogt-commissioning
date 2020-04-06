@@ -161,6 +161,7 @@ def main():
     _log.debug("EF images:", efimages)
     _log.debug("FA images:", faimages)
 
+
     for image in efimages:
         focus, fwhm, theta, ell = getImageData(image)
         if np.isfinite(fwhm):
@@ -213,7 +214,7 @@ def main():
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
     plt.ylabel("FWHM [Pixels]")
-    plt.xlim([-3.6, 3.6])
+    plt.xlim([-2.6, 2.6])
     plt.ylim([0, 20])
     overplot_fit(sqrtfit, exponential_p)
     plt1, = plt.plot(focuslist, fwhmlist, 'o', color="blue", label="EF FWWM")
@@ -228,15 +229,15 @@ def main():
 
     _log.info(f"fermi fit: {fermi_p}")
     ax2.set_ylabel("$\Theta$ [$^\circ$]")
-    ax2.set_xlim([-3.6, 3.6])
+    ax2.set_xlim([-2.6, 2.6])
 
     # Plot the ellipticity.
     ax3 = ax1.twinx()
     ax3.spines['right'].set_position(('outward', 60))
-    plt3, = ax3.plot(focuslist, elllist, "o", color="green", label='EF ellipticity')
+    plt3, = ax3.plot(focuslist, elllist, "o", color="lightgreen", label='EF ellipticity')
 
     ax3.set_ylabel("Ellipticity")
-    ax3.set_xlim([-3.6, 3.6])
+    ax3.set_xlim([-2.6, 2.6])
     ax3.set_ylim([0, 1])
 
     ax1.legend(handles=[plt1, plt1fa, plt2, plt3], loc="lower right", bbox_to_anchor=(1, -0.1),
