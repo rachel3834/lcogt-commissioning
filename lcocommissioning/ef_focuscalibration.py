@@ -97,10 +97,13 @@ def getImageData(imagename, minarea=20, deblend=0.5):
     hdul = fits.open(imagename, 'readonly', ignore_missing_end=True)
 
     deltaFocus = None
+    pixelscale = None
     for ii in range(len(hdul)):
         if FOCDMD in hdul[ii].header:
             deltaFocus = hdul[ii].header[FOCDMD]
-            continue
+        if 'PIXSCALE' in hdul[ii].header:
+            pixelscale = hdul[ii].header['PIXSCALE']
+
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     thetacat = np.asarray([])
@@ -143,6 +146,11 @@ def getImageData(imagename, minarea=20, deblend=0.5):
     _log.debug ("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel  {:5.2f}".format(imagename, deltaFocus,
                                                                                              meanfwhm, medianfwhm,
                                                                                              fwhmstd, mediantheta))
+
+    if pixelscale is not None:
+        medianfwhm *= pixelscale
+    else:
+        _log.warning("Pixel scale was not defined!")
     return deltaFocus, medianfwhm, mediantheta, medianell
 
 
@@ -213,9 +221,9 @@ def main():
         plt.axes().axvspan(bestfocus - bestfocus_error, bestfocus + bestfocus_error, alpha=0.1, color='grey')
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
-    plt.ylabel("FWHM [Pixels]")
+    plt.ylabel("FWHM ['']")
     plt.xlim([-2.6, 2.6])
-    plt.ylim([0, 20])
+    plt.ylim([0.5, 6])
     overplot_fit(sqrtfit, exponential_p)
     plt1, = plt.plot(focuslist, fwhmlist, 'o', color="blue", label="EF FWWM")
     overplot_fit(sqrtfit, faexponential_p, color="lightblue")
