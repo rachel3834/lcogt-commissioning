@@ -119,9 +119,7 @@ def getImageData(imagename, minarea=20, deblend=0.5):
     # comprehension of the object catalog....
     good = fwhmcat > 0
     goodtheta = thetacat > -720
-    _log.debug("Theta", np.min(thetacat), np.max(thetacat), np.mean(thetacat))
     goodell = (ellcat > 0) & (ellcat <= 1)
-    meanfwhm = np.mean(fwhmcat[good])
 
     for iter in range(3):
         medianfwhm = np.median(fwhmcat[good])
@@ -131,26 +129,27 @@ def getImageData(imagename, minarea=20, deblend=0.5):
         thetastd = np.std(thetacat[goodtheta])
         ellstd = np.std(ellcat[goodell])
 
-        good = abs(fwhmcat - medianfwhm) < 2 * fwhmstd
+        good = abs(fwhmcat - medianfwhm) < 3 * fwhmstd
         goodtheta = abs(thetacat - mediantheta) < 3 * thetastd
-        goodell = abs(ellcat - medianell) < 2 * ellstd
+        goodell = abs(ellcat - medianell) < 3 * ellstd
 
-        if np.sum(good) > 10:
+        if np.sum(good) > 5:
             medianfwhm = np.median(fwhmcat[good])
-        if np.sum(goodtheta) > 10:
+        if np.sum(goodtheta) > 5:
             mediantheta = np.median(thetacat[good])
-        if np.sum(goodell) > 10:
+        if np.sum(goodell) > 5:
             medianell = np.median(ellcat[goodell])
 
+    if pixelscale is None:
+        pixelscale = 1
+    medianfwhm *= pixelscale
 
-    _log.debug ("{}  FOCCMD {: 5.3f} FWHM (mean med) ({: 5.2f} {: 5.2f}) \pm {:5.2f} pixel  {:5.2f}".format(imagename, deltaFocus,
-                                                                                             meanfwhm, medianfwhm,
-                                                                                             fwhmstd, mediantheta))
+    _log.info ("{}  FOCCMD {: 5.3f} FWHM (\" : pix) ({: 5.2f} : {: 5.2f}) \pm {: 5.2f} pixel  {: 5.2f} {: 6.4f}".format(os.path.basename(imagename), deltaFocus,
+                                                                                             medianfwhm, medianfwhm / pixelscale,
+                                                                                             fwhmstd, mediantheta, pixelscale))
 
-    if pixelscale is not None:
-        medianfwhm *= pixelscale
-    else:
-        _log.warning("Pixel scale was not defined!")
+
+
     return deltaFocus, medianfwhm, mediantheta, medianell
 
 
@@ -171,7 +170,7 @@ def main():
 
 
     for image in efimages:
-        focus, fwhm, theta, ell = getImageData(image)
+        focus, fwhm, theta, ell = getImageData(image, minarea=15)
         if np.isfinite(fwhm):
             focuslist.append(focus)
             fwhmlist.append(fwhm)
@@ -182,7 +181,7 @@ def main():
     fafocuslist = []
 
     for image in faimages:
-        focus, fwhm, theta, ell = getImageData(image)
+        focus, fwhm, theta, ell = getImageData(image, minarea=5)
         fafwhmlist.append(fwhm)
         fafocuslist.append(focus)
 
