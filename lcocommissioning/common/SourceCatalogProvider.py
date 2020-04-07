@@ -112,8 +112,8 @@ class SEPSourceCatalogProvider(SourceCatalogProvider):
         image_data = image_data - backGround
 
         # find sources
-        det_thres = 5
-        objects, segmap = sep.extract(image_data, det_thres, err=backGround.globalrms, deblend_cont=deblend, minarea=minarea,
+        det_thres = 10
+        objects, segmap = sep.extract(image_data, det_thres, err=backGround.rms(), deblend_cont=deblend, minarea=minarea,
                                       segmentation_map=True)
         objects = Table(objects)
         # cleanup

@@ -129,9 +129,9 @@ def getImageData(imagename, minarea=20, deblend=0.5):
         thetastd = np.std(thetacat[goodtheta])
         ellstd = np.std(ellcat[goodell])
 
-        good = abs(fwhmcat - medianfwhm) < 3 * fwhmstd
-        goodtheta = abs(thetacat - mediantheta) < 3 * thetastd
-        goodell = abs(ellcat - medianell) < 3 * ellstd
+        good = abs(fwhmcat - medianfwhm) < 2 * fwhmstd
+        goodtheta = abs(thetacat - mediantheta) < 2 * thetastd
+        goodell = abs(ellcat - medianell) < 2 * ellstd
 
         if np.sum(good) > 5:
             medianfwhm = np.median(fwhmcat[good])
@@ -170,7 +170,7 @@ def main():
 
 
     for image in efimages:
-        focus, fwhm, theta, ell = getImageData(image, minarea=15)
+        focus, fwhm, theta, ell = getImageData(image, minarea=20, deblend=0.5)
         if np.isfinite(fwhm):
             focuslist.append(focus)
             fwhmlist.append(fwhm)
@@ -181,7 +181,7 @@ def main():
     fafocuslist = []
 
     for image in faimages:
-        focus, fwhm, theta, ell = getImageData(image, minarea=5)
+        focus, fwhm, theta, ell = getImageData(image, minarea=5, deblend=0.5)
         fafwhmlist.append(fwhm)
         fafocuslist.append(focus)
 
