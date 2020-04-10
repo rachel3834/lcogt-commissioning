@@ -69,7 +69,7 @@ def overplot_fit(func, paramset):
 
 
 def main():
-    logging.basicConfig(level=getattr(logging, 'DEBUG'),
+    logging.basicConfig(level=getattr(logging, 'INFO'),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
 
     error_string = None
