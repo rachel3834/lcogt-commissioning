@@ -76,7 +76,7 @@ def main():
     focuslist = []
     fwhmlist = []
     for image in sys.argv[1:]:
-        focus, fwhm = getImageFWHM(image)
+        focus, fwhm = getImageFWHM(image, minarea=5)
         if np.isfinite(fwhm):
             focuslist.append(focus)
             fwhmlist.append(fwhm)
