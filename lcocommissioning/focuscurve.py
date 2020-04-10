@@ -1,4 +1,6 @@
 import json
+import logging
+
 import sys
 import math
 import matplotlib.pyplot as plt
@@ -67,6 +69,9 @@ def overplot_fit(func, paramset):
 
 
 def main():
+    logging.basicConfig(level=getattr(logging, 'DEBUG'),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
     error_string = None
     focuslist = []
     fwhmlist = []
@@ -115,9 +120,9 @@ def main():
         plt.axes().axvspan(bestfocus - bestfocus_error, bestfocus + bestfocus_error, alpha=0.1, color='grey')
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
-    plt.ylabel("FWHM (Pixels")
-    plt.xlim([-3.6, 3.6])
-    plt.ylim([0, 30])
+    plt.ylabel("FWHM (arcsec)")
+    plt.xlim([-2.6, 2.6])
+    plt.ylim([0, 6])
     overplot_fit(polyfit, parabola_p)
     overplot_fit(sqrtfit, exponential_p)
     plt.plot(focuslist, fwhmlist, 'o')
