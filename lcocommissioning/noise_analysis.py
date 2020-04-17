@@ -104,7 +104,7 @@ def plot_quadrant_ffts(params):
         fig = plot_image_fft(fig,quad_image)
         plt.title('Quadrant '+str(q+1))
     plotname = path.join( "fft.png")
-    plt.savefig(plotname, dpi=200)
+    plt.savefig(plotname, dpi=400)
     plt.close(2)
 
 def get_image_data(params):
