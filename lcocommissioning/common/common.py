@@ -172,6 +172,8 @@ def submit_observation(observation, dosubmit=False):
         except Exception:
             _log.error(
                 'Failed to submit observation: error code {}: {}'.format(response.status_code, response.content))
+    else:
+        _log.info ("Not submitting block since CONFIRM  is not set")
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
