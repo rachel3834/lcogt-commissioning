@@ -1,15 +1,15 @@
+import datetime as dt
 import json
 import logging
 import os
-import math
-import ephem
-import requests
-import datetime as dt
-from astropy.coordinates import SkyCoord, Angle
 
+import ephem
+import math
+import requests
+from astropy.coordinates import SkyCoord
 
 _log = logging.getLogger(__name__)
-# LCO Request submisison definitions
+# LCO Request submission definitions
 VALHALLA_URL = os.getenv('VALHALLA_URL', 'http://internal-observation-portal.lco.gtn')
 VALHALLA_API_TOKEN = os.getenv('VALHALLA_API_TOKEN', '')
 
@@ -22,21 +22,22 @@ lco_site_lonlat = {'bpl': (-119.863103, 34.433161),
                    'ogg': (-156.2589, 34.433161),
                    'sqa': (-120.04222167, 34.691453333),
                    'tfn': (-16.511544, 28.300433),
-                   'tlv': (0,0),}
+                   'tlv': (0, 0), }
 
 # Dictionary of NRES instances
 nres_instruments = {'lsc': 'nres01',
                     'elp': 'nres02',
                     'cpt': 'nres03',
                     'tlv': 'nres04',
-
                     }
 
 lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'bpl']
-lco_2meter_sites = ['ogg','coj']
+lco_2meter_sites = ['ogg', 'coj']
 lco_MuSCAT_sites = ['ogg']
 lco_nres_sites = nres_instruments.keys()
-lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06','fa07', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15', 'fa16', 'fa19',]
+
+lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa07', 'fa08', 'fa11', 'fa12', 'fa14', 'fa15',
+                          'fa16', 'fa19', ]
 
 archon_readout_modes = ["full_frame", "central_2k_2x2"]
 
@@ -46,10 +47,10 @@ lco_muscat_readmodes = ['default']
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
 default_constraints = {"max_airmass": 3,
-                      "min_lunar_distance": 30.0, }
+                       "min_lunar_distance": 30.0, }
 
 
-def get_ephem_obj_for_site (sitecode, dateobs):
+def get_ephem_obj_for_site(sitecode, dateobs):
     site = ephem.Observer()
     lon, lat = lco_site_lonlat[sitecode]
     site.lat = lat * math.pi / 180
@@ -58,7 +59,7 @@ def get_ephem_obj_for_site (sitecode, dateobs):
     return site
 
 
-def is_valid_lco_site (sitecode):
+def is_valid_lco_site(sitecode):
     return sitecode in lco_site_lonlat
 
 
@@ -99,18 +100,24 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
             _log.debug("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
             return starcandidate
         else:
-         _log.debug("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
+            _log.debug("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
 
     _log.debug("No viable star was found! full moon? returning None!")
     return None
 
 
-def send_request_to_portal (requestgroup, dosubmit=False):
+def send_request_to_portal(requestgroup, dosubmit=False):
+    _log.debug(json.dumps(requestgroup, indent=4))
 
-    _log.debug (json.dumps (requestgroup, indent=4))
+    response = requests.post(
+        'https://observe.lco.global/api/requestgroups/validate/',
+        headers={'Authorization': 'Token {}'.format(VALHALLA_API_TOKEN)},
+        json=requestgroup  # Make sure you use json!
+    )
+    print('API call return: {}'.format(response.content))
 
     if not dosubmit:
-        print ("Not submitting as per user request")
+        print("Not submitting as per user request")
         return
 
     response = requests.post(
@@ -131,8 +138,7 @@ def send_request_to_portal (requestgroup, dosubmit=False):
     print('View the observing request: https://observe.lco.global/requestgroups/{}/'.format(requestgroup_dict['id']))
 
 
-
-def send_to_scheduler(user_request,  dosubmit=False):
+def send_to_scheduler(user_request, dosubmit=False):
     """Submit a user request to LCO Scheduler via Valhalla interface
     """
 
@@ -151,7 +157,7 @@ def send_to_scheduler(user_request,  dosubmit=False):
             submitted = requests.post(url, json=user_request, headers=headers).json()
             print('Submitted request information: {}'.format(submitted))
         else:
-            print (" ** Not submitting as per user request **")
+            print(" ** Not submitting as per user request **")
     else:
         print('Output of the validation check: {}'.format(validation_check))
         print('UserRequest that was validated: {}'.format(user_request))
@@ -173,18 +179,20 @@ def submit_observation(observation, dosubmit=False):
             _log.error(
                 'Failed to submit observation: error code {}: {}'.format(response.status_code, response.content))
     else:
-        _log.info ("Not submitting block since CONFIRM  is not set")
+        _log.info("Not submitting block since CONFIRM  is not set")
+
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-def dateformat (starttime=None,endtime=None):
+
+def dateformat(starttime=None, endtime=None):
     """ Utility to prettify a plot with dates.
     """
 
     plt.xlim([starttime, endtime])
     plt.gcf().autofmt_xdate()
-    years = mdates.YearLocator()   # every year
+    years = mdates.YearLocator()  # every year
     months = mdates.MonthLocator(bymonth=[4, 7, 10])  # every month
     yearsFmt = mdates.DateFormatter('%Y %b')
     monthformat = mdates.DateFormatter('%b')
