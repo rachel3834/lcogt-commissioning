@@ -107,7 +107,7 @@ def parseCommandLine():
 
     parser.add_argument('--defocus', type=float, default=0.0, help="Amount to defocus star.")
 
-    parser.add_argument('--exp-times', nargs=4, type=float, default=[2, 4, 6, 12],
+    parser.add_argument('--exp-times', nargs=4, type=float, default=[10, 10, 10, 10],
                         help='List of exposure times in g r i z, e.g., "1.4 1.6 2.0 5')
 
     parser.add_argument('--ipp', type=float, default=1.0, help="ipp value")
@@ -119,11 +119,11 @@ def parseCommandLine():
     parser.add_argument('--exp-mode', default='SYNCHRONOUS', choices=['SYNCHRONOUS', 'ASYNCHRONOUS'], required=False)
 
     repeatgroup = parser.add_mutually_exclusive_group()
-    repeatgroup.add_argument('--exp-cnt', type=int, help="How often to reapeat each exposure")
+    repeatgroup.add_argument('--exp-cnt', type=int, help="How often to repeat each exposure")
     repeatgroup.add_argument('--filltime', type=float, help="How long to repeat Muscat exposures (seconds)")
 
     parser.add_argument('--scheduler', action='store_true',
-                        help='If set, submit to scheduler instead of tryuing a direct submission.')
+                        help='If set, submit to scheduler instead of trying a direct submission.')
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, observation will be submitted. If omitted, nothing will be submitted.')
 
