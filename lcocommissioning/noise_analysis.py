@@ -15,7 +15,7 @@ from common.Image import Image
 log = logging.getLogger(__name__)
 
 
-def image_fft(image):
+def image_fft(image, samplefreq = 0):
     """Function to compute an FFT of an image data array."""
     
 
@@ -23,6 +23,7 @@ def image_fft(image):
     fft_image_1 = abs(np.fft.rfft(image,axis=1)).mean(axis=0)
     gaussian_noise = np.random.normal(0, image[5:-5,5:-5].std(), size=image.shape)
     fft_noise = abs(np.fft.rfft(gaussian_noise,axis=0)).mean(axis=1)
+
     return fft_image_0, fft_image_1, fft_noise
 
 def findpeaks (data):
@@ -39,51 +40,53 @@ def findpeaks (data):
     return goodpeaks
 
 
-def plot_image_fft(fig,image):
+def plot_image_fft(fig,image, samplerate = 0):
     """Function to create the plot of an FFT, given a data array of an 
     image region"""
-    
+
+
     (fft_image_0, fft_image_1, fft_noise) = image_fft(image)
     log_fft_image_0 = np.log10(fft_image_0)
     log_fft_image_1 = np.log10(fft_image_1)
     log_fft_noise = np.log10(fft_noise)
-    
 
-    plt.plot(log_fft_noise,color='grey', label="gauss equivalent")
-    plt.plot(log_fft_image_1, label="FFT X")
+    if samplerate >0:
+        freqfactor = samplerate / (2* len(fft_image_0))
+    else:
+        freqfactor = 1
+
+    freq_0 = np.arange (len(fft_image_0)) * freqfactor
+
+    plt.plot(freq_0, log_fft_noise,color='grey', label="gauss equivalent")
+    plt.plot(freq_0, log_fft_image_1, label="FFT X")
 
     indexes = findpeaks(log_fft_image_1)
     values = log_fft_image_1[indexes]
-    print (indexes, values)
+    peaklist = zip (freq_0[indexes], values)
+    for (f,v) in peaklist:
+        print (f,v)
+
     if len (values) > 0:
-        plt.plot (indexes, values, '.')
+        plt.plot (freq_0[indexes], values, '.')
 
-    plt.plot(log_fft_image_0, label="FFT Y")
+    plt.plot(freq_0, log_fft_image_0, label="FFT Y")
 
-    plt.xlabel('Cycles per line')
+    if samplerate >0:
+        plt.xlabel('Frequency [Hz]')
+    else:
+        plt.xlabel('Cycles per line')
+
     plt.ylabel('log10(FFT)')
-    plt.legend()
+    #plt.legend()
     (xmin,xmax,ymin,ymax) = plt.axis()
     ymax = ymax * 1.05
-    if xmax > len(fft_image_0):
-        xmax = len(fft_image_0)
+    if xmax > np.max (freq_0):
+        xmax = np.max (freq_0)
     plt.axis([xmin,xmax,ymin,ymax])
 
     return fig
     
-def plot_whole_frame_fft(params):
-    """Function to plot the FFT of a whole frame"""
-    
-    if 'image_data' in params.keys():
-        image = params['image_data']
-    else:
-        image = fits.getdata(params['image_path'])
-    fig = pyplot.figure(1)
-    fig = plot_image_fft(fig,image)
-    plotname = path.join( params['out_dir'], \
-         path.splitext(path.basename(params['image_path']))[0]+'_fft_log.png' )
-    pyplot.savefig(plotname)
-    pyplot.close(1)
+
 
 def plot_quadrant_ffts(params):
     """Function to plot separate FFTs of each quadrant of a Sinistro frame"""
@@ -100,38 +103,21 @@ def plot_quadrant_ffts(params):
         ax = plt.subplot(2,2,q+1)
         plt.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
             wspace=0.4,hspace=0.4)
-            
-        fig = plot_image_fft(fig,quad_image)
+
+        fig = plot_image_fft(fig,quad_image, samplerate=args.pr)
         plt.title('Quadrant '+str(q+1))
     plotname = path.join( "fft.png")
     plt.savefig(plotname, dpi=400)
     plt.close(2)
 
-def get_image_data(params):
-    
-    if 'image_data' in params.keys():
-        image = params['image_data']
-    else:
-        image = fits.getdata(params['image_path'])
 
-    header = fits.getheader(params['image_path'])  
-    NAXIS1 = float(header['NAXIS1'])
-    NAXIS2 = float(header['NAXIS2'])
-    
-    params['regions'] = {
-                        0: [1,int(NAXIS1/2.0),1,int(NAXIS2/2.0)],
-                        1: [int(NAXIS1/2.0),int(NAXIS1),1,int(NAXIS2/2.0)],
-                        2: [int(NAXIS1/2.0),int(NAXIS1),int(NAXIS2/2.0),int(NAXIS2)],
-                        3: [1,int(NAXIS1/2.0),int(NAXIS2/2.0),int(NAXIS2)]
-                        }
-                        
-    return image, params
     
 def parse_args():
     """Function to harvest and parse the commandline arguments for noise 
     analysis"""
 
     parser = argparse.ArgumentParser(description='Noise analysis of image.')
+    parser.add_argument ('--pr', type=float, default = 0, help="Pixel rate in kHz")
 
     parser.add_argument('fitsfile', type=str, nargs=1,
                     help='Fits files for cross talk measurement')
