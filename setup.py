@@ -28,13 +28,14 @@ setuptools.setup(
                             'focuscurve = lcocommissioning.focuscurve:main',
                             'effocus = lcocommissioning.ef_focuscalibration:main',
                             'submit_floyds_calibration = lcocommissioning.floyds.submitFloydsCalibration:main',
+                            'focusmap = lcocommissioning.focusmap:main',
                             ],
 
     },
     install_requires=[
         "astropy==4.0",
         "numpy==1.18.1",
-        "matplotlib==3.1.3",
+        "matplotlib==3.3.1",
         "ephem==3.7.7.0",
         "requests==2.22.0",
         "scipy==1.4.1",
