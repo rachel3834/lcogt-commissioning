@@ -60,8 +60,8 @@ def aws_enabled():
     secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
     s3_bucket = os.environ.get('AWS_S3_BUCKET', None)
     region = os.environ.get('AWS_DEFAULT_REGION', None)
-
     return access_key and secret_key and s3_bucket and region
+
 
 
 def write_to_storage_backend(directory, filename, data, binary=True):
