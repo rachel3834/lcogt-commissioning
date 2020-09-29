@@ -15,19 +15,19 @@ goodFloydsFluxStandards = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745
 def createRequestsForStar(context):
     exposuretime = context.exptime
     overheadperexposure = 60  # readout plus fixed overhead
-    telescopeslew = 120 + 90 + 60  # telscope slew, acquire exposure + process, config change time
+    telescopeslew = 120 + 90 + 60  # telescope slew, acquire exposure + process, config change time
     start = context.start
     nexposure = int(context.expcnt)
 
     # create one block per quadrant
     end = start + \
           dt.timedelta(seconds=telescopeslew) + \
-          dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + \
-          dt.timedelta(seconds=2 * (80 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
+          dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure))
+
 
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
-
+    # vestigal code, offset better be 0
     offsetPointing = SkyCoord(context.radec.ra + Angle(context.offsetRA, unit=u.arcsec),
                               context.radec.dec + Angle(context.offsetDec, unit=u.arcsec))
 
@@ -64,18 +64,13 @@ def createRequestsForStar(context):
                      'mode': 'default',
                      'rotator_mode': 'VFLOAT',
                      'optical_elements': {
-                         'slit': 'slit_1.2as'
+                         'slit': context.slit
                      }
                  }]
                  }
             ]
         }
     }
-
-
-    # TODO: move to a better location in code!
-    # agname = 'kb42' if 'ogg' in context.site else 'kb38'
-
 
     _logger.info(json.dumps(data, indent=4))
     common.submit_observation(data, context.opt_confirmed)
