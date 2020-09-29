@@ -105,6 +105,7 @@ def getImageData(imagename, minarea=20, deblend=0.5):
         if 'PIXSCALE' in hdul[ii].header:
             pixelscale = hdul[ii].header['PIXSCALE']
 
+    _log.info ("Delta Focus: ", deltaFocus)
     catalog = SEPSourceCatalogProvider(refineWCSViaLCO=False)
     fwhmcat = np.asarray([])
     thetacat = np.asarray([])
@@ -156,7 +157,7 @@ def getImageData(imagename, minarea=20, deblend=0.5):
 
 def sort_input_images (inputlist):
     ''' Sort the input image list by camera. Return a dictionary {cameraname -> [listof iamges]}'''
-    cameraregex = '.*1m.*-([fe][apf]\d\d)-.*'
+    cameraregex = '.*[12]m.*-([fea][apfk]\d\d)-.*'
 
     returndict = {}
 
@@ -200,11 +201,11 @@ def main():
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
-    plt.xlim([-2.6, 2.6])
+    plt.xlim([-3.6, 3.6])
     plt.ylim([0, 6])
     ax2 = ax1.twinx()
     ax2.set_ylabel("$\Theta$ [$^\circ$]")
-    ax2.set_xlim([-2.6, 2.6])
+    ax2.set_xlim([-3.6, 3.6])
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
     plt.ylabel("FWHM ['']")
@@ -218,7 +219,7 @@ def main():
     bestfocus_yu = 0.1
     for camera in measurementlist:
         overplot_fit(sqrtfit,  measurementlist[camera]['exponential_p'])
-        plt1, = plt.plot(measurementlist[camera]['focuslist'], measurementlist[camera]['fwhmlist'], 'o', color="blue", label=camera)
+        plt1, = plt.plot(measurementlist[camera]['focuslist'], measurementlist[camera]['fwhmlist'], 'o',  label=camera)
 
         bestfocus = measurementlist[camera]['exponential_p'][1]
         bestfocus_error = measurementlist[camera]['exponential_rms'][1]
