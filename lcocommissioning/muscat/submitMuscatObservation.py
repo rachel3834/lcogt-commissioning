@@ -48,7 +48,7 @@ def createMuscatRequestConfiguration(args):
 
 def createRequest(args):
     requestgroup = {"name": args.title,
-                    "proposal": "LCOEngineering",
+                    "proposal": "MuSCAT Commissioning",
                     "ipp_value": args.ipp,
                     "operator": "SINGLE", # "MANY" if args.dither else "SINGLE",
                     "observation_type": "NORMAL",
