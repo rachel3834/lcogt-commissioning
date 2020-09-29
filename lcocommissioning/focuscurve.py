@@ -121,7 +121,7 @@ def main():
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
     plt.ylabel("FWHM (arcsec)")
-    plt.xlim([-2.6, 2.6])
+    plt.xlim([-3.6, 3.6])
     plt.ylim([0, 6])
     overplot_fit(polyfit, parabola_p)
     overplot_fit(sqrtfit, exponential_p)
