@@ -11,132 +11,69 @@ _logger = logging.getLogger(__name__)
 
 goodFloydsFluxStandards = ['auto', 'HZ 43', 'GD 71', 'BD+284211', 'HZ 44', 'L745-46A', 'Feige 110', 'EGGR274']
 
+
 def createRequestsForStar(context):
     exposuretime = context.exptime
-    overheadperexposure = 60 # readout plus fixed overhead
-    telescopeslew = 120 + 90 + 60  # teelscope slew, acquire exposure + process, config change time
+    overheadperexposure = 60  # readout plus fixed overhead
+    telescopeslew = 120 + 90 + 60  # telescope slew, acquire exposure + process, config change time
     start = context.start
     nexposure = int(context.expcnt)
 
     # create one block per quadrant
     end = start + \
           dt.timedelta(seconds=telescopeslew) + \
-          dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure)) + \
-          dt.timedelta(seconds=2 * (80 + overheadperexposure) + (80 + overheadperexposure))  # 2x flat, 1x arc
+          dt.timedelta(seconds=nexposure * (exposuretime + overheadperexposure))
+
 
     start = str(start).replace(' ', 'T')
     end = str(end).replace(' ', 'T')
-
+    # vestigal code, offset better be 0
     offsetPointing = SkyCoord(context.radec.ra + Angle(context.offsetRA, unit=u.arcsec),
                               context.radec.dec + Angle(context.offsetDec, unit=u.arcsec))
 
-    pointing = {
-        "type": "SP",
-        "name": "Floyds test {}".format(context.targetname),
-        "coord_type": "RD",
-        "coord_sys": "ICRS",
-        "epoch": "2000.0000000",
-        "equinox": "2000.0000000",
-        "pro_mot_ra": "0",
-        "pro_mot_dec": "0",
-        "parallax": "0.0000000",
-        "ra": "%10f" % offsetPointing.ra.degree,
-        "dec": "%10f" % offsetPointing.dec.degree,
+    data = {
+        'name': "Floyds test {}".format(context.targetname),
+        'proposal': 'LCOEngineering',
+        'site': context.site,
+        'enclosure': 'clma',
+        'telescope': '2m0a',
+        'start': start,
+        'end': end,
+        'request': {
+            'acceptability_threshold': 100,
+            'configurations': [
+                {'type': 'SPECTRUM',
+                 'instrument_type': '2M0-FLOYDS-SCICAM',
+                 'target': {
+                     'type': 'ICRS',
+                     'name': context.targetname,
+                     'ra': offsetPointing.ra.degree,
+                     'dec': offsetPointing.dec.degree
+                 },
+                 'acquisition_config': {
+                     'mode': 'WCS'
+                 },
+                 'guiding_config': {
+                     'mode': 'ON',
+                     'optional': False
+                 },
+                 'constraints': {},
+                 'instrument_configs': [{
+                     'exposure_time': context.exptime,
+                     'exposure_count': int(context.expcnt),
+                     'mode': 'default',
+                     'rotator_mode': 'VFLOAT',
+                     'optical_elements': {
+                         'slit': context.slit
+                     }
+                 }]
+                 }
+            ]
+        }
     }
 
-    print("Block for {} from {} to {}".format(pointing['name'], str(start), str(end)))
-
-    # TODO: move to a better lcoation in code!
-    agname = 'kb42' if 'ogg' in context.site else 'kb38'
-
-    block = {"molecules": [],
-             'start': start,
-             'end': end,
-             'site': context.site,
-             'observatory': 'clma',
-             'telescope': '2m0a',
-             'instrument_class': '2M0-FLOYDS-SCICAM'.upper(),
-             'priority': 31,
-             "is_too": False,
-             "max_airmass": "3.0000000",
-             "min_lunar_dist": "30.0000000",
-             }
-
-    flat_molecule = {
-        "spectra_slit": context.slit,
-        "pointing": pointing,
-
-        "tag_id": "LCOGT",
-        "user_id": context.user,
-        "prop_id": "LCOEngineering",
-        "group": "Floyds test exposure",
-        "exposure_count": 1,
-        "bin_x": 1,
-        "bin_y": 1,
-        "inst_name": context.instrument,
-        "priority": 1,
-        "type": "LAMP_FLAT",
-        "events": [],
-        "ag_filter": "",
-        "ag_exp_time": "10.0000000",
-        "exposure_time": "40.0000000",
-        "readout_mode": ""
-    }
-
-    spectrum_molecule = {
-        "acquire_mode": "BRIGHTEST",
-        "acquire_radius_arcsec": "5.00",
-        "spectra_slit": context.slit,
-        "pointing": pointing,
-        "defocus": "0.0000000",
-        "ag_name": agname,
-        "ag_mode": "YES",
-        "tag_id": "LCOGT",
-        "user_id": context.user,
-        "prop_id": "LCOEngineering",
-        "group": "Floyds test exposure",
-        "exposure_count": nexposure,
-        "bin_x": 1,
-        "bin_y": 1,
-        "inst_name": context.instrument,
-        "priority": 2,
-        "type": "SPECTRUM",
-        "events": [],
-        "ag_filter": "",
-        "ag_exp_time": "10.0000000",
-        "exposure_time": exposuretime,
-        "readout_mode": ""
-    }
-
-    arc_molecule = {
-        "spectra_slit": context.slit,
-        "pointing": pointing,
-        "tag_id": "LCOGT",
-        "user_id": context.user,
-        "prop_id": "LCOEngineering-001",
-        "group": "Floyds test exposure",
-        "exposure_count": 1,
-        "bin_x": 1,
-        "bin_y": 1,
-        "inst_name": context.instrument,
-        "priority": 3,
-        "type": "ARC",
-        "events": [],
-        "ag_filter": "",
-        "ag_exp_time": "10.0000000",
-        "exposure_time": "80.0000000",
-        "readout_mode": ""
-    }
-
-    block['molecules'].append(flat_molecule)
-    block['molecules'].append(spectrum_molecule)
-    block['molecules'].append(arc_molecule)
-    lastflat = copy.deepcopy (flat_molecule)
-    lastflat['priority'] = 4
-    block['molecules'].append(lastflat)
-
-    _logger.debug(json.dumps(block, indent=4))
-    common.submit_observation (block, context.opt_confirmed)
+    _logger.info(json.dumps(data, indent=4))
+    common.submit_observation(data, context.opt_confirmed)
 
 
 def parseCommandLine():
@@ -149,11 +86,11 @@ def parseCommandLine():
                              ' program will exit.')
 
     requiredNamed = parser.add_argument_group('required named arguments')
-    requiredNamed.add_argument('--site', choices=common.lco_2meter_sites, required=True,  help="To which site to submit")
+    requiredNamed.add_argument('--site', choices=common.lco_2meter_sites, required=True, help="To which site to submit")
 
     parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=150)
-    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as','slit_2.0as','slit_6.0as'])
+    parser.add_argument('--slit', type=str, default="slit_1.2as", choices=['slit_1.2as', 'slit_2.0as', 'slit_6.0as'])
 
     parser.add_argument('--start', default=None,
                         help="When to start Floyds observation. If not given, defaults to \"NOW\"")
@@ -181,14 +118,13 @@ def parseCommandLine():
         try:
             args.start = dt.datetime.strptime(args.start, "%Y%m%d %H:%M")
         except ValueError:
-            _logger.error("Invalidt start time argument: ", args.start)
+            _logger.error("Invalid start time argument: ", args.start)
             exit(1)
 
     if ('auto' in args.targetname):
-        args.targetname =  common.get_auto_target(goodFloydsFluxStandards, args.site, args.start)
+        args.targetname = common.get_auto_target(goodFloydsFluxStandards, args.site, args.start)
         if args.targetname is None:
-            exit (1)
-
+            exit(1)
 
     try:
         _logger.debug("Resolving target name")
@@ -201,12 +137,12 @@ def parseCommandLine():
     return args
 
 
-
 def main():
-    print ("Need to update this program for direct submission. Quitting.")
-    exit(1)
     args = parseCommandLine()
     createRequestsForStar(args)
+    print("Need to update this program for direct submission. Quitting.")
+    exit(1)
+
 
 if __name__ == '__main__':
     main()

@@ -41,7 +41,7 @@ def parseCommandLine():
         description='Crawl LCO archive tyo measure noise, gain from paitrs of biases and darks',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--cameratype', type=str, nargs='+', default=['fa', 'fs', 'kb'],
+    parser.add_argument('--cameratype', type=str, nargs='+', default=['fa', 'fs', 'kb', 'ep'],
                         help='Type of cameras to parse')
     parser.add_argument('--instrument', type=str, default=None,
                         help='Individual camera to request')
@@ -96,7 +96,7 @@ def main():
     log.info (f"These are the dates to process: {args.dates}")
     for date in args.dates:
         for ct in args.cameratype:
-            log.debug ("Processing fro date, cameratype, camera {} {} {}".format (date, args.cameratype, args.instrument))
+            log.debug ("Processing from date, cameratype, camera {} {} {}".format (date, args.cameratype, args.instrument))
             find_files_and_invoke_noisegain(date, args, camera=args.instrument, cameratype=ct)
     log.info("All Done")
 
