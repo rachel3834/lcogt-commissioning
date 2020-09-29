@@ -155,14 +155,15 @@ def send_to_scheduler(user_request,  dosubmit=False):
 
 
 def submit_observation(observation, dosubmit=False):
-    """ Submit a user request to LCO POND"""
+    """ Submit to LCO via an API call, direct submission"""
+
     if dosubmit:
         headers = {'Authorization': 'Token {token}'.format(token=VALHALLA_API_TOKEN)}
         response = requests.post(VALHALLA_URL + '/api/schedule/', json=observation, headers=headers)
         try:
             response.raise_for_status()
             _log.info(
-                'Submitted observation with id: {0}. Check it at {1}/observations/{0}'.format(
+                'Direct submitted observation with id: {0}. Check it at {1}/observations/{0}'.format(
                     response.json()['id'], VALHALLA_URL
                 )
             )
