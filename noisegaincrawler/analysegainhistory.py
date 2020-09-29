@@ -21,6 +21,7 @@ endtime.replace(day=1)
 
 fareadmodes = [['full_frame', None], ['central_2k_2x2', ]]
 
+epreadmodes = [['1',], ]
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
@@ -59,8 +60,8 @@ def aws_enabled():
     secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
     s3_bucket = os.environ.get('AWS_S3_BUCKET', None)
     region = os.environ.get('AWS_DEFAULT_REGION', None)
-
     return access_key and secret_key and s3_bucket and region
+
 
 
 def write_to_storage_backend(directory, filename, data, binary=True):
@@ -105,6 +106,9 @@ def renderHTMLPage(args, cameras, filenames):
             continue
         if 'fa' in camera:
             readmodes = fareadmodes
+
+        if 'ep' in camera:
+            readmodes = epreadmodes
 
         message = message + " <h2> %s </h2>\n" % (camera)
         for readmode in readmodes:
@@ -195,6 +199,8 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
         plt.ylim([5, 10])
     if 'fl' in camera:
         plt.ylim([5, 15])
+    if 'ep' in camera:
+        plt.ylim([5, 15])
     if 'fs' in camera:
         plt.ylim([5, 15])
     if 'kb' in camera:
@@ -227,6 +233,8 @@ def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
             plt.ylim([5.5, 7])
     if 'fl' in camera:
         plt.ylim([1, 3])
+    if 'ep' in camera:
+        plt.ylim([0, 3])
     if 'fs' in camera:
         plt.ylim([6, 8])
     if 'kb' in camera:
@@ -259,6 +267,8 @@ def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=No
             plt.ylim([5.5, 7])
     if 'fl' in camera:
         plt.ylim([1, 3])
+    if 'ep' in camera:
+        plt.ylim([0, 3])
     if 'fs' in camera:
         plt.ylim([6, 8])
     if 'kb' in camera:
