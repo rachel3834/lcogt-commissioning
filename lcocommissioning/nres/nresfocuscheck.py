@@ -1,5 +1,5 @@
 import os
-
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -17,8 +17,8 @@ def readFile(file):
     return cat
 
 
-inputs = ['/home/dharbeck/temp/raw/bpl1m002-fa02-20200925-0013-e00.fits.fz'  ,
-    ]
+inputs = [x for x in sys.argv[1:]]
+
 
 index = 0
 for input in inputs[:]:

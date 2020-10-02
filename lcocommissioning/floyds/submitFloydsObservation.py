@@ -72,7 +72,7 @@ def createRequestsForStar(context):
         }
     }
 
-    _logger.info(json.dumps(data, indent=4))
+    _logger.debug(json.dumps(data, indent=4))
     common.submit_observation(data, context.opt_confirmed)
 
 

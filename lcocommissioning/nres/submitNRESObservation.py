@@ -118,6 +118,16 @@ def parseCommandLine():
         except ValueError:
             _logger.error("Invalid start time argument: ", args.start)
             exit(1)
+
+    if args.targetname is None:
+
+        args.targetname = common.get_auto_target(common.goodXTalkTargets, site=args.site, starttime=args.start)
+        _logger.info (f"Auto selecting target {args.targetname}")
+
+    if args.targetname is None:
+        _logger.error ("No target given, giving up.")
+        exit(1)
+
     astropy.coordinates.name_resolve.sesame_database.set("simbad")
     try:
         _logger.debug("Resolving target name")

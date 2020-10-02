@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="lcocommissioning",
-    version="2.0.12",
+    version="2.0.11",
     author="Daniel Harbeck",
     author_email="dharbeck@lco.global",
     description="Tool to characterize CCD detectors and other commissioning tasks for the LCO observatory.",
@@ -29,14 +29,14 @@ setuptools.setup(
                             'effocus = lcocommissioning.ef_focuscalibration:main',
                             'submit_floyds_calibration = lcocommissioning.floyds.submitFloydsCalibration:main',
                             'submit_floyds_observation = lcocommissioning.floyds.submitFloydsObservation:main',
-                            'focusmap = lcocommissioning.focusmap:main',
+                            'submit_muscat_observation = lcocommissioning.muscat.submitMuscatObservation:main'
                             ],
 
     },
     install_requires=[
         "astropy==4.0",
         "numpy==1.18.1",
-        "matplotlib==3.3.1",
+        "matplotlib==3.1.3",
         "ephem==3.7.7.0",
         "requests==2.22.0",
         "scipy==1.4.1",
