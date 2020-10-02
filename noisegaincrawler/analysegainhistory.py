@@ -200,7 +200,7 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
     if 'fl' in camera:
         plt.ylim([5, 15])
     if 'ep' in camera:
-        plt.ylim([5, 15])
+        plt.ylim([5, 20])
     if 'fs' in camera:
         plt.ylim([5, 15])
     if 'kb' in camera:
