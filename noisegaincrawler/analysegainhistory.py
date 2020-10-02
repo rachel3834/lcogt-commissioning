@@ -21,7 +21,7 @@ endtime.replace(day=1)
 
 fareadmodes = [['full_frame', None], ['central_2k_2x2', ]]
 
-epreadmodes = [['1',], ]
+epreadmodes = [['MUSCAT_SLOW',], ['MUSCAT_FAST', ] ]
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
