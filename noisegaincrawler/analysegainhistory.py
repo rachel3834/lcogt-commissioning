@@ -16,6 +16,7 @@ logging.getLogger('matplotlib').setLevel(logging.FATAL)
 
 starttimeall = datetime.datetime(2016, 1, 1)
 starttimefa = datetime.datetime(2018, 7, 1)
+starttimeep = datetime.datetime(2020, 10, 1)
 endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=31 + 4)
 endtime.replace(day=1)
 
@@ -112,6 +113,7 @@ def renderHTMLPage(args, cameras, filenames):
 
         message = message + " <h2> %s </h2>\n" % (camera)
         for readmode in readmodes:
+            _logger.info (f"Processing readmode: {readmode}")
             if readmode is not None:
                 readmode = [x if x is not None else 'None' for x in readmode]
 
@@ -147,6 +149,10 @@ def make_plots_for_camera(camera, args, database):
     if 'fa' in camera:
         starttime = starttimefa
         readmodes = fareadmodes
+
+    if 'ep' in camera:
+        starttime = starttimeep
+        readmodes = epreadmodes
 
     for readmode in readmodes:
         dataset = database.getMeasurementsForCamera(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
