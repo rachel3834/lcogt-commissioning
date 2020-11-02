@@ -35,6 +35,9 @@ def createMuscatRequestConfiguration(args):
             }, ]
         }
 
+    if args.selfguide:
+        configuration['guiding_config'] = {'mode': f'MUSCAT_{args.selfguide.upper()}'}
+
     if args.exp_cnt:
         configuration['type'] = 'EXPOSE'
         configuration['instrument_configs'][0]['exposure_count'] = args.exp_cnt
@@ -122,6 +125,8 @@ def parseCommandLine():
     repeatgroup.add_argument('--exp-cnt', type=int, help="How often to repeat each exposure")
     repeatgroup.add_argument('--filltime', type=float, help="How long to repeat Muscat exposures (seconds)")
 
+
+    parser.add_argument('--selfguide', type=str, default=None, choices=[None,'g','r','i','z'])
     parser.add_argument('--scheduler', action='store_true',
                         help='If set, submit to scheduler instead of trying a direct submission.')
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
