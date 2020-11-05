@@ -15,10 +15,11 @@ def createMuscatRequestConfiguration(args):
     configuration = {
             'type': None,
             'instrument_type': '2M0-SCICAM-MUSCAT',
-            'guiding_config': {},
+            'guiding_config': { 'mode': 'ON', 'optional': True},
             'acquisition_config': {},
             'instrument_configs': [{
                 'exposure_count': 1,
+                'mode' : 'MUSCAT_FAST' if args.readmode is None else args.readmode,
                 'optical_elements': {
                     'diffuser_g_position': 'out',
                     'diffuser_r_position': 'out',
@@ -36,7 +37,7 @@ def createMuscatRequestConfiguration(args):
         }
 
     if args.selfguide:
-        configuration['guiding_config'] = {'mode': f'MUSCAT_{args.selfguide.upper()}'}
+        configuration['guiding_config']['mode'] = f'MUSCAT_{args.selfguide.upper()}'
 
     if args.exp_cnt:
         configuration['type'] = 'EXPOSE'
@@ -127,6 +128,7 @@ def parseCommandLine():
 
 
     parser.add_argument('--selfguide', type=str, default=None, choices=[None,'g','r','i','z'])
+    parser.add_argument('--readmode', type=str, default='MUSCAT_FAST', choices=['MUSCAT_FAST', 'MUSCAT_SLOW'])
     parser.add_argument('--scheduler', action='store_true',
                         help='If set, submit to scheduler instead of trying a direct submission.')
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
