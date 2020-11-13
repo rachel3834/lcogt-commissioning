@@ -71,6 +71,33 @@ def createRequest(args):
     return requestgroup
 
 
+def convert_request_for_direct_submission(nres, args):
+    """ Need to fill in some extra fields for a direct submission"""
+    SLEWTIME = 180
+    ACQUISITIONTIME = 300
+
+    READOUTTIME = 60
+    # Calculate the4 end tim efor this reuquest
+    endtime = args.start + dt.timedelta(seconds=SLEWTIME + ACQUISITIONTIME)
+    endtime += dt.timedelta(seconds=args.expcnt * (args.exptime + READOUTTIME))
+
+    data = {
+        'name': f'NRES ENGINEERING {args.targetname}',
+        'proposal': 'ENG2017AB-001',
+        'site': args.site,
+        'enclosure': args.dome,
+        'telescope': '1m0a',
+        'start': args.start.isoformat(),
+        'end': endtime.isoformat(),
+        'request': {
+            'acceptability_threshold': 90,
+            'configurations': nres['requests'][0]['configurations']
+        }
+
+    }
+    return data
+
+
 def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='Submit an engineering NRES observation to SCHEDULER.')
@@ -82,11 +109,10 @@ def parseCommandLine():
                              ' find a cataloged flux stadnard star. Name must resolve via Simbad; if resolve failes,'
                              ' program will exit.')
 
-    requiredNamed = parser.add_argument_group('required named arguments')
-
-    requiredNamed.add_argument('--site', choices=['lsc', 'elp', 'cpt', 'tlv'], default=None,
+    parser.add_argument('--site', choices=common.lco_nres_sites, default=None,
                                help="To which site to submit")
-    parser.add_argument('--exp-cnt', type=int, dest="expcnt", default=1)
+    parser.add_argument('--dome', choices = ['doma','domb','domc'], default = None, help="Which dome. Important for direct submission")
+    parser.add_argument('--expcnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=120)
     parser.add_argument('--forcewcs', action='store_true',
                         help='Force WCSW based acquistion')
@@ -98,7 +124,8 @@ def parseCommandLine():
                         help="When to start NRES observation. If not given, defaults to \"NOW\"")
     parser.add_argument('--schedule-window', default=3, type=float,
                         help="How long after start should request be schedulable?")
-
+    parser.add_argument('--direct', action='store_true',
+                    help='If set, make a direct submission instead of a scheduler submission.')
     parser.add_argument('--user', default='daniel_harbeck', help="Which user name to use for submission")
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, block will be submitted.')
@@ -142,7 +169,13 @@ def parseCommandLine():
 def main():
     args = parseCommandLine()
     requstgroup = createRequest(args)
-    common.send_request_to_portal(requstgroup, args.opt_confirmed)
+    if not args.direct:
+        common.send_request_to_portal(requstgroup, args.opt_confirmed)
+    else:
+        directrequest = convert_request_for_direct_submission(requstgroup,args)
+        _logger.info(f"Attempting direct submission {directrequest['start']} {directrequest['end']}")
+        _logger.debug(json.dumps(directrequest, indent=2))
+        common.submit_observation(directrequest, args.opt_confirmed)
     exit(0)
 
 
