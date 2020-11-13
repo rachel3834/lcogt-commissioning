@@ -41,8 +41,8 @@ lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa07', 'fa08'
 
 archon_readout_modes = ["full_frame", "central_2k_2x2"]
 
-lco_muscat_instruments = ['muscat01']
-lco_muscat_readmodes = ['default']
+lco_muscat_instruments = ['mc03']
+lco_muscat_readmodes = ['MUSCAT_FAST','MUSCAT_SLOW']
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
@@ -141,26 +141,8 @@ def send_request_to_portal(requestgroup, dosubmit=False):
 def send_to_scheduler(user_request, dosubmit=False):
     """Submit a user request to LCO Scheduler via Valhalla interface
     """
-
-    auth = 'Token {token}'.format(token=VALHALLA_API_TOKEN)
-    print(auth)
-    url = '{api_root}/api/userrequests/'.format(api_root=VALHALLA_URL)
-
-    headers = {
-        'Authorization': auth
-    }
-    validation_check = requests.post(url + 'validate/', json=user_request, headers=headers).json()
-    print(validation_check)
-    if not validation_check['errors']:
-        print('There are no errors.')
-        if dosubmit:
-            submitted = requests.post(url, json=user_request, headers=headers).json()
-            print('Submitted request information: {}'.format(submitted))
-        else:
-            print(" ** Not submitting as per user request **")
-    else:
-        print('Output of the validation check: {}'.format(validation_check))
-        print('UserRequest that was validated: {}'.format(user_request))
+    _log.fatal ("Not supported any more")
+    exit (1)
 
 
 def submit_observation(observation, dosubmit=False):
