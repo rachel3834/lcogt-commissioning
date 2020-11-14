@@ -13,28 +13,28 @@ _log = logging.getLogger(__name__)
 
 def createMuscatRequestConfiguration(args):
     configuration = {
-            'type': None,
-            'instrument_type': '2M0-SCICAM-MUSCAT',
-            'guiding_config': { 'mode': 'ON', 'optional': True},
-            'acquisition_config': {},
-            'instrument_configs': [{
-                'exposure_count': 1,
-                'mode' : 'MUSCAT_FAST' if args.readmode is None else args.readmode,
-                'optical_elements': {
-                    'diffuser_g_position': 'out',
-                    'diffuser_r_position': 'out',
-                    'diffuser_i_position': 'out',
-                    'diffuser_z_position': 'out',
-                },
-                'extra_params': {
-                    'exposure_time_g': args.exp_times[0],
-                    'exposure_time_r': args.exp_times[1],
-                    'exposure_time_i': args.exp_times[2],
-                    'exposure_time_z': args.exp_times[3],
-                    'exposure_mode': args.exp_mode,
-                }
-            }, ]
-        }
+        'type': None,
+        'instrument_type': '2M0-SCICAM-MUSCAT',
+        'guiding_config': {'mode': 'ON', 'optional': True},
+        'acquisition_config': {},
+        'instrument_configs': [{
+            'exposure_count': 1,
+            'mode': 'MUSCAT_FAST' if args.readmode is None else args.readmode,
+            'optical_elements': {
+                'diffuser_g_position': 'out',
+                'diffuser_r_position': 'out',
+                'diffuser_i_position': 'out',
+                'diffuser_z_position': 'out',
+            },
+            'extra_params': {
+                'exposure_time_g': args.exp_times[0],
+                'exposure_time_r': args.exp_times[1],
+                'exposure_time_i': args.exp_times[2],
+                'exposure_time_z': args.exp_times[3],
+                'exposure_mode': args.exp_mode,
+            }
+        }, ]
+    }
 
     if args.selfguide:
         configuration['guiding_config']['mode'] = f'MUSCAT_{args.selfguide.upper()}'
@@ -54,7 +54,7 @@ def createRequest(args):
     requestgroup = {"name": args.title,
                     "proposal": "MuSCAT Commissioning",
                     "ipp_value": args.ipp,
-                    "operator": "SINGLE", # "MANY" if args.dither else "SINGLE",
+                    "operator": "SINGLE",  # "MANY" if args.dither else "SINGLE",
                     "observation_type": "NORMAL",
                     "requests": []
                     }
@@ -64,7 +64,7 @@ def createRequest(args):
 
     location = {'telescope': '2m0a',
                 'telescope_class': '2m0',
-                'enclosure' : 'clma',
+                'enclosure': 'clma',
                 'site': args.site, }
 
     request = {'configurations': [],
@@ -83,9 +83,9 @@ def createRequest(args):
     }
     muscatconfiguration['target'] = target
     muscatconfiguration['constraints'] = common.default_constraints
-    request['configurations'].append (muscatconfiguration)
+    request['configurations'].append(muscatconfiguration)
 
-    requestgroup['requests'].append (request)
+    requestgroup['requests'].append(request)
 
     return requestgroup
 
@@ -126,8 +126,7 @@ def parseCommandLine():
     repeatgroup.add_argument('--exp-cnt', type=int, help="How often to repeat each exposure")
     repeatgroup.add_argument('--filltime', type=float, help="How long to repeat Muscat exposures (seconds)")
 
-
-    parser.add_argument('--selfguide', type=str, default=None, choices=[None,'g','r','i','z'])
+    parser.add_argument('--selfguide', type=str, default=None, choices=[None, 'g', 'r', 'i', 'z'])
     parser.add_argument('--readmode', type=str, default='MUSCAT_FAST', choices=['MUSCAT_FAST', 'MUSCAT_SLOW'])
     parser.add_argument('--scheduler', action='store_true',
                         help='If set, submit to scheduler instead of trying a direct submission.')
@@ -155,7 +154,7 @@ def parseCommandLine():
         # automatically find the best target
         args.targetname = common.get_auto_target(common.goodXTalkTargets, args.site, args.start, moonseparation=40)
         if args.targetname is None:
-            _log.error ("Could not find a suitable auto target. Exiting.")
+            _log.error("Could not find a suitable auto target. Exiting.")
             exit(1)
 
     try:
@@ -176,12 +175,14 @@ def parseCommandLine():
 
 def ammend_request_for_direct_submission(muscat, args):
     """ Need to fill in some extra fields for a direct submission"""
-
+    SLEWTIME = 180
+    READOUTTIME = 6 if 'FAST' in args.readmode else 46
     # Calculate the4 end tim efor this reuquest
+    endtime = args.start + dt.timedelta(seconds=SLEWTIME)
     if args.filltime:
-        endtime = args.start + dt.timedelta(seconds=args.filltime)
+        endtime += dt.timedelta(seconds=args.filltime)
     if args.exp_cnt:
-        endtime = args.start + dt.timedelta (seconds = args.exp_cnt * (float (np.max (args.exp_times) + 10)))
+        endtime += dt.timedelta(seconds=args.exp_cnt * (float(np.max(args.exp_times)) + READOUTTIME))
 
     data = {
         'name': args.title,
@@ -192,7 +193,7 @@ def ammend_request_for_direct_submission(muscat, args):
         'start': args.start.isoformat(),
         'end': endtime.isoformat(),
         'request': {
-            'acceptability_threshold' : 90,
+            'acceptability_threshold': 90,
             'configurations': muscat['requests'][0]['configurations']
         }
 
@@ -206,18 +207,18 @@ def main():
     muscat = createRequest(args)
 
     if args.scheduler:
-        _log.info ("Submitting to scheduler")
-        _log.info(json.dumps(muscat, indent=2))
+        _log.info("Submitting to scheduler")
+        _log.debug(json.dumps(muscat, indent=2))
         common.send_request_to_portal(muscat, args.opt_confirmed)
     else:
-        _log.info ("Attempting direct submission")
-        muscat = ammend_request_for_direct_submission (muscat, args)
-        _log.info(json.dumps(muscat, indent=2))
+        muscat = ammend_request_for_direct_submission(muscat, args)
+        _log.info(f"Attempting direct submission {muscat['start']} {muscat['end']}")
+        _log.debug(json.dumps(muscat, indent=2))
         common.submit_observation(muscat, args.opt_confirmed)
 
 
 # else:
-    #     createRequestsForStar_pond(args)
+#     createRequestsForStar_pond(args)
 
 
 if __name__ == '__main__':
