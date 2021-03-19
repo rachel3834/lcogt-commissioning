@@ -13,15 +13,16 @@ defaultconstraints = {"max_airmass": 2.5,
                       "min_lunar_distance": 45.0, }
 
 
-def createNRESRequestsConfiguration(context):
+def createNRESRequestsConfiguration(args):
     configuration = {
         'type': 'NRES_SPECTRUM',
-        'instrument_type': '1M0-NRES-SCICAM',
-        'guiding_config': {'mode': 'ON'},
-        'acquisition_config': {'mode': 'WCS' if context.forcewcs else 'BRIGHTEST'},
+        'instrument_type': '1M0-NRES-SCICAM' if not args.commissioning else '1M0-NRES-COMMISSIONING',
+        'guiding_config': {'mode': 'ON', 'optional' : False},
+        'acquisition_config': {'mode': 'WCS' if args.forcewcs else 'BRIGHTEST'},
         'instrument_configs': [{
-            'exposure_time': context.exptime,
-            'exposure_count': context.expcnt,
+            'exposure_time': args.exptime,
+            'exposure_count': args.expcnt,
+            'mode': 'default'
         },]
     }
     return configuration
@@ -104,7 +105,7 @@ def parseCommandLine():
 
     parser.add_argument("--proposalid", default="ENG2017AB-001")
 
-    parser.add_argument('--targetname', type=str,
+    parser.add_argument('--targetname', type=str, default=None,
                         help='Name of star for NRES test observation. if none is given, or auto, Software will try to'
                              ' find a cataloged flux stadnard star. Name must resolve via Simbad; if resolve failes,'
                              ' program will exit.')
@@ -112,13 +113,15 @@ def parseCommandLine():
     parser.add_argument('--site', choices=common.lco_nres_sites, default=None,
                                help="To which site to submit")
     parser.add_argument('--dome', choices = ['doma','domb','domc'], default = None, help="Which dome. Important for direct submission")
+    parser.add_argument('--commissioning', action='store_true', help="request observation to instrument 1m0-NRES-Commissioning" )
+
     parser.add_argument('--expcnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, default=120)
     parser.add_argument('--forcewcs', action='store_true',
                         help='Force WCSW based acquistion')
     parser.add_argument('--window', default=3, type=int, help="scheduling window length")
     parser.add_argument('--ipp', default=1.0, help="IPP priority for block")
-    parser.add_argument('--pm', type=float, nargs=2, help="proper motion RA DEC in marcsec / year")
+    parser.add_argument('--pm', type=float, nargs=2, default = None, help="proper motion RA DEC in marcsec / year")
 
     parser.add_argument('--start', default=None,
                         help="When to start NRES observation. If not given, defaults to \"NOW\"")
@@ -146,12 +149,20 @@ def parseCommandLine():
             exit(1)
 
     if args.targetname is None:
-        args.targetname = common.get_auto_target(common.goodXTalkTargets, site=args.site, starttime=args.start)
+        args.targetname = common.get_auto_target(common.goodNRESFluxTargets, site=args.site, starttime=args.start)
         _logger.info(f"Auto selecting target {args.targetname}")
 
     if args.targetname is None:
         _logger.error("No target given, giving up.")
         exit(1)
+
+    if args.pm is None:
+        if args.targetname in common.listofpm:
+            args.pm = common.listofpm[args.targetname]
+        else:
+            args.pm = [0,0]
+
+
 
     astropy.coordinates.name_resolve.sesame_database.set("simbad")
     try:
