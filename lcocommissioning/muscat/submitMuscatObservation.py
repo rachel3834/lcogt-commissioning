@@ -11,6 +11,7 @@ import lcocommissioning.common.common as common
 _log = logging.getLogger(__name__)
 
 
+
 def createMuscatRequestConfiguration(args):
     configuration = {
         'type': None,
@@ -21,10 +22,10 @@ def createMuscatRequestConfiguration(args):
             'exposure_count': 1,
             'mode': 'MUSCAT_FAST' if args.readmode is None else args.readmode,
             'optical_elements': {
-                'diffuser_g_position': 'out',
-                'diffuser_r_position': 'out',
-                'diffuser_i_position': 'out',
-                'diffuser_z_position': 'out',
+                'diffuser_g_position': 'out' if not args.diffuser else 'in',
+                'diffuser_r_position': 'out' if not args.diffuser else 'in',
+                'diffuser_i_position': 'out' if not args.diffuser else 'in',
+                'diffuser_z_position': 'out' if not args.diffuser else 'in'
             },
             'extra_params': {
                 'exposure_time_g': args.exp_times[0],
@@ -85,6 +86,8 @@ def createRequest(args):
         "ra": "%10f" % args.radec.ra.degree,
         "dec": "%10f" % args.radec.dec.degree,
     }
+
+
     muscatconfiguration['target'] = target
     muscatconfiguration['constraints'] = common.default_constraints
     request['configurations'].append(muscatconfiguration)
@@ -96,7 +99,7 @@ def createRequest(args):
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='MuSCAT @ LCO engineering commissioning submisison tool')
+        description='MuSCAT @ LCO engineering commissioning submission tool')
 
     parser.add_argument('--targetname', default='auto', type=str,
                         help='Name of object to observe; will beresolved via simbad. Can be coordinates in the form of Jhhmmss+ddmmss')
@@ -125,7 +128,7 @@ def parseCommandLine():
     parser.add_argument('--pp', default=[0., 0.], nargs=2, type=float, help="Proper motion, mas/yr")
 
     parser.add_argument('--exp-mode', default='SYNCHRONOUS', choices=['SYNCHRONOUS', 'ASYNCHRONOUS'], required=False)
-
+    parser.add_argument('--diffuser',  action='store_true')
     repeatgroup = parser.add_mutually_exclusive_group()
     repeatgroup.add_argument('--exp-cnt', type=int, help="How often to repeat each exposure")
     repeatgroup.add_argument('--filltime', type=float, help="How long to repeat Muscat exposures (seconds)")
@@ -140,7 +143,6 @@ def parseCommandLine():
 
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
-
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -169,10 +171,10 @@ def parseCommandLine():
         print("Resolving target name failed, giving up")
         exit(1)
 
-    print("Resolved target %s at corodinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
+    print("Resolved target %s at coordinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
 
     if not (args.exp_cnt or args.filltime):
-        print("No exposure mode choosen, defaulting to EXPOSE")
+        print("No exposure mode chosen, defaulting to EXPOSE")
         args.exp_cnt = 1
 
     return args
