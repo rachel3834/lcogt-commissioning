@@ -22,7 +22,8 @@ lco_site_lonlat = {'bpl': (-119.863103, 34.433161),
                    'ogg': (-156.2589, 34.433161),
                    'sqa': (-120.04222167, 34.691453333),
                    'tfn': (-16.511544, 28.300433),
-                   'tlv': (0, 0), }
+                   'tlv': (30.595833, 30.595833),
+                   }
 
 # Dictionary of NRES instances
 nres_instruments = {'lsc': 'nres01',
@@ -42,12 +43,30 @@ lco_sinistro1m_cameras = ['fa02', 'fa03', 'fa04', 'fa05', 'fa06', 'fa07', 'fa08'
 archon_readout_modes = ["full_frame", "central_2k_2x2"]
 
 lco_muscat_instruments = ['mc03']
-lco_muscat_readmodes = ['MUSCAT_FAST','MUSCAT_SLOW']
+lco_muscat_readmodes = ['MUSCAT_FAST', 'MUSCAT_SLOW']
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
+goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR3454', 'HR5501', 'HR7596']
+
+# list of propoer motions for some stars:
+listofpm = {'HR9087': [  18.844,  -9.700],
+            'HR1544': [   1.41,  -29.91],
+            'HR3454': [ -19.39,   -1.08],
+            'HR5501': [ -40.419,  -8.096],
+            'HR7596': [  39.126, -13.931]}
+
+# have a list of cached coordiantes so we do not alwasys need to look it up
+listofchachedcoordiantes = {
+    'HR9087': [0.4560297510252, -03.0275060205485],
+    'HR1544': [72.6530124271, +8.9001803703],
+    'HR3454': [130.8061458029, +03.3986629753 ],
+    'HR5501': [221.3758584061525, +0.7172718096401],
+    'HR7596': [298.6866476452963, +0.2736259408895]
+}
+
 default_constraints = {"max_airmass": 3,
-                       "min_lunar_distance": 30.0, }
+                       "min_lunar_distance": 20.0, }
 
 
 def get_ephem_obj_for_site(sitecode, dateobs):
@@ -63,7 +82,7 @@ def is_valid_lco_site(sitecode):
     return sitecode in lco_site_lonlat
 
 
-def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
+def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
     """ Go through a list of Simbad-resolvable objects and return the first visible object at the given site and time.
 
     :param targetlist: List of possible target names, as strings. Must resolve via simbad
@@ -82,7 +101,14 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=35):
     for starcandidate in targetlist:
         if 'auto' in starcandidate:
             continue
-        radec = SkyCoord.from_name(starcandidate)
+        if starcandidate in listofchachedcoordiantes:
+            cradec = listofchachedcoordiantes[starcandidate]
+            radec = SkyCoord(cradec[0],cradec[1], unit='deg', frame='icrs', )
+
+        else:
+            radec = SkyCoord.from_name(starcandidate)
+
+
         s = ephem.FixedBody()
         s._ra = radec.ra.degree * math.pi / 180
         s._dec = radec.dec.degree * math.pi / 180
@@ -141,8 +167,8 @@ def send_request_to_portal(requestgroup, dosubmit=False):
 def send_to_scheduler(user_request, dosubmit=False):
     """Submit a user request to LCO Scheduler via Valhalla interface
     """
-    _log.fatal ("Not supported any more")
-    exit (1)
+    _log.fatal("Not supported any more")
+    exit(1)
 
 
 def submit_observation(observation, dosubmit=False):
