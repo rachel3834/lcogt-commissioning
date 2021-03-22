@@ -47,22 +47,27 @@ lco_muscat_readmodes = ['MUSCAT_FAST', 'MUSCAT_SLOW']
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
-goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR3454', 'HR5501', 'HR7596']
+goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR4468', 'HD 93521', 'HR3454', 'HR5501', 'HR7596']
 
-# list of propoer motions for some stars:
-listofpm = {'HR9087': [  18.844,  -9.700],
-            'HR1544': [   1.41,  -29.91],
-            'HR3454': [ -19.39,   -1.08],
-            'HR5501': [ -40.419,  -8.096],
-            'HR7596': [  39.126, -13.931]}
+# list of proper motions for some stars:
+listofpm = {'HR9087': [18.844, -9.700],
+            'HR1544': [1.41, -29.91],
+            'HR3454': [-19.39, -1.08],
+            'HR5501': [-40.419, -8.096],
+            'HR7596': [39.126, -13.931],
+            'HR4468': [-59.38, 2.55 ],
+            'HD93521': [0.220, 1.717],
+          }
 
 # have a list of cached coordiantes so we do not alwasys need to look it up
 listofchachedcoordiantes = {
     'HR9087': [0.4560297510252, -03.0275060205485],
     'HR1544': [72.6530124271, +8.9001803703],
-    'HR3454': [130.8061458029, +03.3986629753 ],
+    'HR3454': [130.8061458029, +03.3986629753],
     'HR5501': [221.3758584061525, +0.7172718096401],
-    'HR7596': [298.6866476452963, +0.2736259408895]
+    'HR7596': [298.6866476452963, +0.2736259408895],
+    'HD93521': [162.0979650581188, +37.5703027604956],
+    'HR4468': [174.1704723071, -9.8022475661]
 }
 
 default_constraints = {"max_airmass": 3,
@@ -103,11 +108,10 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
             continue
         if starcandidate in listofchachedcoordiantes:
             cradec = listofchachedcoordiantes[starcandidate]
-            radec = SkyCoord(cradec[0],cradec[1], unit='deg', frame='icrs', )
+            radec = SkyCoord(cradec[0], cradec[1], unit='deg', frame='icrs', )
 
         else:
             radec = SkyCoord.from_name(starcandidate)
-
 
         s = ephem.FixedBody()
         s._ra = radec.ra.degree * math.pi / 180
