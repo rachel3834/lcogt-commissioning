@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 logging.getLogger('elasticsearch').setLevel(logging.WARNING)
 logging.getLogger('connectionpool').setLevel(logging.WARNING)
 
-ARCHIVE_ROOT = "/archive/engineering"
+ARCHIVE_ROOT = "/archive"
 ARCHIVE_API_TOKEN = os.getenv('ARCHIVE_API_TOKEN', '')
 
 
@@ -151,7 +151,7 @@ def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=
     return t
 
 
-def filename_to_archivepath_dict(filenametable, rootpath='/archive/engineering'):
+def filename_to_archivepath_dict(filenametable, rootpath=ARCHIVE_ROOT):
     ''' Return a dictionary with camera -> list of FileIO-able path of imagers from an elastic search result.
         We are still married to /archive file names here - because reasons. Long term we should go away from that.
     '''
