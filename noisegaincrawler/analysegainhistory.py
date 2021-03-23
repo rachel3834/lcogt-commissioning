@@ -159,6 +159,7 @@ def make_plots_for_camera(camera, args, database):
         if dataset is None:
             return
         extensions = sorted(set(dataset['extension']))
+        print (extensions)
         if readmode is not None:
             readmode = [x if x is not None else 'None' for x in readmode]
 
@@ -318,7 +319,7 @@ def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
     return filename
 
 
-goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'U', 'B', 'V', 'R', 'I']
+goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'zs', 'U', 'B', 'V', 'R', 'I']
 
 
 def main():
