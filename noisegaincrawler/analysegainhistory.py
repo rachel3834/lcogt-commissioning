@@ -129,10 +129,10 @@ def renderHTMLPage(args, cameras, filenames):
 
     message = message + "</body></html>"
 
-    with io.StringIO() as fileobj:
-        fileobj.write(message)
+    with io.BytesIO() as fileobj:
+        fileobj.write(str.encode(message))
         filename = 'index.html'
-        write_to_storage_backend(args.outputdir, filename, fileobj.getvalue(), binary=False)
+        write_to_storage_backend(args.outputdir, filename, fileobj.getvalue(), binary=True)
 
 
 
