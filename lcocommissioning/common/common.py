@@ -47,7 +47,7 @@ lco_muscat_readmodes = ['MUSCAT_FAST', 'MUSCAT_SLOW']
 
 goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
 
-goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR4468', 'HD 93521', 'HR3454', 'HR5501', 'HR7596']
+goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR4468', 'HD93521', 'HR3454', 'HR5501', 'HR7596']
 
 # list of proper motions for some stars:
 listofpm = {'HR9087': [18.844, -9.700],
