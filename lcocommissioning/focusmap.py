@@ -14,35 +14,36 @@ from lcocommissioning.common.SourceCatalogProvider import SEPSourceCatalogProvid
 '''
 
 
-def plotdistribution(imagecatalog):
+def plotdistribution(imagecatalog, name=None):
 
 
     medianfwhm = np.median (imagecatalog['fwhm'])
     std = np.std (imagecatalog['fwhm'])
     medianfwhm = np.median (imagecatalog['fwhm'][ np.abs (imagecatalog['fwhm'] - medianfwhm) < std*2])
-
     good =  np.abs (imagecatalog['fwhm'] - medianfwhm) < std*2
 
 
-
-
-
-    fig = plt.figure()
-    plt.subplot (1,1,1)
-    plt.scatter (x=imagecatalog['x'][good], y=imagecatalog['y'][good], c=imagecatalog['fwhm'][good], vmin=4, vmax=8)
-    plt.savefig ('fwhm2d.png', dpi=150)
-
-
-    fig = plt.figure()
-    plt.scatter (x=imagecatalog['x'][good], y=imagecatalog['y'][good], c=imagecatalog['ellipticity'][good], vmin=0,vmax=1)
+    fig, ax = plt.subplots()
+    ax.set_box_aspect(1)
+    plt.scatter (x=imagecatalog['x'][good], y=imagecatalog['y'][good], c=imagecatalog['ellipticity'][good], vmin=0,vmax=0.15)
+    plt.colorbar()
+    plt.xlabel ("x center")
+    plt.ylabel ("y center")
     plt.savefig ('ellipticity2d.png')
 
     fig = plt.figure()
+
     plt.subplot (2,1,2)
     plt.plot (imagecatalog['x'][good], imagecatalog['ellipticity'][good],'.')
+    plt.xlabel ("x position")
+    plt.ylabel ("ellipticity")
+
+
     plt.ylim([0,0.2])
     plt.subplot (2,1,1)
     plt.plot (imagecatalog['y'][good], imagecatalog['ellipticity'][good], '.')
+    plt.xlabel ("y position")
+    plt.ylabel ("ellipticity")
     plt.ylim([0,0.2])
     plt.savefig ('ellipticity1d.png')
 

@@ -1,4 +1,6 @@
 import json
+import logging
+
 import sys
 import math
 import matplotlib.pyplot as plt
@@ -67,11 +69,14 @@ def overplot_fit(func, paramset):
 
 
 def main():
+    logging.basicConfig(level=getattr(logging, 'INFO'),
+                        format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
     error_string = None
     focuslist = []
     fwhmlist = []
     for image in sys.argv[1:]:
-        focus, fwhm = getImageFWHM(image)
+        focus, fwhm = getImageFWHM(image, minarea=5)
         if np.isfinite(fwhm):
             focuslist.append(focus)
             fwhmlist.append(fwhm)
@@ -115,9 +120,9 @@ def main():
         plt.axes().axvspan(bestfocus - bestfocus_error, bestfocus + bestfocus_error, alpha=0.1, color='grey')
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
-    plt.ylabel("FWHM (Pixels")
+    plt.ylabel("FWHM (arcsec)")
     plt.xlim([-3.6, 3.6])
-    plt.ylim([0, 30])
+    plt.ylim([0, 6])
     overplot_fit(polyfit, parabola_p)
     overplot_fit(sqrtfit, exponential_p)
     plt.plot(focuslist, fwhmlist, 'o')

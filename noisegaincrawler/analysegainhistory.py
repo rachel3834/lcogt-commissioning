@@ -16,11 +16,13 @@ logging.getLogger('matplotlib').setLevel(logging.FATAL)
 
 starttimeall = datetime.datetime(2016, 1, 1)
 starttimefa = datetime.datetime(2018, 7, 1)
+starttimeep = datetime.datetime(2020, 10, 1)
 endtime = datetime.datetime.utcnow().replace(day=28) + datetime.timedelta(days=31 + 4)
 endtime.replace(day=1)
 
 fareadmodes = [['full_frame', None], ['central_2k_2x2', ]]
 
+epreadmodes = [['MUSCAT_SLOW',], ['MUSCAT_FAST', ] ]
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
@@ -59,8 +61,8 @@ def aws_enabled():
     secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
     s3_bucket = os.environ.get('AWS_S3_BUCKET', None)
     region = os.environ.get('AWS_DEFAULT_REGION', None)
-
     return access_key and secret_key and s3_bucket and region
+
 
 
 def write_to_storage_backend(directory, filename, data, binary=True):
@@ -106,8 +108,12 @@ def renderHTMLPage(args, cameras, filenames):
         if 'fa' in camera:
             readmodes = fareadmodes
 
+        if 'ep' in camera:
+            readmodes = epreadmodes
+
         message = message + " <h2> %s </h2>\n" % (camera)
         for readmode in readmodes:
+            _logger.info (f"Processing readmode: {readmode}")
             if readmode is not None:
                 readmode = [x if x is not None else 'None' for x in readmode]
 
@@ -123,10 +129,10 @@ def renderHTMLPage(args, cameras, filenames):
 
     message = message + "</body></html>"
 
-    with io.StringIO() as fileobj:
-        fileobj.write(message)
+    with io.BytesIO() as fileobj:
+        fileobj.write(str.encode(message))
         filename = 'index.html'
-        write_to_storage_backend(args.outputdir, filename, fileobj.getvalue(), binary=False)
+        write_to_storage_backend(args.outputdir, filename, fileobj.getvalue(), binary=True)
 
 
 
@@ -144,11 +150,16 @@ def make_plots_for_camera(camera, args, database):
         starttime = starttimefa
         readmodes = fareadmodes
 
+    if 'ep' in camera:
+        starttime = starttimeep
+        readmodes = epreadmodes
+
     for readmode in readmodes:
         dataset = database.getMeasurementsForCamera(camera, levelratio=0.02, filters=goodfilters, readmode=readmode)
         if dataset is None:
             return
         extensions = sorted(set(dataset['extension']))
+        print (extensions)
         if readmode is not None:
             readmode = [x if x is not None else 'None' for x in readmode]
 
@@ -195,6 +206,8 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
         plt.ylim([5, 10])
     if 'fl' in camera:
         plt.ylim([5, 15])
+    if 'ep' in camera:
+        plt.ylim([5, 20])
     if 'fs' in camera:
         plt.ylim([5, 15])
     if 'kb' in camera:
@@ -227,6 +240,8 @@ def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
             plt.ylim([5.5, 7])
     if 'fl' in camera:
         plt.ylim([1, 3])
+    if 'ep' in camera:
+        plt.ylim([0, 3])
     if 'fs' in camera:
         plt.ylim([6, 8])
     if 'kb' in camera:
@@ -259,6 +274,8 @@ def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=No
             plt.ylim([5.5, 7])
     if 'fl' in camera:
         plt.ylim([1, 3])
+    if 'ep' in camera:
+        plt.ylim([0, 3])
     if 'fs' in camera:
         plt.ylim([6, 8])
     if 'kb' in camera:
@@ -302,7 +319,7 @@ def plot_ptc(camera, dataset, extensions, outputdir, readmode=None):
     return filename
 
 
-goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'U', 'B', 'V', 'R', 'I']
+goodfilters = ['up', 'gp', 'rp', 'ip', 'zp', 'zs', 'U', 'B', 'V', 'R', 'I']
 
 
 def main():
