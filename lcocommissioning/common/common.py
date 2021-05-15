@@ -109,7 +109,6 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
         if starcandidate in listofchachedcoordiantes:
             cradec = listofchachedcoordiantes[starcandidate]
             radec = SkyCoord(cradec[0], cradec[1], unit='deg', frame='icrs', )
-
         else:
             radec = SkyCoord.from_name(starcandidate)
 
@@ -118,7 +117,7 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
         s._dec = radec.dec.degree * math.pi / 180
         s.compute(site)
 
-        separation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
+        separation = math.fabs (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
 
         alt = s.alt * 180 / math.pi
         separation = separation * 180 / math.pi
@@ -130,7 +129,7 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
             _log.debug("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
             return starcandidate
         else:
-            _log.debug("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
+            _log.debug(f"rejecting star {starcandidate:10s}  {radec.ra: 9.7} {radec.dec: 9.7}- altitude ok: {altok} {alt}    moon separation ok: {sepok} {separation: 6.1f}")
 
     _log.debug("No viable star was found! full moon? returning None!")
     return None
