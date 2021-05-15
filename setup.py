@@ -34,13 +34,13 @@ setuptools.setup(
 
     },
     install_requires=[
-        "astropy==4.0",
-        "numpy==1.18.1",
-        "matplotlib==3.3.1",
+        "astropy==4.2",
+        "numpy==1.20",
+        "matplotlib==3.4",
         "ephem==3.7.7.0",
         "requests==2.22.0",
-        "scipy==1.4.1",
-        "sep==1.0.3",
+        "scipy==1.6.2",
+        "sep==1.1.1",
         "peakutils==1.3.3",
         "sqlalchemy==1.3.13",
         "sqlalchemy_utils==0.36.1",
@@ -49,6 +49,6 @@ setuptools.setup(
         "boto3==1.11.14",
         "Flask==1.1.1",
         "gunicorn[gevent]==20.0.4",
-        "psycopg2-binary==2.8.4",
+        "psycopg2-binary==2.8.6",
     ],
 )
