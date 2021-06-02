@@ -52,6 +52,8 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
         ccdstemp = findkeywordinhdul(hdu, 'CCDSTEMP')
         ccdatemp = findkeywordinhdul(hdu, 'CCDATEMP')
         readoutmode = findkeywordinhdul(hdu, 'CONFMODE')
+        if readoutmode is None:
+            readoutmode = str (findkeywordinhdul(hdu, 'READMODE'))
 
         if readoutmode not in selectedreadmode:
             _logger.info("Rejecting file as it is not in the correct readout mode ({} != {})".format(readoutmode,
@@ -196,6 +198,11 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     # print (alllevels)
     for ext in alllevels:
         plt.plot(allexptimes[ext], alllevels[ext], '.', label="extension %s" % ext)
+        texp_sorted = np.sort(allexptimes[ext])
+        z = np.polyfit (allexptimes[ext], alllevels[ext], 2)
+        p = np.poly1d(z)
+        plt.plot (texp_sorted, p(texp_sorted), '-', label=f'fit: {p}')
+
     plt.legend()
 
     plt.xlabel("Exposure time [s]")
