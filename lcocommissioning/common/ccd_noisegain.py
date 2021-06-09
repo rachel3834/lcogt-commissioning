@@ -1,4 +1,5 @@
 import math
+import matplotlib
 import numpy as np
 from astropy.io.fits import HDUList
 from matplotlib import pyplot as plt
@@ -69,6 +70,8 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     readnoise = gain * biasnoise / math.sqrt(2)
 
     if showImages:
+        plt.switch_backend ('TkAgg')
+        print ("Showing images", plt.get_backend())
         plt.imshow(deltaflat - np.median(deltaflat), clim=(-5 * flatnoise, 5 * flatnoise))
         plt.colorbar()
         plt.title("Delta flat")

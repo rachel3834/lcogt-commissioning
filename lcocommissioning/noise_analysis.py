@@ -56,12 +56,13 @@ def plot_image_fft(fig,image, samplerate = 0):
         freqfactor = 1
 
     freq_0 = np.arange (len(fft_image_0)) * freqfactor
+    freq_1 = np.arange (len(fft_image_1)) * freqfactor
 
     plt.plot(freq_0, log_fft_noise,color='grey', label="gauss equivalent")
-    plt.plot(freq_0, log_fft_image_1, label="FFT X")
+    plt.plot(freq_1, log_fft_image_1, label="FFT X")
 
-    indexes = findpeaks(log_fft_image_1)
-    values = log_fft_image_1[indexes]
+    indexes = findpeaks(log_fft_image_0)
+    values = log_fft_image_0[indexes]
     peaklist = zip (freq_0[indexes], values)
     for (f,v) in peaklist:
         print (f,v)
@@ -77,11 +78,11 @@ def plot_image_fft(fig,image, samplerate = 0):
         plt.xlabel('Cycles per line')
 
     plt.ylabel('log10(FFT)')
-    #plt.legend()
+    plt.legend()
     (xmin,xmax,ymin,ymax) = plt.axis()
     ymax = ymax * 1.05
-    if xmax > np.max (freq_0):
-        xmax = np.max (freq_0)
+    if xmax > max (np.max (freq_0), np.max(freq_1)):
+        xmax = max (np.max (freq_0), np.max(freq_1))
     plt.axis([xmin,xmax,ymin,ymax])
 
     return fig
@@ -99,7 +100,7 @@ def plot_quadrant_ffts(params):
     fig = plt.figure(2)
     for q,qid in enumerate(plotord):
 
-        quad_image = (image.data[q] - np.mean (image.data[q]))
+        quad_image = (image.data[q] - np.mean (image.data[q]))[0:-1,:]
         ax = plt.subplot(2,2,q+1)
         plt.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9,\
             wspace=0.4,hspace=0.4)

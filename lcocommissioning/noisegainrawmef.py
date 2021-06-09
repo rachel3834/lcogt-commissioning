@@ -154,13 +154,13 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
     return sortedlistofFiles
 
 
-def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
+def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, maxlinearity = 40000):
     _logger.debug("Plotting gain vs level")
     plt.figure()
     for ext in alllevels:
         gains = np.asarray(allgains[ext])
         levels = np.asarray(alllevels[ext])
-        statdata = gains[(levels > 1000) & (levels < 50000) & (gains < 20)]
+        statdata = gains[(levels > 1000) & (levels < maxlinearity) & (gains < 20)]
         bestgain = np.mean(statdata)
         for iter in range(2):
             if len(statdata >=3):
@@ -178,7 +178,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.legend()
     plt.xlabel(("Exposure level [ADU]"))
     plt.ylabel("Gain [e-/ADU]")
-    plt.savefig("levelgain.png")
+    plt.savefig("levelgain.png", bbox_inches="tight")
     plt.close()
 
     _logger.debug("Plotting ptc")
@@ -190,24 +190,38 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes):
     plt.ylim([5, 300])
     plt.xlabel("Exposure Level [ADU]")
     plt.ylabel("Measured Noise [ADU]")
-    plt.savefig("ptc.png")
+    plt.savefig("ptc.png", bbox_inches="tight")
     plt.close()
 
-    _logger.debug("Plotting levle vs exptime")
+    _logger.info("Plotting level vs exptime")
     plt.figure()
+    print ("modified")
     # print (alllevels)
+    f, (ax1,ax2) = plt.subplots(2,1, gridspec_kw={'height_ratios':[2,1]})
     for ext in alllevels:
-        plt.plot(allexptimes[ext], alllevels[ext], '.', label="extension %s" % ext)
-        texp_sorted = np.sort(allexptimes[ext])
-        z = np.polyfit (allexptimes[ext], alllevels[ext], 2)
+
+        exptimes = np.asarray (allexptimes[ext])
+        levels = np.asarray (alllevels[ext])
+
+        ax1.plot(exptimes, levels, '.', label="extension %s" % ext)
+        texp_sorted = np.sort(exptimes)
+        good = (levels < maxlinearity)
+        z = np.polyfit (exptimes[good], levels[good], 2)
         p = np.poly1d(z)
-        plt.plot (texp_sorted, p(texp_sorted), '-', label=f'fit: {p}')
+        ax1.plot (texp_sorted, p(texp_sorted), '-', label=f'fit: {p}')
 
-    plt.legend()
+        ax2.plot (levels, (levels / p(exptimes) -1) * 100, '.', label="extension %s" % ext)
 
-    plt.xlabel("Exposure time [s]")
-    plt.ylabel("Exposure label [ADU]")
-    plt.savefig("texplevel.png")
+    ax1.legend()
+    ax1.set_xlabel("Exposure time [s]")
+    ax1.set_ylabel("Exposure level [ADU]")
+    ax2.set_xlabel ("Exposure Level [ADU]")
+    ax2.set_ylabel ("Residual (%)")
+
+    ax1.set_ylim([0, 65000])
+    ax2.set_xlim([0, 65000])
+    ax2.set_ylim([-1,1])
+    plt.savefig("texplevel.png", bbox_inches="tight")
     plt.close()
 
 
