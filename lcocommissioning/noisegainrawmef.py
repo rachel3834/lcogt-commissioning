@@ -26,6 +26,7 @@ def findkeywordinhdul(hdulist, keyword):
         val = ext.header.get(keyword)
         if val is not None:
             return val
+
     return None
 
 
@@ -48,7 +49,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
             fitsfilepath = str(filecandidate['FILENAME'])
             hdu = fits.open(fitsfilepath)
 
-        # Note: The values below could come from the elasticsearch already. But not if working on lcoal files.
+        # Note: The values below could come from the elasticsearch already. But not if working on local files.
         ccdstemp = findkeywordinhdul(hdu, 'CCDSTEMP')
         ccdatemp = findkeywordinhdul(hdu, 'CCDATEMP')
         readoutmode = findkeywordinhdul(hdu, 'CONFMODE')
@@ -204,9 +205,10 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, max
         levels = np.asarray (alllevels[ext])
 
         ax1.plot(exptimes, levels, '.', label="extension %s" % ext)
+        print (exptimes)
         texp_sorted = np.sort(exptimes)
         good = (levels < maxlinearity)
-        z = np.polyfit (exptimes[good], levels[good], 2)
+        z = np.polyfit (exptimes[good], levels[good], 1)
         p = np.poly1d(z)
         ax1.plot (texp_sorted, p(texp_sorted), '-', label=f'fit: {p}')
 

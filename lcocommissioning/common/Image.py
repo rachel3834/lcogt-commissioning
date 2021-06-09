@@ -67,7 +67,7 @@ class Image(object):
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
 
         if len (sci_extensions) == 0:
-            _log.warning ("No SCI extenstion found in image %s. Forcing primary ." % filename)
+            _log.debug ("No SCI extenstion found in image %s. Forcing primary ." % filename)
             sci_extensions = [hdulist[0]]
 
         # Find out whow big dat are. Warning: assumption is that all extensions have same dimensions.
@@ -75,7 +75,7 @@ class Image(object):
         _log.debug("DATASEC: {}".format(datasec ))
 
         if ( (datasec is None) or not trim):
-            _log.info ("Not trimming")
+            _log.debug ("Not trimming")
             cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
         else:
             cs = self.fitssection_to_slice(datasec)
