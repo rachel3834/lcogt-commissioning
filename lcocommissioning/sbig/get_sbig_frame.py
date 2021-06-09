@@ -206,7 +206,7 @@ def main():
         for ii in range (args.expcnt):
             imagename=f"{args.outputpath}/restcam-{datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%S')}.{suffix}.fits"
             if args.flat and lab is not None:
-                lab.expose(exptime = exptime, overhead = 1, block=False)
+                lab.expose(exptime = exptime, overhead = 2, block=False)
 
             qhyccd.getframe(exptime, imagename)
 
@@ -244,7 +244,7 @@ def parseCommandLine():
 
 
     parser.add_argument('--outputpath', type=str, default="data", help="outputpath")
-    parser.add_argument('--loglevel', dest='log_level', default='DEBUG', choices=['DEBUG', 'INFO', 'WARN'],
+    parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
     args = parser.parse_args()

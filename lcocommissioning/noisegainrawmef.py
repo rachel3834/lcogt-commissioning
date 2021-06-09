@@ -212,7 +212,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, max
         p = np.poly1d(z)
         ax1.plot (texp_sorted, p(texp_sorted), '-', label=f'fit: {p}')
 
-        ax2.plot (levels, (levels / p(exptimes) -1) * 100, '.', label="extension %s" % ext)
+        ax2.plot (levels, (levels / p(exptimes)  -1 ) * 100, '.', label="extension %s" % ext)
 
     ax1.legend()
     ax1.set_xlabel("Exposure time [s]")
