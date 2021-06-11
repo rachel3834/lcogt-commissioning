@@ -1,0 +1,8 @@
+#!/bin/sh
+
+exptimes="0.5 1 2 3 10 4 5 6 7 8 9 10 12.5 15 17.5 20 25 30 35 10 40 45 50 55 60 10 65 70 75 80"
+exptimes_binned="0.25 0.5 1 2 3 10 4 5 6 7 8 9 10 12.5 15 17.5 20 25 30 35"
+#mkdir kb93_2x2
+#python lcocommissioning/sbig/get_sbig_frame.py --bias  --expcnt 5 --binning 2 --outputpath kb93_2x2
+python lcocommissioning/sbig/get_sbig_frame.py --flat --exptime ${exptimes_binned}  --binning 2 --expcnt 2 --outputpath kb93_2x2
+
