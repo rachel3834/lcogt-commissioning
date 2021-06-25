@@ -32,7 +32,7 @@ nres_instruments = {'lsc': 'nres01',
                     'tlv': 'nres04',
                     }
 
-lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'bpl']
+lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'tfn', 'bpl']
 lco_2meter_sites = ['ogg', 'coj']
 lco_MuSCAT_sites = ['ogg']
 lco_nres_sites = nres_instruments.keys()
@@ -45,7 +45,7 @@ archon_readout_modes = ["full_frame", "central_2k_2x2"]
 lco_muscat_instruments = ['mc03']
 lco_muscat_readmodes = ['MUSCAT_FAST', 'MUSCAT_SLOW']
 
-goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo',]
 
 goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR4468', 'HD93521', 'HR3454', 'HR5501', 'HR7596']
 
