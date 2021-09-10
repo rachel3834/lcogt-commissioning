@@ -103,7 +103,7 @@ def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='Submit an engineering NRES observation to SCHEDULER.')
 
-    parser.add_argument("--proposalid", default="ENG2017AB-001")
+    parser.add_argument("--proposalid", default="ENGINEERING")
 
     parser.add_argument('--targetname', type=str, default=None,
                         help='Name of star for NRES test observation. if none is given, or auto, Software will try to'
