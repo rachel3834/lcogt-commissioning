@@ -32,7 +32,7 @@ nres_instruments = {'lsc': 'nres01',
                     'tlv': 'nres04',
                     }
 
-lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'bpl']
+lco_1meter_sites = ['lsc', 'cpt', 'coj', 'elp', 'tfn', 'bpl']
 lco_2meter_sites = ['ogg', 'coj']
 lco_MuSCAT_sites = ['ogg']
 lco_nres_sites = nres_instruments.keys()
@@ -45,7 +45,7 @@ archon_readout_modes = ["full_frame", "central_2k_2x2"]
 lco_muscat_instruments = ['mc03']
 lco_muscat_readmodes = ['MUSCAT_FAST', 'MUSCAT_SLOW']
 
-goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo']
+goodXTalkTargets = ['auto', '91 Aqr', 'HD30562', '15 Sex', '30Psc', '51Hya', 'Zet Boo',]
 
 goodNRESFluxTargets = ['auto', 'HR9087', 'HR1544', 'HR4468', 'HD93521', 'HR3454', 'HR5501', 'HR7596']
 
@@ -109,7 +109,6 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
         if starcandidate in listofchachedcoordiantes:
             cradec = listofchachedcoordiantes[starcandidate]
             radec = SkyCoord(cradec[0], cradec[1], unit='deg', frame='icrs', )
-
         else:
             radec = SkyCoord.from_name(starcandidate)
 
@@ -118,7 +117,7 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
         s._dec = radec.dec.degree * math.pi / 180
         s.compute(site)
 
-        separation = (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
+        separation = math.fabs (ephem.separation((moon.ra, moon.dec), (s.ra, s.dec)))
 
         alt = s.alt * 180 / math.pi
         separation = separation * 180 / math.pi
@@ -130,7 +129,7 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
             _log.debug("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
             return starcandidate
         else:
-            _log.debug("rejecting star %s - altitude ok: %s     moon separation ok: %s" % (starcandidate, altok, sepok))
+            _log.debug(f"rejecting star {starcandidate:10s}  {radec.ra: 9.7} {radec.dec: 9.7}- altitude ok: {altok} {alt}    moon separation ok: {sepok} {separation: 6.1f}")
 
     _log.debug("No viable star was found! full moon? returning None!")
     return None

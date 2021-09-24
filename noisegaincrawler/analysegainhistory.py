@@ -2,12 +2,14 @@ import errno
 import os
 import matplotlib
 matplotlib.use('Agg')
+from astropy.io import ascii
 import matplotlib.pyplot as plt
 import argparse
 import logging
 import datetime
 import boto3
 import io
+import numpy as np
 from lcocommissioning.common.common import dateformat
 from lcocommissioning.common.noisegaindb_orm import noisegaindb
 
@@ -163,6 +165,9 @@ def make_plots_for_camera(camera, args, database):
         if readmode is not None:
             readmode = [x if x is not None else 'None' for x in readmode]
 
+
+        #ascii.write (dataset, f'data/{camera}{"".join(readmode) if readmode is not None else ""}.txt')
+
         filenames.append(plot_ptc(camera, dataset, extensions, outputdir, readmode))
         filenames.append(plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode))
         filenames.append(plot_levelgain(camera, dataset, extensions, outputdir, readmode))
@@ -203,7 +208,7 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
         g = dataset['readnoise'][dataset['extension'] == ext]
         plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
     if 'fa' in camera:
-        plt.ylim([5, 10])
+        plt.ylim([5, 15])
     if 'fl' in camera:
         plt.ylim([5, 15])
     if 'ep' in camera:

@@ -121,15 +121,16 @@ def main():
 
     plt.xlabel("FOCUS Demand [mm foc plane]")
     plt.ylabel("FWHM (arcsec)")
-    plt.xlim([-3.6, 3.6])
-    plt.ylim([0, 6])
+
     overplot_fit(polyfit, parabola_p)
     overplot_fit(sqrtfit, exponential_p)
     plt.plot(focuslist, fwhmlist, 'o')
     plt.legend()
+    plt.xlim([-3.6, 3.6])
+    plt.ylim([0, 6])
     plt.title("Sqrt best focus found at {:5.2f} +/- {:5.2f}".format(bestfocus, bestfocus_error) if math.isfinite(
         bestfocus_error) else "Fit failed")
-    plt.savefig("{}".format("focus_0.png"))
+    plt.savefig("{}".format("focus_0.png"), bbox_inches='tight')
 
 
 if __name__ == '__main__':

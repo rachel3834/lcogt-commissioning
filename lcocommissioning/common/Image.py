@@ -54,7 +54,7 @@ class Image(object):
 
         # Get the main header
         self.primaryheader = hdulist[0].header
-        if alreadyopenedhdu or filename.endswith(".fz") :
+        if (alreadyopenedhdu or filename.endswith(".fz")) and (len (hdulist) > 1) :
             for card in hdulist[1].header:
                 self.primaryheader.append (card)
 
@@ -67,16 +67,15 @@ class Image(object):
         sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
 
         if len (sci_extensions) == 0:
-            _log.warning ("No SCI extenstion found in image %s. Aborting." % filename)
-            self.data = None
-            return None
+            _log.debug ("No SCI extenstion found in image %s. Forcing primary ." % filename)
+            sci_extensions = [hdulist[0]]
 
         # Find out whow big dat are. Warning: assumption is that all extensions have same dimensions.
         datasec = sci_extensions[0].header.get('DATASEC')
         _log.debug("DATASEC: {}".format(datasec ))
 
         if ( (datasec is None) or not trim):
-            _log.info ("Not trimming")
+            _log.debug ("Not trimming")
             cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
         else:
             cs = self.fitssection_to_slice(datasec)
