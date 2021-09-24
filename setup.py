@@ -29,7 +29,8 @@ setuptools.setup(
                             'effocus = lcocommissioning.ef_focuscalibration:main',
                             'submit_floyds_calibration = lcocommissioning.floyds.submitFloydsCalibration:main',
                             'submit_floyds_observation = lcocommissioning.floyds.submitFloydsObservation:main',
-                            'submit_muscat_observation = lcocommissioning.muscat.submitMuscatObservation:main'
+                            'submit_muscat_observation = lcocommissioning.muscat.submitMuscatObservation:main',
+                            'submit_cdk_observation = lcocommissioning.cdk17.submit_cdk17_observation:main',
                             ],
 
     },
