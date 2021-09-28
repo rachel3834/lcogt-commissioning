@@ -35,12 +35,12 @@ setuptools.setup(
 
     },
     install_requires=[
-        "astropy==4.2",
+        "astropy==4.3",
         "numpy==1.20",
         "matplotlib==3.4",
         "ephem==3.7.7.0",
         "requests==2.22.0",
-        "scipy==1.6.2",
+        "scipy==1.6",
         "sep==1.1",
         "peakutils==1.3.3",
         "sqlalchemy==1.3.13",
