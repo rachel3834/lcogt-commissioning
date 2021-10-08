@@ -14,18 +14,18 @@ _log = logging.getLogger(__name__)
 def createCDKRequestConfiguration(args):
     configuration = {
         'type': None,
-        'instrument_type': '0m4-QHY-SCICAM',
+        'instrument_type': '0m4-SCICAM-QHY268',
         'guiding_config': {'mode': 'ON', 'optional': True},
         'acquisition_config': {},
         'instrument_configs': [{
             'exposure_count': None if args.exp_cnt is None else args.exp_cnt,
             'exposure_time': args.exp_time,
-            'mode': None if args.readmode is None else args.readmode,
+            'mode': 'default' if args.readmode is None else args.readmode,
             'optical_elements': {
                 'filter': args.filter,
             },
             'extra_params': {
-                'bin_x': 1,
+                'bin_x': 2,
                 'bin_y': 2,
                 'defocus': args.defocus,
                 'offset_ra': args.offsetRA,
@@ -96,11 +96,11 @@ def createRequest(args):
 
 def parseCommandLine():
     parser = argparse.ArgumentParser(
-        description='MuSCAT @ LCO engineering commissioning submission tool')
+        description='CDK17 @ LCO engineering commissioning submission tool')
 
     parser.add_argument('--targetname', default='auto', type=str,
                         help='Name of object to observe; will beresolved via simbad. Can be coordinates in the form of Jhhmmss+ddmmss')
-    parser.add_argument('--title', default="Muscat commissioning", help="Descriptive title for observation request")
+    parser.add_argument('--title', default="CDK17 commissioning", help="Descriptive title for observation request")
 
     parser.add_argument('--site', default='coj', choices=common.lco_2meter_sites,
                         help="To which site to submit")
@@ -192,7 +192,7 @@ def ammend_request_for_direct_submission(cdk, args):
         'proposal': 'LCOEngineering',
         'site': args.site,
         'enclosure': 'clma',
-        'telescope': '0m4d',
+        'telescope': '0m4c',
         'start': args.start.isoformat(),
         'end': endtime.isoformat(),
         'request': {
