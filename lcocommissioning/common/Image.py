@@ -54,18 +54,18 @@ class Image(object):
 
         # Get the main header
         self.primaryheader = hdulist[0].header
-        if (alreadyopenedhdu or filename.endswith(".fz")) and (len (hdulist) > 1) :
+        if len (hdulist) > 1:
             for card in hdulist[1].header:
-                self.primaryheader.append (card)
-
+                if len (card) > 0:
+                    self.primaryheader.append ((card, hdulist[1].header[card]))
         # Check for multi-extension fits
         self.extension_headers = []
         self.ccdsec = []
         self.ccdsum = []
         self.extver = []
 
-        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
-
+        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'SPECTRUM','COMPRESSED_IMAGE'])
+        _log.debug (f"SCI extensions found: {sci_extensions}")
         if len (sci_extensions) == 0:
             _log.debug ("No SCI extenstion found in image %s. Forcing primary ." % filename)
             sci_extensions = [hdulist[0]]
@@ -146,7 +146,6 @@ class Image(object):
         """ Calculate the overscan level of an image extension.
             Calculation is based on slice defined by header keyword.
         """
-
         overkeyword = hdu.header.get(biassecheader)
         if overkeyword is None:
             return 0
@@ -186,7 +185,7 @@ class Image(object):
         # The following of using False is just an awful convention and will probably be
         # deprecated at some point
         extension_info = fits_hdulist.info(False)
-        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] in name])
+        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ( (ext[1] in name) and (fits_hdulist[ext[0]].data is not None))])
 
 
 
