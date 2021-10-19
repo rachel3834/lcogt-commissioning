@@ -208,7 +208,7 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
         g = dataset['readnoise'][dataset['extension'] == ext]
         plt.plot(d, g, '.', label="ext %s" % ext, markersize=1)
     if 'fa' in camera:
-        plt.ylim([5, 15])
+        plt.ylim([5, 20])
     if 'fl' in camera:
         plt.ylim([5, 15])
     if 'ep' in camera:
@@ -217,6 +217,8 @@ def plotnoisehist(camera, dataset, extensions, outputdir, starttime, readmode=No
         plt.ylim([5, 15])
     if 'kb' in camera:
         plt.ylim([7, 20])
+    if 'sq' in camera:
+        plt.ylim([5, 15])
     dateformat(starttime, endtime)
     plt.xlabel('Date')
     plt.ylabel('Readnoise [e-]')
@@ -251,6 +253,9 @@ def plot_levelgain(camera, dataset, extensions, outputdir, readmode=None):
         plt.ylim([6, 8])
     if 'kb' in camera:
         plt.ylim([1, 3])
+    if 'sq' in camera:
+        plt.ylim([0, 3])
+
     plt.xlim([0, 70000])
     plt.xlabel('Avg. Level [ADU]')
     plt.ylabel('Gain [e-/ADU]')
@@ -285,6 +290,9 @@ def plot_gainhist(camera, dataset, extensions, outputdir, starttime, readmode=No
         plt.ylim([6, 8])
     if 'kb' in camera:
         plt.ylim([1, 3])
+    if 'sq' in camera:
+        plt.ylim([0, 3])
+
     plt.xlabel('Date Obs')
     plt.ylabel('Gain [e-/ADU]')
     plt.title('Gain history for %s %s ' % (camera, readmode))
