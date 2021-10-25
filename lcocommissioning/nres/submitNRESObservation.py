@@ -30,7 +30,7 @@ def createNRESRequestsConfiguration(args):
 
 def createRequest(args):
     requestgroup = {"name": f'NRES engineering {args.targetname}',
-                    "proposal": "ENG2017AB-001",
+                    "proposal": args.proposalid,
                     "ipp_value": args.ipp,
                     "operator": "SINGLE",  # "MANY" if args.dither else "SINGLE",
                     "observation_type": "NORMAL",
@@ -45,6 +45,12 @@ def createRequest(args):
     }
     if args.site is not None:
         location['site'] = args.site
+    if args.dome is not None:
+        location['enclosure'] = args.dome
+    if args.telescope is not None:
+        location['telescope'] = args.telescope
+
+
 
     request = {'configurations': [],
                'windows': [{"start": absolutestart.isoformat(), "end": windowend.isoformat()}, ],
@@ -84,10 +90,10 @@ def convert_request_for_direct_submission(nres, args):
 
     data = {
         'name': f'NRES ENGINEERING {args.targetname}',
-        'proposal': 'ENG2017AB-001',
+        'proposal': args.proposalid,
         'site': args.site,
         'enclosure': args.dome,
-        'telescope': '1m0a',
+        'telescope': args.telescope,
         'start': args.start.isoformat(),
         'end': endtime.isoformat(),
         'request': {
@@ -103,7 +109,7 @@ def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='Submit an engineering NRES observation to SCHEDULER.')
 
-    parser.add_argument("--proposalid", default="ENGINEERING")
+    parser.add_argument("--proposalid", default="LCOEngineering")
 
     parser.add_argument('--targetname', type=str, default=None,
                         help='Name of star for NRES test observation. if none is given, or auto, Software will try to'
@@ -112,7 +118,8 @@ def parseCommandLine():
 
     parser.add_argument('--site', choices=common.lco_nres_sites, default=None,
                                help="To which site to submit")
-    parser.add_argument('--dome', choices = ['doma','domb','domc'], default = None, help="Which dome. Important for direct submission")
+    parser.add_argument('--dome', choices = ['doma','domb','domc'], default = None, help="Which dome. Important for direct submission or non-schedulable override")
+    parser.add_argument('--telescope', choices = ['1m0a',], default = '1m0a', help="Which telescope. Important for direct submission or non-schedulable override")
     parser.add_argument('--commissioning', action='store_true', help="request observation to instrument 1m0-NRES-Commissioning" )
 
     parser.add_argument('--expcnt', type=int, dest="expcnt", default=1)
