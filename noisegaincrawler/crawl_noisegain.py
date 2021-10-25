@@ -41,7 +41,7 @@ def parseCommandLine():
         description='Crawl LCO archive tyo measure noise, gain from paitrs of biases and darks',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--cameratype', type=str, nargs='+', default=['fa', 'fs', 'kb', 'ep'],
+    parser.add_argument('--cameratype', type=str, nargs='+', default=['fa', 'fs', 'kb', 'ep', 'sq'],
                         help='Type of cameras to parse')
     parser.add_argument('--instrument', type=str, default=None,
                         help='Individual camera to request')

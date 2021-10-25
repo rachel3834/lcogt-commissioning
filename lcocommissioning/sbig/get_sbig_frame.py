@@ -202,7 +202,7 @@ def main():
 
 
     for exptime in args.exptime:
-        _logger.info (f"takeing exposures for exptie {exptime}")
+        _logger.info (f"takeing exposures for exptime {exptime}")
         for ii in range (args.expcnt):
             imagename=f"{args.outputpath}/restcam-{datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%S')}.{suffix}.fits"
             if args.flat and lab is not None:

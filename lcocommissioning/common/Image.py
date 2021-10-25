@@ -3,9 +3,9 @@ import re
 
 import numpy as np
 from astropy.io import fits
-import matplotlib.pyplot as plt
 
 _log = logging.getLogger(__name__)
+
 
 class Image(object):
     """ Generic class to read in all SCI extensions from a fits file, be it fz compressed or not.
@@ -16,7 +16,8 @@ class Image(object):
 
     filename = None
 
-    def __init__(self, filename, alreadyopenedhdu=False , overscancorrect=False, gaincorrect=False, skycorrect=False, trim=True, minx=None, maxx=None,miny=None,maxy=None):
+    def __init__(self, filename, alreadyopenedhdu=False, overscancorrect=False, gaincorrect=False, skycorrect=False,
+                 trim=True, minx=None, maxx=None, miny=None, maxy=None):
         """
         Load an image from a FITS file
 
@@ -54,42 +55,44 @@ class Image(object):
 
         # Get the main header
         self.primaryheader = hdulist[0].header
-        if (alreadyopenedhdu or filename.endswith(".fz")) and (len (hdulist) > 1) :
+        if (alreadyopenedhdu or filename.endswith(".fz")) and (len(hdulist) == 2):
             for card in hdulist[1].header:
-                self.primaryheader.append (card)
-
+                if len(card) > 0:
+                    self.primaryheader.append((card, hdulist[1].header[card]))
+                    pass
         # Check for multi-extension fits
         self.extension_headers = []
         self.ccdsec = []
         self.ccdsum = []
         self.extver = []
 
-        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'COMPRESSED_IMAGE', 'SPECTRUM'])
-
-        if len (sci_extensions) == 0:
-            _log.debug ("No SCI extenstion found in image %s. Forcing primary ." % filename)
+        sci_extensions = self.get_extensions_by_name(hdulist, ['SCI', 'SPECTRUM', 'COMPRESSED_IMAGE'])
+        _log.debug(f"SCI extensions found: {sci_extensions}")
+        if len(sci_extensions) == 0:
+            _log.warning("No SCI extenstion found in image %s. Forcing primary ." % filename)
             sci_extensions = [hdulist[0]]
 
         # Find out whow big dat are. Warning: assumption is that all extensions have same dimensions.
         datasec = sci_extensions[0].header.get('DATASEC')
-        _log.debug("DATASEC: {}".format(datasec ))
+        _log.debug("DATASEC: {}".format(datasec))
 
-        if ( (datasec is None) or not trim):
-            _log.debug ("Not trimming")
-            cs = [1,sci_extensions[0].header['NAXIS1'], 1,sci_extensions[0].header['NAXIS2']]
+        if ((datasec is None) or not trim):
+            _log.debug("Not trimming")
+            cs = [1, sci_extensions[0].header['NAXIS1'], 1, sci_extensions[0].header['NAXIS2']]
         else:
             cs = self.fitssection_to_slice(datasec)
+        _log.debug(f"Parsed datasec is: {cs}")
 
-        if len(sci_extensions) >0:
+        if len(sci_extensions) > 0:
             # Generate internal storage array for pre-processed data
-            self.data = np.zeros( ( len(sci_extensions), cs[3]-cs[2] + 1 ,cs[1] - cs[0] + 1), dtype=np.float32)
+            self.data = np.zeros((len(sci_extensions), cs[3] - cs[2] + 1, cs[1] - cs[0] + 1), dtype=np.float32)
 
             for i, hdu in enumerate(sci_extensions):
 
                 gain = 1.
                 overscan = 0.
-                extver = hdu.header.get('EXTVER', str(i+1))
-                self.extver.append (extver)
+                extver = hdu.header.get('EXTVER', str(i + 1))
+                self.extver.append(extver)
 
                 self.ccdsec.append(cs)
 
@@ -102,17 +105,17 @@ class Image(object):
 
                 hdu.header['OVLEVEL'] = overscan
 
-                self.data[i, :, :] = (hdu.data[cs[2]-1:cs[3],cs[0]-1:cs[1]] - overscan) * gain
+                self.data[i, :, :] = (hdu.data[cs[2] - 1:cs[3], cs[0] - 1:cs[1]] - overscan) * gain
 
                 skylevel = 0
                 if skycorrect:
                     imagepixels = self.data[
-                                  i, 20:-20,20:-20]
+                                  i, 20:-20, 20:-20]
                     skylevel = np.median(imagepixels)
                     std = np.std(imagepixels - skylevel)
                     skylevel = np.median(imagepixels[np.abs(imagepixels - skylevel) < 3 * std])
                     hdu.header['SKYLEVEL'] = skylevel
-                    self.data[i, :, :] = self.data[i, :,:] - skylevel
+                    self.data[i, :, :] = self.data[i, :, :] - skylevel
 
                 _log.debug(
                     "Correcting image extension #%d with gain / overscan / sky: % 5.3f % 8.1f  % 8.2f" % (
@@ -132,39 +135,37 @@ class Image(object):
         if not alreadyopenedhdu:
             hdulist.close()
 
-    def getccddata (self, extension):
+    def getccddata(self, extension):
         """
         Returns the data as define by DATASEC in ehader
         :param extension:
         :return:
         """
-        retdata = self.data[extension]#, sect[2]-1:sect[3]-1, sect[0]-1:sect[1]-1]
+        retdata = self.data[extension]  # , sect[2]-1:sect[3]-1, sect[0]-1:sect[1]-1]
         return retdata
 
-
-    def get_overscan_from_hdu (self, hdu, sig_rej=2, biassecheader='BIASSEC'):
+    def get_overscan_from_hdu(self, hdu, sig_rej=2, biassecheader='BIASSEC'):
         """ Calculate the overscan level of an image extension.
             Calculation is based on slice defined by header keyword.
         """
-
         overkeyword = hdu.header.get(biassecheader)
         if overkeyword is None:
             return 0
 
         if 'UNKNOWN' in hdu.header.get(biassecheader):
-            _log.error (f"Bias Section is undefined for extension {hdu}")
+            _log.error(f"Bias Section is undefined for extension {hdu}")
             return 0
 
         biassecslice = self.fitssection_to_slice(overkeyword)
         ovpixels = hdu.data[
-                   biassecslice[2]+1:biassecslice[3]-1, biassecslice[0]+1: biassecslice[1]-1]
+                   biassecslice[2] + 1:biassecslice[3] - 1, biassecslice[0] + 1: biassecslice[1] - 1]
         overscanlevel = np.median(ovpixels)
         std = np.std(ovpixels)
         overscanlevel = np.mean(ovpixels[np.abs(ovpixels - overscanlevel) < sig_rej * std])
         return overscanlevel
 
-    def fitssection_to_slice (self, keyword):
-        integers =  [int(n) for n in re.split(',|:', keyword[1:-1])]
+    def fitssection_to_slice(self, keyword):
+        integers = [int(n) for n in re.split(',|:', keyword[1:-1])]
         return integers
 
     def get_extensions_by_name(self, fits_hdulist, name):
@@ -186,7 +187,5 @@ class Image(object):
         # The following of using False is just an awful convention and will probably be
         # deprecated at some point
         extension_info = fits_hdulist.info(False)
-        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if ext[1] in name])
-
-
-
+        return fits.HDUList([fits_hdulist[ext[0]] for ext in extension_info if
+                             ((ext[1] in name) and (fits_hdulist[ext[0]].data is not None))])
