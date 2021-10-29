@@ -20,7 +20,7 @@ def createCDKRequestConfiguration(args):
         'instrument_configs': [{
             'exposure_count': None if args.exp_cnt is None else args.exp_cnt,
             'exposure_time': args.exp_time,
-            'mode': 'default' if args.readmode is None else args.readmode,
+            'mode': 'High Gain Mode' if args.readmode is None else args.readmode,
             'optical_elements': {
                 'filter': args.filter,
             },

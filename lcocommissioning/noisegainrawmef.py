@@ -155,7 +155,7 @@ def sortinputfitsfiles(listoffiles, sortby='exptime', selectedreadmode="full_fra
     return sortedlistofFiles
 
 
-def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, maxlinearity = 40000):
+def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, maxlinearity = 50000):
     _logger.debug("Plotting gain vs level")
     plt.figure()
     for ext in alllevels:
@@ -207,7 +207,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, max
         ax1.plot(exptimes, levels, '.', label="extension %s" % ext)
         print (exptimes)
         texp_sorted = np.sort(exptimes)
-        good = (levels < maxlinearity)
+        good = (levels < maxlinearity) & (exptimes > 1)
         z = np.polyfit (exptimes[good], levels[good], 1)
         p = np.poly1d(z)
         ax1.plot (texp_sorted, p(texp_sorted), '-', label=f'fit: {p}')
@@ -222,7 +222,7 @@ def graphresults(alllevels, allgains, allnoises, allshotnoises, allexptimes, max
 
     ax1.set_ylim([0, 65000])
     ax2.set_xlim([0, 65000])
-    ax2.set_ylim([-1,1])
+    ax2.set_ylim([-5,5])
     plt.savefig("texplevel.png", bbox_inches="tight")
     plt.close()
 
