@@ -40,11 +40,12 @@ def create_request_for_star_scheduler(context):
 
     if context.instrument != "None":
         location['instrument'] = context.instrument
+    ## Location completed
 
     requestgroup = {"name": context.title,
-                    "proposal": "LCOEngineering",
+                    "proposal": context.proposal,
                     "ipp_value": context.ipp,
-                    "operator": "SINGLE" if context.nodither else "MANY",
+                    "operator": "SINGLE" ,
                     "observation_type": "NORMAL",
                     "requests": []
                     }
@@ -53,10 +54,12 @@ def create_request_for_star_scheduler(context):
     if context.nodither:
         offsets = no_dither
 
+    request = {'configurations': [],
+               'windows': [{"start": str(absolutestart), "end": str(windowend)}, ],
+               'location': location}
+
+    print (offsets)
     for quadrant in offsets:
-        request = {'configurations': None,
-                    'windows': [{"start": str(absolutestart), "end": str(windowend)}, ],
-                    'location': location}
 
         offsetPointing = getRADecForQuadrant(context.radec, quadrant, context.offsetRA, context.offsetDec)
         target = {
@@ -68,16 +71,15 @@ def create_request_for_star_scheduler(context):
             "dec": "%10f" % offsetPointing.dec.degree,
         }
 
-        configurations = []
         for exptime in context.exp_times:
             configuration = {
-            'type': 'EXPOSE',
-            'instrument_type': '1M0-SCICAM-SINISTRO',
-            'target': target,
-            'constraints': common.default_constraints,
-            'acquisition_config': {},
-            'guiding_config': {},
-            'instrument_configs': [],
+                'type': 'EXPOSE',
+                'instrument_type': '1M0-SCICAM-SINISTRO',
+                'target': target,
+                'constraints': common.default_constraints,
+                'acquisition_config': {},
+                'guiding_config': {},
+                'instrument_configs': [],
             }
 
             configuration['instrument_configs'].append(
@@ -93,9 +95,9 @@ def create_request_for_star_scheduler(context):
                     }
                 })
 
-            configurations.append (configuration)
-        request['configurations']=configurations
-        requestgroup['requests'].append (request)
+
+            request['configurations'].append (configuration)
+    requestgroup['requests'].append(request)
 
     common.send_request_to_portal(requestgroup, context.opt_confirmed)
 
@@ -121,7 +123,7 @@ def createRequestsForStar_pond(context):
 
         observation = {
             'name': 'Sinistro x talk commissioning',
-            'proposal': 'LCOEngineering',
+            'proposal': context.proposal,
             'start': start,
             'end': end,
             'site': context.site,
@@ -201,6 +203,9 @@ def parseCommandLine():
 
     parser.add_argument('--nodither', action='store_true',
                         help='Do not dither the exposure')
+    parser.add_argument('--ditherthrow', default=120, type=float,
+                        help="Throw for dithering in arcsec, default is 120''")
+    parser.add_argument('--ditherx', action='store_true', help="dithering is in + pattern inste4ad of x pattern. Do not use for xtalk observations.")
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--exp-times', nargs="*", type=float, default=[2, 4, 6, 12], help="List of exposure times")
     parser.add_argument('--exp-cnt', type=int, default=1, help="How often to reapeat each exposure")
@@ -212,9 +217,9 @@ def parseCommandLine():
     parser.add_argument('--schedule-window', default=2, type=float)
     parser.add_argument('--CONFIRM', dest='opt_confirmed', action='store_true',
                         help='If set, observation will be submitted. If omitted, nothing will be submitted.')
-    parser.add_argument('--scheduler', action='store_true',
-                        help='If set, submit to scheduler instead of directly.')
-
+    parser.add_argument('--direct', action='store_true',
+                        help='If set, submit directly insgtead of via scheduler')
+    parser.add_argument('--proposal', default='LCOEngineering')
     parser.add_argument('--loglevel', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARN'],
                         help='Set the debug level')
 
@@ -246,16 +251,26 @@ def parseCommandLine():
         exit(1)
 
     print("Resolved target %s at corodinates %s %s" % (args.targetname, args.radec.ra, args.radec.dec))
+
+    global sinistro_1m_quadrant_offsets
+    sinistro_1m_quadrant_offsets = {0: [-args.ditherthrow, args.ditherthrow],
+                                    1: [args.ditherthrow, args.ditherthrow],
+                                    2: [args.ditherthrow, -args.ditherthrow],
+                                    3: [-args.ditherthrow, -args.ditherthrow]}
+    if args.ditherx:
+        sinistro_1m_quadrant_offsets = {0: [-args.ditherthrow,0],
+                                        1: [args.ditherthrow, 0],
+                                        2: [0, args.ditherthrow],
+                                        3: [0, -args.ditherthrow]}
     return args
 
 
 def main():
     args = parseCommandLine()
-    if args.scheduler:
-        create_request_for_star_scheduler(args)
-    else:
+    if  args.direct:
         createRequestsForStar_pond(args)
-
+    else:
+        create_request_for_star_scheduler(args)
 
 if __name__ == '__main__':
     main()
