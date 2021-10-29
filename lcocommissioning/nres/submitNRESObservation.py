@@ -30,7 +30,7 @@ def createNRESRequestsConfiguration(args):
 
 def createRequest(args):
     requestgroup = {"name": f'NRES engineering {args.targetname}',
-                    "proposal": "ENG2017AB-001",
+                    "proposal": "LCOEngineering",
                     "ipp_value": args.ipp,
                     "operator": "SINGLE",  # "MANY" if args.dither else "SINGLE",
                     "observation_type": "NORMAL",
@@ -84,7 +84,7 @@ def convert_request_for_direct_submission(nres, args):
 
     data = {
         'name': f'NRES ENGINEERING {args.targetname}',
-        'proposal': 'ENG2017AB-001',
+        'proposal': 'LCOEngineering',
         'site': args.site,
         'enclosure': args.dome,
         'telescope': '1m0a',
@@ -103,7 +103,7 @@ def parseCommandLine():
     parser = argparse.ArgumentParser(
         description='Submit an engineering NRES observation to SCHEDULER.')
 
-    parser.add_argument("--proposalid", default="ENGINEERING")
+    parser.add_argument("--proposalid", default="LCOEngineering")
 
     parser.add_argument('--targetname', type=str, default=None,
                         help='Name of star for NRES test observation. if none is given, or auto, Software will try to'
