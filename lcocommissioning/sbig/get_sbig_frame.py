@@ -66,9 +66,17 @@ class restcam:
         pass
 
 
+    def sendSettings (self, payload):
+        r = requests.get(f"http://{self.ipaddr}/api/ImagerSetSettings.cgi", data = payload)
+        return r
+
     def setBinning(self, wbin, hbin):
         self.bin_x = wbin
         self.bin_y = hbin
+        payload = {'BinX' : self.bin_x,
+                   'BinY' : self.bin_y}
+        r = self.sendSettings(payload)
+        _logger.info(f"Binning returned {r}")
 
 
     def setGain(self, gain):
@@ -175,20 +183,12 @@ def main():
         qhyccd.close()
         exit(0)
 
-    if args.chamberpump is not None:
-        qhyccd.setSensorChamberCycle(args.chamberpump)
-        qhyccd.close()
-        exit(0)
 
     if args.gettemp:
         qhyccd.getTemp()
         qhyccd.close()
         exit(0)
 
-
-
-    qhyccd.setReadMode(args.readmode)
-    qhyccd.setGain (args.gain)
     qhyccd.setBinning (args.binning, args.binning)
 
     suffix = None
