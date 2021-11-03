@@ -31,8 +31,8 @@ def create_request_for_star_scheduler(context):
     absolutestart = context.start
     windowend = context.start + dt.timedelta(hours=context.schedule_window)
 
-    location = {'telescope': '1m0a',
-                'telescope_class': '1m0',
+    location = {'telescope': context.telescope,
+                'telescope_class': context.telescope[:3],
                 'site': context.site, }
 
     if context.dome != "None":
@@ -74,7 +74,7 @@ def create_request_for_star_scheduler(context):
         for exptime in context.exp_times:
             configuration = {
                 'type': 'EXPOSE',
-                'instrument_type': '1M0-SCICAM-SINISTRO',
+                'instrument_type': context.insttype,
                 'target': target,
                 'constraints': common.default_constraints,
                 'acquisition_config': {},
@@ -164,8 +164,8 @@ def createRequestsForStar_pond(context):
                 'exposure_time': exptime,
                 'exposure_count': context.exp_cnt,
                 'mode': context.readmode,
-                'bin_x': 2,
-                'bin_y': 2,
+                'bin_x': context.binning,
+                'bin_y': context.binning,
                 'optical_elements': {
                     'filter': context.filter
                 },
@@ -187,13 +187,15 @@ def parseCommandLine():
 
     parser.add_argument('--site', required=True, choices=common.lco_1meter_sites,
                         help="To which site to submit")
-    parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc', 'None'],
+    parser.add_argument('--dome', required=True, choices=['doma', 'domb', 'domc', 'aqwa','aqwb', 'None'],
                         help="To which enclosure to submit")
     parser.add_argument('--telescope', default='1m0a')
     parser.add_argument('--instrument', required=True,
                         choices=common.lco_sinistro1m_cameras.extend('None'),
                         help="To which instrument to submit")
-    parser.add_argument('--readmode', choices=common.archon_readout_modes, default=common.archon_readout_modes[0])
+
+    parser.add_argument('--insttype', type=str, default='1M-SCICAM-SINISTRO')
+    parser.add_argument('--readmode', choices=common.archon_readout_modes.append('default'), default=common.archon_readout_modes[0])
     parser.add_argument('--targetname', default='auto', type=str,
                         help='Name of star for X talk measurement. Will be resolved via simbad. If resolve failes, '
                              'program will exit.\n If name is auto, which is te default, a viable target will be choosen for you.')
@@ -209,6 +211,7 @@ def parseCommandLine():
     parser.add_argument('--defocus', type=float, default=6.0, help="Amount to defocus star.")
     parser.add_argument('--exp-times', nargs="*", type=float, default=[2, 4, 6, 12], help="List of exposure times")
     parser.add_argument('--exp-cnt', type=int, default=1, help="How often to reapeat each exposure")
+    parser.add_argument('--binning', type=int, default = None)
     parser.add_argument('--ipp', type=float, default=1.0, help="ipp value")
     parser.add_argument('--filter', type=str, default='rp', help="Filter")
     parser.add_argument('--offsetRA', default=0, help="Extra pointing offset to apply R.A.")
