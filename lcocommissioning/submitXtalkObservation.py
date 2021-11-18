@@ -91,7 +91,9 @@ def create_request_for_star_scheduler(context):
                         'filter': context.filter
                     },
                     "extra_params": {
-                        "defocus": min(5, context.defocus)  # scheduler doe snot allow defocussing more than 3mm FP.
+                        "defocus": min(5, context.defocus),  # scheduler doe snot allow defocussing more than 3mm FP.
+                        "bin_x": context.binning,
+                        "bin_y": context.binning,
                     }
                 })
 
