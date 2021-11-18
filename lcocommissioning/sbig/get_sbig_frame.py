@@ -22,17 +22,45 @@ class LCOLab:
 
         _logger.debug ("VXI11 interface: %s" % (self.ins.ask("*IDN?")))
 
-    def expose(self, exptime, block=True, overhead=0):
+    def expose(self, exptime, voltage = None, block=True, overhead=0):
+        ''' Expose via constant illumination.
+        Sets the function generator into pulse mode'''
         _logger.debug ("Lab exposing for % 5.2f s" % (exptime))
+        self.ins.write ("puls:mode TRIG")
+        self.ins.write (f"burst:ncycles 1")
+        self.ins.write ("puls:state ON")
         self.ins.write ("puls:per %fs" % (exptime+overhead+1))
-
         self.ins.write ("puls:widt %fs" % (exptime+overhead))
+        # self.ins.write (f"PULSe:DCYCs 100" )
+        if (voltage is not None) and (voltage >=0.) and (voltage < 5.):
+            _logger.debug (f"Setting LED voltage to {voltage}")
+            self.ins.write(f"voltage:level:imm:high {voltage} V")
 
         self.ins.trigger()
         if block:
             _logger.info("Blocking during exposure time")
             time.sleep (exptime)
         _logger.debug ("Done exposing")
+
+
+    def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=0):
+        _logger.debug ("Lab burst exposing for % 5.2f s" % (exptime))
+        self.ins.write ("burst:state ON")
+        self.ins.write ("burst:mode TRIG")
+        self.ins.write (f"burst:ncycles {ncycles}")
+        self.ins.write (f"freq:fixed {frequency}Hz")
+        self.ins.write (f"PULSe:DCYC 50" )
+        if (voltage is not None) and (voltage >=0.) and (voltage < 5.):
+            _logger.debug (f"Setting LED voltage to {voltage}")
+            self.ins.write(f"voltage:level:imm:high {voltage} V")
+
+        self.ins.trigger()
+        if block:
+            _logger.info("Blocking during exposure time")
+            time.sleep (exptime)
+        _logger.debug ("Done exposing")
+
+
 
     def close(self):
         self.ins.close()
@@ -169,12 +197,20 @@ def main():
     args = parseCommandLine()
 
 
-    if args.testled:
+    if args.testled is not None:
         lab = LCOLab()
         print ("LED ON")
-        lab.expose(exptime = args.testled, overhead = 1, block=True)
+        lab.expose(exptime = args.testled, overhead = 1, block=True, voltage=args.ledvoltage)
         print ("LED OFF")
         exit (0)
+
+    if args.testledburst:
+        lab = LCOLab()
+        print ("LED ON")
+        lab.expose_burst(exptime = args.testledburst, overhead = 1, block=True, voltage=args.ledvoltage)
+        print ("LED OFF")
+        exit (0)
+
     qhyccd = restcam("inst.1m0a.doma.mfg.lco.gtn:8080")
 
 
@@ -231,10 +267,12 @@ def parseCommandLine():
     actions.add_argument ("--settemp", type=float, help="Set CCD target temperature" )
     actions.add_argument ("--gettemp", action = "store_true",  help="get CCD target temperature" )
     actions.add_argument ("--testled", type=float,  help="testled" )
+    actions.add_argument ("--testledburst", type=float,  help="testled in burst mode" )
+
     actions.add_argument ("--chamberpump", type = bool,  help="cycle detector chaber decissitant" )
 
 
-
+    parser.add_argument ("--ledvoltage", type=float, default = None)
     parser.add_argument('--expcnt', type=int, dest="expcnt", default=1)
     parser.add_argument('--exptime', type=float, nargs='*', default=[0,])
     parser.add_argument('--gain', type=int, default=5)
