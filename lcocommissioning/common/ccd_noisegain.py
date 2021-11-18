@@ -2,6 +2,7 @@ import math
 import matplotlib
 import numpy as np
 from astropy.io.fits import HDUList
+from astropy.stats import sigma_clipped_stats
 from matplotlib import pyplot as plt
 from lcocommissioning.common.Image import Image
 import logging
@@ -42,10 +43,10 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     if maxy is None:
         maxy = (int)(flat1.shape[0] * 5 / 8)
 
-    flat1lvl = np.median(flat1[miny:maxy, minx:maxx])
-    flat2lvl = np.median(flat2[miny:maxy, minx:maxx])
-    bias1lvl = np.median(bias1[miny:maxy, minx:maxx])
-    bias2lvl = np.median(bias2[miny:maxy, minx:maxx])
+    _,flat1lvl,_ = sigma_clipped_stats(flat1[miny:maxy, minx:maxx], sigma=5)
+    _,flat2lvl,_ = sigma_clipped_stats(flat2[miny:maxy, minx:maxx], sigma=5)
+    _,bias1lvl,_ = sigma_clipped_stats(bias1[miny:maxy, minx:maxx], sigma=3)
+    _,bias2lvl,_ = sigma_clipped_stats(bias2[miny:maxy, minx:maxx], sigma=3)
 
     avgbiaslevel = 0.5 * (bias2lvl + bias2lvl)
     leveldifference = abs(flat1lvl - flat2lvl)
@@ -56,11 +57,12 @@ def noisegainextension(flat1, flat2, bias1, bias2, minx=None, maxx=None, miny=No
     # Measure noise of flat and bias differential images
     deltaflat = (flat1 - flat2)[miny:maxy, minx:maxx]
     deltabias = (bias1 - bias2)[miny:maxy, minx:maxx]
-    biasnoise = np.std(deltabias)
-    biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 10 * biasnoise])
-    flatnoise = np.std(deltaflat)
-    flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 10 * flatnoise])
-
+    #biasnoise = np.std(deltabias)
+    #biasnoise = np.std(deltabias[np.abs(deltabias - np.median(deltabias)) < 10 * biasnoise])
+    _,_,biasnoise = sigma_clipped_stats(deltabias, sigma=5)
+    #flatnoise = np.std(deltaflat)
+    #flatnoise = np.std(deltaflat[np.abs(deltaflat - np.median(deltaflat)) < 10 * flatnoise])
+    _,_,flatnoise = sigma_clipped_stats(deltaflat, sigma=10)
     _logger.debug(
         " Levels (flat,flat,bias,bias), and noise (flat, bias): [%d:%d, %d:%d]: % 7.2f, % 7.2f | % 5.2f, % 5.2f | % 7.2f % 5.2f" % (
             minx, maxx, miny, maxy, flat1lvl, flat2lvl, bias1lvl, bias2lvl, flatnoise, biasnoise))
