@@ -31,8 +31,10 @@ class LCOLab:
         self.ins.write ("puls:state ON")
         self.ins.write ("puls:per %fs" % (exptime+overhead+1))
         self.ins.write ("puls:widt %fs" % (exptime+overhead))
+        self.ins.write ("PULSe:DELay 0s")
+
         # self.ins.write (f"PULSe:DCYCs 100" )
-        if (voltage is not None) and (voltage >=0.) and (voltage < 5.):
+        if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
             _logger.debug (f"Setting LED voltage to {voltage}")
             self.ins.write(f"voltage:level:imm:high {voltage} V")
 
@@ -44,13 +46,15 @@ class LCOLab:
 
 
     def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=0):
-        _logger.debug ("Lab burst exposing for % 5.2f s" % (exptime))
+        _logger.debug (f"Lab burst exposing for {exptime}, led {voltage}")
         self.ins.write ("burst:state ON")
         self.ins.write ("burst:mode TRIG")
         self.ins.write (f"burst:ncycles {ncycles}")
         self.ins.write (f"freq:fixed {frequency}Hz")
-        self.ins.write (f"PULSe:DCYC 50" )
-        if (voltage is not None) and (voltage >=0.) and (voltage < 5.):
+        self.ins.write (f"PULSe:DCYC 99.9" )
+        self.ins.write (f"PULSe:DELay {overhead}s")
+
+        if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
             _logger.debug (f"Setting LED voltage to {voltage}")
             self.ins.write(f"voltage:level:imm:high {voltage} V")
 
@@ -146,7 +150,7 @@ class restcam:
             logging.error(f"Error while asking for SBIG status : {status}")
         return status
 
-    def getframe(self, exptime, filename):
+    def getframe(self, exptime, filename, args=None):
 
         _logger.info (f"Starting exposure {exptime} seconds")
 
@@ -175,8 +179,12 @@ class restcam:
 
         hdul = fits.open (filename)
 
+        object = None
+        if args is not None:
+            object = f"led {args.ledvoltage} nburst {args.nburstcycles}"
+
         prihdr = hdul[0].header
-        prihdr['OBJECT'] = ""
+        prihdr['OBJECT'] = object
         prihdr['EXPTIME'] = exptime
         prihdr['FILTER'] = 'None'
         prihdr['AIRMASS'] = 1.0
@@ -242,9 +250,14 @@ def main():
         for ii in range (args.expcnt):
             imagename=f"{args.outputpath}/restcam-{datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%S')}.{suffix}.fits"
             if args.flat and lab is not None:
-                lab.expose(exptime = exptime, overhead = 2, block=False)
+                if args.nburstcycles is None:
+                    _logger.info ("Starting conventional shutter-defined exposure")
+                    lab.expose(exptime = exptime, overhead = 2, block=False, voltage=args.ledvoltage)
+                else:
+                    _logger.info ("Starting frequencey generator defined exposure")
+                    lab.expose_burst(exptime=exptime, ncycles=args.nburstcycles, overhead=2, voltage=args.ledvoltage, block=False)
 
-            qhyccd.getframe(exptime, imagename)
+            qhyccd.getframe(exptime, imagename, args=args)
 
             if args.flat:
                 time.sleep (1)
@@ -278,6 +291,7 @@ def parseCommandLine():
     parser.add_argument('--gain', type=int, default=5)
     parser.add_argument('--binning', type=int, default=1)
     parser.add_argument('--readmode', type=int, default=0)
+    parser.add_argument('--nburstcycles', type=int, default = None)
 
 
 
