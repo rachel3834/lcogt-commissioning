@@ -32,6 +32,7 @@ class LCOLab:
         self.ins.write ("puls:per %fs" % (exptime+overhead+1))
         self.ins.write ("puls:widt %fs" % (exptime+overhead))
         self.ins.write ("PULSe:DELay 0s")
+        self.ins.write ("burst:DELay 0s")
 
         # self.ins.write (f"PULSe:DCYCs 100" )
         if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
@@ -45,14 +46,17 @@ class LCOLab:
         _logger.debug ("Done exposing")
 
 
-    def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=0):
+    def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=5):
         _logger.debug (f"Lab burst exposing for {exptime}, led {voltage}")
+        if ncycles == 0:
+            return
         self.ins.write ("burst:state ON")
         self.ins.write ("burst:mode TRIG")
         self.ins.write (f"burst:ncycles {ncycles}")
         self.ins.write (f"freq:fixed {frequency}Hz")
         self.ins.write (f"PULSe:DCYC 99.9" )
-        self.ins.write (f"PULSe:DELay {overhead}s")
+        self.ins.write (f"burst:DELay {overhead}s")
+
 
         if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
             _logger.debug (f"Setting LED voltage to {voltage}")
@@ -62,7 +66,7 @@ class LCOLab:
         if block:
             _logger.info("Blocking during exposure time")
             time.sleep (exptime)
-        _logger.debug ("Done exposing")
+            _logger.debug ("Done exposing")
 
 
 
@@ -255,7 +259,7 @@ def main():
                     lab.expose(exptime = exptime, overhead = 2, block=False, voltage=args.ledvoltage)
                 else:
                     _logger.info ("Starting frequencey generator defined exposure")
-                    lab.expose_burst(exptime=exptime, ncycles=args.nburstcycles, overhead=2, voltage=args.ledvoltage, block=False)
+                    lab.expose_burst(exptime=exptime, ncycles=args.nburstcycles, overhead=5, voltage=args.ledvoltage, block=False)
 
             qhyccd.getframe(exptime, imagename, args=args)
 
