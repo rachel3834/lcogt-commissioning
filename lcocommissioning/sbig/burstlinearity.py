@@ -1,4 +1,6 @@
 import logging
+
+import astropy
 import sys
 import os
 import os.path
@@ -56,7 +58,9 @@ def combinedarks (listofdarks):
 
 
     for i, data in enumerate(listofdarks):
-        a[i, :, :] = data.data[0][:, :]
+        #dark,_,_ = astropy.stats.sigma_clipped_stats(data.data[0][:,-50:-1])
+        a[i, :, :] = data.data[0][:, :] #- dark
+        #_logger.info (f"dark oversan: {dark}")
     stacked_data = a.sum(axis=0) / len(listofdarks)
     std = np.std(stacked_data)
     m = np.median(stacked_data)
@@ -68,9 +72,16 @@ def combinedarks (listofdarks):
 
 
 def getlevelforimage (image, masterdark):
-    zerocorrected = image - masterdark
-    level = np.mean (zerocorrected[1000:1200,1000:1200])
-    return level
+
+
+    #imageov,_,_ = astropy.stats.sigma_clipped_stats(image[:,-50:-10])
+    #_logger.info (f"Oversscan: {imageov}")
+    imageov = 0
+    zerocorrected = (image-imageov) - (masterdark)
+
+    levell, mean, std = astropy.stats.sigma_clipped_stats (zerocorrected[1100:1500,500:800])
+    levelr, mean, std = astropy.stats.sigma_clipped_stats (zerocorrected[1100:1500,-500:-200])
+    return levell,levelr
 
 def do_linearity_for_fileset (fitsfiles, args):
 
@@ -79,20 +90,41 @@ def do_linearity_for_fileset (fitsfiles, args):
 
     exptimes = []
     levels = []
+    levelsr = []
     for flat in flats:
         exptime = float(flat.primaryheader['OBJECT'].split()[3])
-        level = getlevelforimage(flat.data[0], masterdark)
+        levell,levelr = getlevelforimage(flat.data[0], masterdark)
 
         exptimes.append (exptime)
-        levels.append(level)
+        levels.append(levell)
 
+    exptimes = np.asarray(exptimes)
+    levels = np.asarray (levels)
     print (exptimes, levels)
 
     plt.figure()
     plt.plot (exptimes, levels, '.')
     plt.xlabel ('illumination cycles')
     plt.ylabel ('Exposure level [ADU]')
+
+
+    good = np.asarray(exptimes)>200
+    z = np.polyfit (exptimes[good], levels[good], 1)
+    p = np.poly1d(z)
+    plt.plot (exptimes, p(exptimes), label = p)
+    plt.legend()
+
     plt.savefig ("exptimelevel.png")
+
+    plt.figure()
+    plt.plot (levels, (levels - p(exptimes)) / levels * 100, '.')
+    plt.xlabel("level [ADU]")
+    plt.ylabel("(Level - fit [ADU])/Level * 100")
+    plt.savefig ("exptimelevelresidual.png")
+
+    plt.figure()
+    plt.plot ((levels - p(exptimes)) / levels * 100, '.')
+    plt.savefig ('residualhistory.png')
 
 def main():
     args = parseCommandLine()

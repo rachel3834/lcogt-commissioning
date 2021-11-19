@@ -2,6 +2,7 @@ import argparse
 import datetime
 import logging
 import tempfile
+import threading
 from ctypes import *
 import numpy as np
 import time
@@ -47,7 +48,9 @@ class LCOLab:
 
 
     def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=5):
-        _logger.debug (f"Lab burst exposing for {exptime}, led {voltage}")
+        _logger.info (f"Lab burst exposing for {exptime}, led {voltage}, overhead {overhead}")
+        time.sleep(overhead)
+        _logger.info ("Done sleeping, firing up the LED")
         if ncycles == 0:
             return
         self.ins.write ("burst:state ON")
@@ -56,7 +59,7 @@ class LCOLab:
         self.ins.write (f"freq:fixed {frequency}Hz")
         self.ins.write (f"PULSe:DCYC 99.9" )
         self.ins.write (f"burst:DELay {overhead}s")
-
+        self.ins.write (f"pulse:DELay {overhead}s")
 
         if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
             _logger.debug (f"Setting LED voltage to {voltage}")
@@ -81,13 +84,6 @@ class restcam:
         self.ipaddr = ipaddr
         self.bin_x = 1
         self.bin_y = 1
-
-
-
-
-
-
-
 
     """ Relase camera and close sdk """
     def close(self):
@@ -259,7 +255,8 @@ def main():
                     lab.expose(exptime = exptime, overhead = 2, block=False, voltage=args.ledvoltage)
                 else:
                     _logger.info ("Starting frequencey generator defined exposure")
-                    lab.expose_burst(exptime=exptime, ncycles=args.nburstcycles, overhead=5, voltage=args.ledvoltage, block=False)
+                    th =threading.Thread ( target=lab.expose_burst, kwargs={'exptime':exptime, 'ncycles':args.nburstcycles, 'overhead':7, 'voltage':args.ledvoltage, 'block':False})
+                    th.start()
 
             qhyccd.getframe(exptime, imagename, args=args)
 
