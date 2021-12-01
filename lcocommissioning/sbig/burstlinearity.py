@@ -1,11 +1,14 @@
 import logging
 
 import astropy
+import math
 import sys
 import os
 import os.path
 import numpy as np
 import argparse
+
+from scipy import optimize
 
 from lcocommissioning.common import lco_archive_utilities
 from lcocommissioning.common.ccd_noisegain import dosingleLevelGain
@@ -18,6 +21,18 @@ _logger = logging.getLogger(__name__)
 mpl_logger = logging.getLogger('matplotlib')
 mpl_logger.setLevel(logging.WARNING)
 
+
+
+sqrtfunc = lambda x, gain, z , exp:  ((gain*x)**exp + z**exp)**(1/exp) - z
+
+
+def linearityfit (exptime, signaladu, func = sqrtfunc ):
+
+    bounds = [ 0,math.inf]
+    (paramset, istat) = optimize.curve_fit (func, exptime, signaladu, bounds = bounds)
+    paramerrors = np.sqrt(np.diag(istat)) if istat is not None else None
+    _logger.info (f" Paramterset: {paramset} with errors: {paramerrors}")
+    return paramset, paramerrors
 
 
 def parseCommandLine():
@@ -108,7 +123,7 @@ def do_linearity_for_fileset (fitsfiles, args):
     plt.ylabel ('Exposure level [ADU]')
 
 
-    good = np.asarray(exptimes)>200
+    good = np.asarray(exptimes)>400
     z = np.polyfit (exptimes[good], levels[good], 1)
     p = np.poly1d(z)
     plt.plot (exptimes, p(exptimes), label = p)
@@ -117,14 +132,29 @@ def do_linearity_for_fileset (fitsfiles, args):
     plt.savefig ("exptimelevel.png")
 
     plt.figure()
-    plt.plot (levels, (levels - p(exptimes)) / levels * 100, '.')
+
+
+    plt.axhline (0, color='grey')
+    plt.plot (levels, (levels - p(exptimes)), '.', label="linear fit")
+
+
+    paramset, paramerror = linearityfit(exptimes, levels, sqrtfunc)
+
+    fitted  = sqrtfunc(exptimes, paramset[0], paramset[1], paramset[2])
+
+    plt.plot (levels, (levels - fitted) , '.' , label = f"(x**k+z**k)**(1/k)-z\nz={paramset[1]:5.1f} k={paramset[2]:5.3f}")
+
+
     plt.xlabel("level [ADU]")
-    plt.ylabel("(Level - fit [ADU])/Level * 100")
+    plt.ylabel("(Level - fit) [ADU]")
+    plt.legend ()
+
+
     plt.savefig ("exptimelevelresidual.png")
 
-    plt.figure()
-    plt.plot ((levels - p(exptimes)) / levels * 100, '.')
-    plt.savefig ('residualhistory.png')
+
+
+
 
 def main():
     args = parseCommandLine()
