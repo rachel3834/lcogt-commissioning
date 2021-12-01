@@ -2,6 +2,7 @@ import argparse
 import datetime
 import logging
 import tempfile
+import threading
 from ctypes import *
 import numpy as np
 import time
@@ -32,6 +33,7 @@ class LCOLab:
         self.ins.write ("puls:per %fs" % (exptime+overhead+1))
         self.ins.write ("puls:widt %fs" % (exptime+overhead))
         self.ins.write ("PULSe:DELay 0s")
+        self.ins.write ("burst:DELay 0s")
 
         # self.ins.write (f"PULSe:DCYCs 100" )
         if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
@@ -45,14 +47,19 @@ class LCOLab:
         _logger.debug ("Done exposing")
 
 
-    def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=0):
-        _logger.debug (f"Lab burst exposing for {exptime}, led {voltage}")
+    def expose_burst (self, exptime,  frequency=100, ncycles = 10, voltage=None, block=True, overhead=5):
+        _logger.info (f"Lab burst exposing for {exptime}, led {voltage}, overhead {overhead}")
+        time.sleep(overhead)
+        _logger.info ("Done sleeping, firing up the LED")
+        if ncycles == 0:
+            return
         self.ins.write ("burst:state ON")
         self.ins.write ("burst:mode TRIG")
         self.ins.write (f"burst:ncycles {ncycles}")
         self.ins.write (f"freq:fixed {frequency}Hz")
         self.ins.write (f"PULSe:DCYC 99.9" )
-        self.ins.write (f"PULSe:DELay {overhead}s")
+        self.ins.write (f"burst:DELay {overhead}s")
+        self.ins.write (f"pulse:DELay {overhead}s")
 
         if (voltage is not None) and (voltage >=0.) and (voltage <= 5.):
             _logger.debug (f"Setting LED voltage to {voltage}")
@@ -62,7 +69,7 @@ class LCOLab:
         if block:
             _logger.info("Blocking during exposure time")
             time.sleep (exptime)
-        _logger.debug ("Done exposing")
+            _logger.debug ("Done exposing")
 
 
 
@@ -77,13 +84,6 @@ class restcam:
         self.ipaddr = ipaddr
         self.bin_x = 1
         self.bin_y = 1
-
-
-
-
-
-
-
 
     """ Relase camera and close sdk """
     def close(self):
@@ -246,16 +246,21 @@ def main():
 
 
     for exptime in args.exptime:
-        _logger.info (f"takeing exposures for exptime {exptime}")
+        _logger.info (f"taking exposures for exptime {exptime}")
         for ii in range (args.expcnt):
             imagename=f"{args.outputpath}/restcam-{datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%S')}.{suffix}.fits"
             if args.flat and lab is not None:
                 if args.nburstcycles is None:
+                    # This is a conventional exposure where we ensure the LED is on befor we open the shutter and stays on until shutter closes.
                     _logger.info ("Starting conventional shutter-defined exposure")
                     lab.expose(exptime = exptime, overhead = 2, block=False, voltage=args.ledvoltage)
                 else:
-                    _logger.info ("Starting frequencey generator defined exposure")
-                    lab.expose_burst(exptime=exptime, ncycles=args.nburstcycles, overhead=2, voltage=args.ledvoltage, block=False)
+                    # Here we open the shutter, and then turn the LED on for a determined amount of time. it takes a few seconds from requesting an exposure
+                    # until the shutter actually opens. Hence we are putting the LED con command into a background thread that starts its working day with sleeping.
+
+                    _logger.info (f"Starting frequencey generator defined exposure for {args.nburstcycles} cycles.")
+                    th =threading.Thread ( target=lab.expose_burst, kwargs={'exptime':exptime, 'ncycles':args.nburstcycles, 'overhead':7, 'voltage':args.ledvoltage, 'block':False})
+                    th.start()
 
             qhyccd.getframe(exptime, imagename, args=args)
 
