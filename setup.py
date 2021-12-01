@@ -30,7 +30,8 @@ setuptools.setup(
                             'submit_floyds_calibration = lcocommissioning.floyds.submitFloydsCalibration:main',
                             'submit_floyds_observation = lcocommissioning.floyds.submitFloydsObservation:main',
                             'submit_muscat_observation = lcocommissioning.muscat.submitMuscatObservation:main',
-                            'submit_cdk_observation = lcocommissioning.cdk.submit_cdk_observation:main'],
+                            'submit_cdk_observation = lcocommissioning.cdk.submit_cdk_observation:main',
+                            'get_sbigframe = lcocommissioning.sbig.get_sbig_frame:main'],
 
     },
     zip_safe=False,
