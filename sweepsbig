@@ -1,12 +1,11 @@
 #!/bin/sh
 
 
-#python lcocommissioning/sbig/get_sbig_frame.py --bias  --expcnt 5 --binning 1
-cycles="50 100 150 200 250"
+cycles="0 0 0 5 5 10 10 15 25 35 50 75 100 125 150 200 250 25 300 400 500 600 650 700 25 800 850 900 950 1000 1100 1200 1300 1400 1500 25 1600 1700 1800 1900 2000 0 0 0"
 
 for ii in $cycles
 do
-   python lcocommissioning/sbig/get_sbig_frame.py --flat --exptime 10 --ledvoltage 3.0   --binning 1 --expcnt 2 --nburstcycles $ii
+  get_sbigframe --flat --exptime 28 --ledvoltage 5.0   --binning 1 --expcnt 2 --nburstcycles $ii
 done
 
 

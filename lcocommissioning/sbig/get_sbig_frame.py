@@ -57,7 +57,7 @@ class LCOLab:
         self.ins.write ("burst:mode TRIG")
         self.ins.write (f"burst:ncycles {ncycles}")
         self.ins.write (f"freq:fixed {frequency}Hz")
-        self.ins.write (f"PULSe:DCYC 99.9" )
+        self.ins.write (f"PULSe:DCYC 50.0" )
         self.ins.write (f"burst:DELay {overhead}s")
         self.ins.write (f"pulse:DELay {overhead}s")
 
@@ -219,7 +219,7 @@ def main():
         print ("LED OFF")
         exit (0)
 
-    qhyccd = restcam("inst.1m0a.doma.mfg.lco.gtn:8080")
+    qhyccd = restcam("10.6.11.64:8080")
 
 
     if args.settemp is not None:

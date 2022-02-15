@@ -42,6 +42,7 @@ def parseCommandLine():
 
     parser.add_argument('fitsfiles', type=str, nargs='+',
                         help='Input fits files, must include at least two bias and two flat field frames.')
+    parser.add_argument('--camera', default=None)
 
     args = parser.parse_args()
 
@@ -119,18 +120,19 @@ def do_linearity_for_fileset (fitsfiles, args):
 
     plt.figure()
     plt.plot (exptimes, levels, '.')
+    plt.title (args.camera)
     plt.xlabel ('illumination cycles')
     plt.ylabel ('Exposure level [ADU]')
 
 
-    good = np.asarray(exptimes)>400
+    good = np.asarray(exptimes)>1000
     z = np.polyfit (exptimes[good], levels[good], 1)
     p = np.poly1d(z)
     plt.plot (exptimes, p(exptimes), label = p)
     plt.legend()
-
+    title = args.camera.replace(" ","_") if args.camera is not None else None
     plt.savefig ("exptimelevel.png")
-
+    plt.savefig (f'{title}_exptimelevel.png')
     plt.figure()
 
 
@@ -144,13 +146,14 @@ def do_linearity_for_fileset (fitsfiles, args):
 
     plt.plot (levels, (levels - fitted) , '.' , label = f"(x**k+z**k)**(1/k)-z\nz={paramset[1]:5.1f} k={paramset[2]:5.3f}")
 
-
+    plt.title (args.camera)
     plt.xlabel("level [ADU]")
     plt.ylabel("(Level - fit) [ADU]")
+    plt.ylim([-10,60])
     plt.legend ()
 
 
-    plt.savefig ("exptimelevelresidual.png")
+    plt.savefig (f'{title}_exptimelevelresidual.png')
 
 
 
