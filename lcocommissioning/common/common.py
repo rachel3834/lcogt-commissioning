@@ -87,7 +87,7 @@ def is_valid_lco_site(sitecode):
     return sitecode in lco_site_lonlat
 
 
-def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
+def get_auto_target(targetlist, site, starttime, moonseparation=29, minalt=50):
     """ Go through a list of Simbad-resolvable objects and return the first visible object at the given site and time.
 
     :param targetlist: List of possible target names, as strings. Must resolve via simbad
@@ -129,7 +129,7 @@ def get_auto_target(targetlist, site, starttime, moonseparation=30, minalt=50):
             _log.debug("\nViable star found: %s altitude % 4f moon separation % 4f" % (starcandidate, alt, separation))
             return starcandidate
         else:
-            _log.debug(f"rejecting star {starcandidate:10s}  {radec.ra: 9.7} {radec.dec: 9.7}- altitude ok: {altok} {alt}    moon separation ok: {sepok} {separation: 6.1f}")
+            _log.debug(f"rejecting star {starcandidate:10s}  {radec.ra:9.5f} {radec.dec:9.5f}- altitude ok: {altok!s:^5} {alt:5.1f}    moon separation ok: {sepok!s:^5} {separation: 6.1f} < {moonseparation: 4.1f}")
 
     _log.debug("No viable star was found! full moon? returning None!")
     return None
