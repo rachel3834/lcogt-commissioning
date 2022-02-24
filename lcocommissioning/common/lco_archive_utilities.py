@@ -10,11 +10,11 @@ from astropy.io import fits
 from astropy.table import Table
 
 from lcocommissioning.common.common import lco_site_lonlat
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
+from opensearchpy import OpenSearch
+from opensearch_dsl import Search
 
 log = logging.getLogger(__name__)
-logging.getLogger('elasticsearch').setLevel(logging.WARNING)
+logging.getLogger('opensearch').setLevel(logging.WARNING)
 logging.getLogger('connectionpool').setLevel(logging.WARNING)
 
 ARCHIVE_ROOT = "/archive"
@@ -65,9 +65,9 @@ class ArchiveDiskCrawler:
 
 
 
-def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, range_filters=None, prefix_filters=None,
-                       terms_filters=None,
-                       es_url='http://elasticsearch.lco.gtn:9200'):
+def make_opensearch(index, filters, queries=None, exclusion_filters=None, range_filters=None, prefix_filters=None,
+                    terms_filters=None,
+                    opensearch_url='https://opensearch.lco.global'):
     """
     Make an ElasticSearch query
 
@@ -76,21 +76,21 @@ def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, ran
     index : str
             Name of index to search
     filters : list of dicts
-              Each dict has a criterion for an ElasticSearch "filter"
+              Each dict has a criterion for an OpenSearch "filter"
     queries : list of dicts
               Each dict has a "type" and "query" entry. The 'query' entry is a dict that has a criterion for an
               ElasticSearch "query"
     exclusion_filters : list of dicts
-                        Each dict has a criterion for an ElasticSearch "exclude"
+                        Each dict has a criterion for an OpenSearch "exclude"
     range_filters: list of dicts
-                   Each dict has a criterion an ElasticSearch "range filter"
-    es_url : str
-             URL of the ElasticSearch host
+                   Each dict has a criterion an openSearch "range filter"
+    opensearch_url : str
+             URL of the openSearch host
 
     Returns
     -------
-    search : elasticsearch_dsl.Search
-             The ElasticSearch object
+    search : opensearch_dsl.Search
+             The OpenSearch object
     """
     if queries is None:
         queries = []
@@ -102,8 +102,8 @@ def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, ran
         terms_filters = []
     if prefix_filters is None:
         prefix_filters = []
-    es = Elasticsearch(es_url)
-    s = Search(using=es, index=index)
+    opensearch = OpenSearch(opensearch_url)
+    s = Search(using=opensearch, index=index)
     for f in filters:
         s = s.filter('term', **f)
     for f in terms_filters:
@@ -120,13 +120,13 @@ def make_elasticsearch(index, filters, queries=None, exclusion_filters=None, ran
 
 
 def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=None, readmode='full_frame',
-                                     obstype=['BIAS', 'SKYFLAT'], es_url='http://elasticsearch.lco.gtn:9200'):
+                                     obstype=['BIAS', 'SKYFLAT'], opensearch_url='https://opensearch.lco.global'):
     """ Queries for a list of processed LCO images that are viable to get a photometric zeropoint in the griz bands measured.
 
-        Selection criteria are by DAY-OBS, site, by camaera type (fs,fa,kb), what filters to use, and minimum exposure time.
+        Selection criteria are by DAY-OBS, site, by camera type (fs,fa,kb), what filters to use, and minimum exposure time.
         Only day-obs is a mandatory fields, we do not want to query the entire archive at once.
      """
-    log.debug ("Starting elasticsearch query")
+    log.debug ("Starting opensearch query")
     query_filters = [{'DAY-OBS': dayobs}, {'RLEVEL': 0}, {'CONFMODE': readmode}]
     range_filters = []
     terms_filters = [{'OBSTYPE': obstype}]
@@ -140,9 +140,9 @@ def get_frames_for_noisegainanalysis(dayobs, site=None, cameratype=None, camera=
         prefix_filters.append({'INSTRUME': cameratype})
 
     queries = []
-    records = make_elasticsearch('fitsheaders', query_filters, queries, exclusion_filters=None, es_url=es_url,
-                                 range_filters=range_filters, prefix_filters=prefix_filters,
-                                 terms_filters=terms_filters).scan()
+    records = make_opensearch('fitsheaders', query_filters, queries, exclusion_filters=None, opensearch_url=opensearch_url,
+                              range_filters=range_filters, prefix_filters=prefix_filters,
+                              terms_filters=terms_filters).scan()
     records_sanitized = [[record['filename'], record['SITEID'], record['INSTRUME'], record['RLEVEL'], record['DAY-OBS'],
                           record['frameid']] for record in records]
 
@@ -170,8 +170,8 @@ def filename_to_archivepath_dict(filenametable, rootpath=ARCHIVE_ROOT):
 def download_from_archive(frameid):
     """
     Download a file from the LCO archive by frame id.
-    :param frameid: Archive API frame ID
-    :return: Astropy HDUList
+    param frameid: Archive API frame ID
+    return: Astropy HDUList
     """
     url = f'https://archive-api.lco.global/frames/{frameid}'
     log.info("Downloading image frameid {} from URL: {}".format(frameid, url))
