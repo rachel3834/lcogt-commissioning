@@ -1,5 +1,5 @@
-FROM python:3.7
-
+FROM python:3.10
+MAINTAINER Las Cumbres Observatory <webmaster@lco.global>
 # Configure application working directory
 WORKDIR /lco/noisegainreport
 
